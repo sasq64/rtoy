@@ -3,6 +3,7 @@
 extern "C"
 {
 #include <mruby.h>
+#include <mruby/array.h>
 #include <mruby/class.h>
 #include <mruby/compile.h>
 #include <mruby/data.h>
@@ -14,6 +15,7 @@ extern "C"
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <array>
 #include <optional>
 #include <string>
@@ -136,7 +138,7 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>& rest)
 
 //! Convert native type to ruby (mrb_value)
 template <typename RET>
-mrb_value to_value(RET const& r, mrb_state* mrb)
+mrb_value to_value(RET const& r, mrb_state* const mrb)
 {
     if constexpr (std::is_floating_point_v<RET>) {
         return mrb_float_value(mrb, r);
@@ -147,9 +149,17 @@ mrb_value to_value(RET const& r, mrb_state* mrb)
     } else if constexpr (std::is_same_v<RET, const char*>) {
         return mrb_str_new_cstr(mrb, r);
     } else {
-        throw std::exception();
-        return mrb_nil_value();
+        return RET::can_not_convert;
     }
+}
+
+template <typename ELEM>
+mrb_value to_value(std::vector<ELEM> const& r, mrb_state* mrb)
+{
+    std::vector<mrb_value> output(r.size());
+    std::transform(r.begin(), r.end(), output.begin(),
+        [&](ELEM const& e) { return to_value(e, mrb); });
+    return mrb_ary_new_from_values(mrb, output.size(), output.data());
 }
 
 //! Convert ruby (mrb_value) type to native

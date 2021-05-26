@@ -90,9 +90,11 @@ module OS
         Display.default.clear
     end
 
-    def ls(*args)
-        args = ["."] if args.empty?
-        Dir.entries(args[0]).each { |f| puts f unless f.start_with?('.') }
+    @@cwd = "."
+
+    def ls(d = nil)
+        d ||= @@cwd
+        list_files(d).each { |f| puts f }
     end
 
     def show(fn)

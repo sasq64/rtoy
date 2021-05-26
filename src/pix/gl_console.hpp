@@ -31,29 +31,14 @@ struct GLConsole : public Console
     int32_t width = 0;
     int32_t height = 0;
 
-    //int32_t wrap_column = 1920/16;
-    //int32_t scroll_line = 1080/32-1;
-
-    //Cursor cursor{0, 0};
-
     std::shared_ptr<TextureFont> font;
 
     bool is_wide(char32_t) const override;
 
     gl_wrap::Texture frame_buffer;
 
-    //void text(std::string const& t) override;
-    //void text(std::string const& t, uint32_t fg, uint32_t bg);
     Cursor text(int x, int y, std::string const& t);
     Cursor text(int x, int y, std::string const& t, uint32_t fg, uint32_t bg);
-
-//    void set_cursor(int x, int y)
-//    {
-//        cursor.x = x;
-//        cursor.y = y;
-//    }
-//
-//    Cursor get_cursor() const { return cursor; }
 
     void put_char(int x, int y, char32_t c) override;
     void put_char(Cursor cursor, char32_t c)

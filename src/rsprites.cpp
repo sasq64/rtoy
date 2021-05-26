@@ -27,7 +27,7 @@ void RSprite::update_tx()
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
     m = glm::scale(
         m, glm::vec3(static_cast<float>(texture.width) * scale[0] / 2,
-               static_cast<float>(texture.height) * scale[1] / 2, 1.0));
+               static_cast<float>(texture.height) * scale[1] / -2, 1.0));
     memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
 }
 
@@ -40,6 +40,11 @@ RSprites::RSprites(int w, int h) : RLayer{w, h}
 void RSprites::reset()
 {
     RLayer::reset();
+    sprites.clear();
+}
+
+void RSprites::clear()
+{
     sprites.clear();
 }
 

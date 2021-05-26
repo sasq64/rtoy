@@ -153,6 +153,7 @@ void Display::reg_class(mrb_state* ruby)
             auto* display = mrb::self_to<Display>(self);
             display->console->clear();
             display->canvas->clear();
+            display->sprites->clear();
             return mrb_nil_value();
         },
         MRB_ARGS_NONE());

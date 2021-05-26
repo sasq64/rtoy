@@ -44,6 +44,7 @@ public:
     RSprites(int w, int h);
     void render() override;
     void reset() override;
+    void clear();
     static void reg_class(mrb_state* ruby);
 };
 

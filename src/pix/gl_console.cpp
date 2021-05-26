@@ -30,11 +30,6 @@ bool GLConsole::is_wide(char32_t c) const
     return font->is_wide.count(c) > 0;
 }
 
-// void GLConsole::text(std::string const& t)
-//{
-//    cursor = text(cursor.x, cursor.y, t);
-//}
-
 Cursor GLConsole::text(int x, int y, std::string const& t)
 {
     uint32_t fg = default_style.fg;
@@ -42,15 +37,10 @@ Cursor GLConsole::text(int x, int y, std::string const& t)
     return text(x, y, t, fg, bg);
 }
 
-// void GLConsole::text(std::string const& t, uint32_t fg, uint32_t bg)
-//{
-//    cursor = text(cursor.x, cursor.y, t, fg, bg);
-//}
-
 Cursor GLConsole::text(
     int x, int y, std::string const& t, uint32_t fg, uint32_t bg)
 {
-    //    fmt::print("{},{}: '{}'\n", x, y, t);
+    //fmt::print("PRINT {},{}: '{}'\n", x, y, t);
     auto text32 = utils::utf8_decode(t);
     if (x > 0 && grid[x + width * y].c == Wide2) {
         grid[x - 1 + width * y] = {' ', fg, bg};
@@ -61,11 +51,10 @@ Cursor GLConsole::text(
             y++;
             continue;
         }
-        /* while (y >= scroll_line) { */
-        /*     scroll(-2, 0); */
-        /*     y -= 2; */
-        /* } */
-        /* if (c == 10) { continue; } */
+        if(x >= width) {
+            x -= width;
+            y++;
+        }
 
         auto& t = grid[x + width * y];
         t = {c, fg, bg};
@@ -126,27 +115,21 @@ void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)
 }
 
 GLConsole::GLConsole(int w, int h, Style _default_style)
-    //: font(std::make_shared<TextureFont>("JetBrainsMonoNL-Medium.ttf")),
     : width(w),
       height(h),
       default_style(_default_style),
       font(std::make_shared<TextureFont>("data/unscii-16.ttf")),
       frame_buffer(w * font->char_width, h * font->char_height)
 {
-    // auto tile = pix::load_png("data/tile.png");
-    // font->add_char_image('Z', (uint32_t*)tile.ptr);
 
-    printf("GLConsole %d %d\n", w, h);
     fflush(stdout);
     grid.resize(width * height);
     old_grid.resize(width * height);
     fill(default_style.fg, default_style.bg);
     frame_buffer.set_target();
-    puts("HERE WE ARE");
     fflush(stdout);
     gl_wrap::clearColor({default_style.bg});
     glClear(GL_COLOR_BUFFER_BIT);
-    fmt::print("FONT {} {}\n", font->char_width, font->char_height);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

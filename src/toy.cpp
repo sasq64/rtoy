@@ -20,6 +20,9 @@
 #include <string>
 #include <thread>
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 using namespace std::string_literals;
 static std::string to_run;
 
@@ -113,6 +116,18 @@ void Toy::init()
         },
         MRB_ARGS_REQ(1));
 
+    mrb_define_module_function(
+        ruby, ruby->kernel_module, "list_files",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            auto [dir] = mrb::get_args<std::string>(mrb);
+            std::vector<std::string> files;
+            for (auto&& p : fs::directory_iterator(dir)) {
+                fmt::print("{}\n", p.path().string());
+                files.emplace_back(p.path());
+            }
+            return mrb::to_value(files, mrb);
+        },
+        MRB_ARGS_REQ(1));
 }
 
 void Toy::destroy()

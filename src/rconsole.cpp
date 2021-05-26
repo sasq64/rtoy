@@ -10,8 +10,7 @@
 #include <pix/pix.hpp>
 
 RConsole::RConsole(int w, int h, Style style)
-    : RLayer{w * 8, h * 16},
-      console(std::make_shared<GLConsole>(w, h, style))
+    : RLayer{w * 8, h * 16}, console(std::make_shared<GLConsole>(w, h, style))
 {
     trans = {0.0F, 0.0F};
     scale = {2.0F, 2.0F};
@@ -25,42 +24,40 @@ void RConsole::clear()
     console->fill(console->default_style.fg, console->default_style.bg);
     console->flush();
     xpos = ypos = 0;
-    //console->set_cursor(0, 0);
+    // console->set_cursor(0, 0);
+}
+
+void RConsole::update_pos(Cursor const& cursor)
+{
+    xpos = cursor.x;
+    ypos = cursor.y;
+    int w = console->width / scale[0];
+    while (xpos > w) {
+        xpos -= w;
+        ypos++;
+    }
+    while (ypos >= console->height / scale[1]) {
+        console->scroll(-1, 0);
+        ypos--;
+    }
 }
 
 void RConsole::text(std::string const& t)
 {
-    console->default_style = { style.fg, style.bg };
+    console->default_style = {style.fg, style.bg};
     auto cursor = console->text(xpos, ypos, t);
-    xpos = cursor.x;
-    ypos = cursor.y;
-    if(xpos > console->width/scale[0]) {
-        xpos = 0;
-        ypos++;
-    }
-    //fmt::print("{},{} vs y {}\n", xpos, ypos, console->height);
-
-    while(ypos >= console->height/scale[1]) {
-        console->scroll(-1, 0);
-        ypos--;
-    }
-
-
+    update_pos(cursor);
 }
 
 void RConsole::text(std::string const& t, uint32_t fg, uint32_t bg)
 {
     auto cursor = console->text(xpos, ypos, t, fg, bg);
-    xpos = cursor.x;
-    ypos = cursor.y;
-    while(ypos >= console->height/scale[1]) {
-        console->scroll(-1, 0);
-        ypos--;
-    }
+    update_pos(cursor);
 }
+
 void RConsole::text(int x, int y, std::string const& t)
 {
-    console->default_style = { style.fg, style.bg };
+    console->default_style = {style.fg, style.bg};
     console->text(x, y, t);
 }
 
@@ -189,7 +186,7 @@ void RConsole::reg_class(mrb_state* ruby)
             ptr->xpos = x;
             ptr->ypos = y;
             fmt::print("Goto {} {}\n", x, y);
-            //ptr->console->set_cursor(x, y);
+            // ptr->console->set_cursor(x, y);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -212,7 +209,7 @@ void RConsole::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RConsole::rclass, "get_xy",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          auto* ptr = mrb::self_to<RConsole>(self);
+            auto* ptr = mrb::self_to<RConsole>(self);
             mrb_value values[2] = {
                 mrb::to_value(ptr->xpos, mrb), mrb::to_value(ptr->ypos, mrb)};
             return mrb_ary_new_from_values(mrb, 2, values);

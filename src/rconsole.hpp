@@ -18,6 +18,7 @@ class RConsole : public RLayer
 {
     int xpos = 0;
     int ypos = 0;
+    void update_pos(Cursor const& cursor);
 
     void text(int x, int y, std::string const& t);
     void text(int x, int y, std::string const& t, uint32_t fg, uint32_t bg);
