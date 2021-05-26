@@ -83,11 +83,9 @@ bool RInput::should_reset()
 bool RInput::update()
 {
     poll_events();
-    if(resize > 0) {
+    if (resize > 0) {
         resize--;
-        if(resize == 0) {
-            do_reset = true;
-        }
+        if (resize == 0) { do_reset = true; }
     }
     return do_quit;
 }
@@ -123,10 +121,11 @@ void RInput::reg_class(mrb_state* ruby)
     rclass = mrb_define_class(ruby, "Input", ruby->object_class);
     MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
 
+    default_input = new RInput(ruby);
+
     mrb_define_class_method(
         ruby, rclass, "default",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            if (default_input == nullptr) { default_input = new RInput(mrb); }
             return mrb::new_data_obj(mrb, default_input);
         },
         MRB_ARGS_NONE());

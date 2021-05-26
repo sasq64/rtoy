@@ -45,7 +45,7 @@ def step_worm
     c
 end
 
-Timer.default.on_timer($speed) {
+on_timer($speed) {
 
     return if $game_over
 
@@ -82,11 +82,9 @@ Timer.default.on_timer($speed) {
     text(WIDTH - 10, 1,"SCORE: #{$score}")
 
     $speed -= 0.02 if $speed > 20
-    Timer.default.on_timer($speed)
+    on_timer($speed)
 }
 
-
-Display.default.on_draw {}
 scale(4.0, 2.0)
 
 # Draw playfield

@@ -113,16 +113,6 @@ void Toy::init()
         },
         MRB_ARGS_REQ(1));
 
-    puts("Main");
-    std::ifstream ruby_file;
-    ruby_file.open("ruby/main.rb");
-    auto source = read_all(ruby_file);
-    auto v = mrb_load_string(ruby, source.c_str());
-    if (auto err = mrb::check_exception(ruby)) {
-        fmt::print("Error: {}\n", *err);
-        exit(1);
-    }
-    puts("Loaded");
 }
 
 void Toy::destroy()
@@ -189,6 +179,16 @@ bool Toy::render_loop()
 int Toy::run(std::string const& script)
 {
     init();
+    puts("Main");
+    std::ifstream ruby_file;
+    ruby_file.open(script);
+    auto source = read_all(ruby_file);
+    auto v = mrb_load_string(ruby, source.c_str());
+    if (auto err = mrb::check_exception(ruby)) {
+        fmt::print("Error: {}\n", *err);
+        exit(1);
+    }
+    puts("Loaded");
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(
         [](void* data) {

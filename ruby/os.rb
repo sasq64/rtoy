@@ -45,7 +45,8 @@ module OS
         @@app_stack.last.add(:click, block)
     end
     
-    def on_timer(&block)
+    def on_timer(t, &block)
+        Timer.default.on_timer(t);
         @@app_stack.last.add(:timer, block)
     end
 
@@ -65,6 +66,7 @@ module OS
         p "HANDLERS"
 
         t = Timer.default
+        t.on_timer(1000) { |ms| @@app_stack.last.call_all(:timer, ms) }
         Display.default.on_draw { @@app_stack.last.call_all(:draw, t.seconds) }
         Input.default.on_key { |*args| @@app_stack.last.call_all(:key, *args) }
         Input.default.on_drag { |*args| @@app_stack.last.call_all(:drag, *args) }
