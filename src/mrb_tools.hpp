@@ -162,6 +162,16 @@ mrb_value to_value(std::vector<ELEM> const& r, mrb_state* mrb)
     return mrb_ary_new_from_values(mrb, output.size(), output.data());
 }
 
+template <typename ELEM, size_t N>
+mrb_value to_value(std::array<ELEM, N> const& r, mrb_state* mrb)
+{
+    std::vector<mrb_value> output(r.size());
+    std::transform(r.begin(), r.end(), output.begin(),
+        [&](ELEM const& e) { return to_value(e, mrb); });
+    return mrb_ary_new_from_values(mrb, output.size(), output.data());
+}
+
+
 //! Convert ruby (mrb_value) type to native
 template <typename TARGET>
 TARGET to(mrb_value obj)

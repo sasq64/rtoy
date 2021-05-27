@@ -23,5 +23,5 @@ emruby :
 	MRUBY_CONFIG=emruby.cfg rake -f external/mruby/Rakefile -j8 -v
 
 fix :
-	cp external/mruby/build/host/bin/* emhost/mrbc/bin
-	chmod +x emhost/mrbc/bin/mrbc
+	cp external/mruby/build/host/bin/* builds/emhost/mrbc/bin
+	chmod +x builds/emhost/mrbc/bin/mrbc

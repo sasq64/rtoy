@@ -32,7 +32,7 @@ void RConsole::update_pos(Cursor const& cursor)
     xpos = cursor.x;
     ypos = cursor.y;
     int w = console->width / scale[0];
-    while (xpos > w) {
+    while (xpos >= w) {
         xpos -= w;
         ypos++;
     }

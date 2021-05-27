@@ -10,7 +10,6 @@ def by_elem(a, b, method)
 end
 
 class TweenTarget
-    include OS
 
     def initialize(obj, method, from, to, seconds, steps)
         @obj = obj
@@ -42,9 +41,7 @@ class TweenTarget
 end
 
 class Tween
-    include OS
     @@tweens = []
-    @@init = false
 
     def initialize(o = nil, m = nil, obj:nil, method:nil, on_done: nil,
                    seconds:nil, &block)
@@ -55,12 +52,6 @@ class Tween
         @on_done = on_done
         @total_time = seconds
         @start_time = Timer.default.seconds
-        if not @@init
-            @@init = true
-            on_draw do |t|
-                Tween.update_all(t)
-            end
-        end
 
     end
 

@@ -51,10 +51,6 @@ Cursor GLConsole::text(
             y++;
             continue;
         }
-        if(x >= width) {
-            x -= width;
-            y++;
-        }
 
         auto& t = grid[x + width * y];
         t = {c, fg, bg};
@@ -62,6 +58,10 @@ Cursor GLConsole::text(
         if (font->is_wide.count(c) > 0) {
             grid[x + width * y] = {Wide2, fg, bg};
             x++;
+        }
+        if(x >= width) {
+            x -= width;
+            y++;
         }
     }
     if (x < (width - 1) && grid[x + 1 + width * y].c == Wide2) {

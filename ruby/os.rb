@@ -1,5 +1,9 @@
 
+require 'tween.rb'
+
 module OS
+
+    @@display = Display.default
 
     class App
         def initialize()
@@ -67,7 +71,10 @@ module OS
 
         t = Timer.default
         t.on_timer(1000) { |ms| @@app_stack.last.call_all(:timer, ms) }
-        Display.default.on_draw { @@app_stack.last.call_all(:draw, t.seconds) }
+        Display.default.on_draw do
+            Tween.update_all(t.seconds)
+            @@app_stack.last.call_all(:draw, t.seconds)
+        end
         Input.default.on_key { |*args| @@app_stack.last.call_all(:key, *args) }
         Input.default.on_drag { |*args| @@app_stack.last.call_all(:drag, *args) }
         Input.default.on_click { |*args| @@app_stack.last.call_all(:click, *args) }
@@ -75,7 +82,6 @@ module OS
 
     reset_handlers()
 
-    @@display = Display.default
     def display() @@display end
     def load_image(*args) Image.from_file(*args) end
     def text(*args) @@display.console.text(*args) end

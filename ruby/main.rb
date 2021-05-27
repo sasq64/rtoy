@@ -18,7 +18,6 @@ Display.default.clear()
 require 'repl.rb'
 require 'editor.rb'
 
-load('ruby/tween.rb')
 load('ruby/user.rb')
 
 

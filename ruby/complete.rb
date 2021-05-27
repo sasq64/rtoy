@@ -4,6 +4,10 @@ module Complete
 
 @alternatives = nil
 
+def initialize
+    @commands = ["ls", "cd", "cat"]
+end
+
 def longest_common_prefix(strs)
   return '' if strs.empty?
   min, max = strs.minmax
@@ -28,7 +32,12 @@ def complete(full_line)
 
     p full_line
 
+    # We can't handle strings so lets not even try
     return "" if full_line.include?('"') or full_line.include?("'")
+    
+    # Scan backwards from line end until we found the start of the
+    # last 'symbol reference'; ie anyting consisting of symbols
+    # separated by dots or double colons
     i = full_line.size-1
     while i >= 0
         c = full_line[i]
@@ -45,13 +54,25 @@ def complete(full_line)
     end
     p "I:" + i.to_s
 
+    # Prefix is ignored when completing, but added back when returning
     prefix = i < 0 ? "" : full_line[0..i]
+    # line is what we want to complete
     line = full_line[i+1..-1]
+
 
     p "LINE:" + line
     p "PREF:" + prefix
 
+    if prefix == "ls "
+        @alternatives = list_files()
+    end
 
+
+    # Scan backwards again to see if we have a complete object
+    # reference that we should evaluate. If we do, it goes into
+    # `objname`.
+    # `incomplete` is the string we should complete, and is either
+    # a member of `objname` or a "global".
     i = line.length-1
     while i > 0
         break if line[i] == '.' or line[i] == ':'

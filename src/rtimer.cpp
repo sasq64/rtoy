@@ -1,8 +1,9 @@
 #include "rtimer.hpp"
 
+#include <fmt/format.h>
+
 #include "error.hpp"
 #include "mrb_tools.hpp"
-#include <fmt/format.h>
 
 using namespace std::chrono_literals;
 using namespace std::string_literals;
@@ -24,9 +25,7 @@ void RTimer::update()
     auto now = clk::now();
     auto seconds = get_seconds();
     while (now >= next_timer) {
-        if (timer_handler.w != 0) {
-            call_proc(ruby, timer_handler, seconds);
-        }
+        if (timer_handler.w != 0) { call_proc(ruby, timer_handler, seconds); }
         next_timer += 1ms * timer_interval;
     }
 }

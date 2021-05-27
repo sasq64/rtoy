@@ -1,6 +1,16 @@
 #include "toy.hpp"
-#include "error.hpp"
 
+#include <mruby.h>
+#include <mruby/compile.h>
+#include <mruby/value.h>
+
+#include <filesystem>
+#include <pix/gl_console.hpp>
+#include <string>
+#include <thread>
+
+#include "error.hpp"
+#include "mrb_tools.hpp"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
 #include "rdisplay.hpp"
@@ -8,31 +18,17 @@
 #include "rinput.hpp"
 #include "rsprites.hpp"
 #include "rtimer.hpp"
-
-#include "mrb_tools.hpp"
-
-#include <pix/gl_console.hpp>
-
-#include <mruby.h>
-#include <mruby/compile.h>
-#include <mruby/value.h>
-
-#include <string>
-#include <thread>
-
-#include <filesystem>
 namespace fs = std::filesystem;
 
 using namespace std::string_literals;
 static std::string to_run;
 
-void Toy::init()
-{
+void Toy::init() {
     ruby = mrb_open();
 
     auto define_const = [&](RClass* mod, std::string const& sym, uint32_t v) {
-        fmt::print("{} {:x} {}\n", sym, v, v);
-        mrb_define_const(ruby, mod, sym.c_str(), mrb_int_value(ruby, v));
+        auto sv = static_cast<int32_t>(v);
+        mrb_define_const(ruby, mod, sym.c_str(), mrb_int_value(ruby, sv));
     };
 
     auto* colors = mrb_define_module(ruby, "Color");
@@ -40,7 +36,7 @@ void Toy::init()
     define_const(colors, "WHITE", 0xffffffff);
     define_const(colors, "RED", 0x880000ff);
     define_const(colors, "CYAN", 0xAAFFEEff);
-    define_const(colors, "PURLE", 0xcc44ccff);
+    define_const(colors, "PURPLE", 0xcc44ccff);
     define_const(colors, "GREEN", 0x00cc55ff);
     define_const(colors, "BLUE", 0x0000aaff);
     define_const(colors, "YELLOW", 0xeeee77ff);
@@ -116,33 +112,41 @@ void Toy::init()
         },
         MRB_ARGS_REQ(1));
 
+    static auto root_path = fs::current_path();
+
     mrb_define_module_function(
         ruby, ruby->kernel_module, "list_files",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [dir] = mrb::get_args<std::string>(mrb);
+            auto [ds] = mrb::get_args<std::string>(mrb);
+            auto dir = fs::path(ds);
+            auto parent = fs::canonical(root_path / dir);
             std::vector<std::string> files;
-            for (auto&& p : fs::directory_iterator(dir)) {
-                fmt::print("{}\n", p.path().string());
-                files.emplace_back(p.path());
+            for (auto&& p : fs::directory_iterator(parent)) {
+                auto real_path = dir == "." ? p.path().filename()
+                                            : dir / p.path().filename();
+                fmt::print("{}/{}\n", p.path().string(), real_path.string());
+                files.emplace_back(real_path);
             }
             return mrb::to_value(files, mrb);
         },
         MRB_ARGS_REQ(1));
 }
 
-void Toy::destroy()
-{
+void Toy::destroy() {
     mrb_close(ruby);
     ruby = nullptr;
 }
 
-bool Toy::render_loop()
-{
+bool Toy::render_loop() {
     auto* display = Display::default_display;
     // auto seconds = get_seconds();
     auto* input = RInput::default_input;
-    if (display->begin_draw()) { return true; }
-    if ((input != nullptr) && input->update()) { return true; }
+    if (display->begin_draw()) {
+        return true;
+    }
+    if ((input != nullptr) && input->update()) {
+        return true;
+    }
 
     if (!ErrorState::stack.empty()) {
         auto e = ErrorState::stack.back();
@@ -166,10 +170,12 @@ bool Toy::render_loop()
         std::ifstream ruby_file;
         ruby_file.open("ruby/main.rb");
         auto source = read_all(ruby_file);
-        auto v = mrb_load_string(ruby, source.c_str());
+        mrb_load_string(ruby, source.c_str());
     }
 
-    if (RTimer::default_timer != nullptr) { RTimer::default_timer->update(); }
+    if (RTimer::default_timer != nullptr) {
+        RTimer::default_timer->update();
+    }
 
     display->end_draw();
 
@@ -188,17 +194,16 @@ bool Toy::render_loop()
 }
 
 #ifdef __EMSCRIPTEN__
-#    include <emscripten.h>
+#include <emscripten.h>
 #endif
 
-int Toy::run(std::string const& script)
-{
+int Toy::run(std::string const& script) {
     init();
     puts("Main");
     std::ifstream ruby_file;
     ruby_file.open(script);
     auto source = read_all(ruby_file);
-    auto v = mrb_load_string(ruby, source.c_str());
+    mrb_load_string(ruby, source.c_str());
     if (auto err = mrb::check_exception(ruby)) {
         fmt::print("Error: {}\n", *err);
         exit(1);
