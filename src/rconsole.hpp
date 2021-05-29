@@ -18,6 +18,10 @@ class RConsole : public RLayer
 {
     int xpos = 0;
     int ypos = 0;
+
+    std::vector<std::vector<Console::Char>> buffers;
+    int current_buf = 0;
+
     void update_pos(Cursor const& cursor);
 
     void text(int x, int y, std::string const& t);

@@ -47,7 +47,7 @@ end
 
 on_timer($speed) {
 
-    return if $game_over
+    next if $game_over
 
     boost = false
     unless $keys.empty?

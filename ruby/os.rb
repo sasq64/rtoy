@@ -5,20 +5,20 @@ module OS
 
     @@display = Display.default
 
-    class App
+    class Handlers
         def initialize()
             @callbacks = { key:[], draw:[], drag:[], click: [], timer: [] }
         end
 
         def add(what, cb)
-            i = @callbacks[what].index(:nil?)
-            if i
-                @callacks[what][i] = cb
+            index = @callbacks[what].index(:nil?)
+            if index
+                @callbacks[what][i] = [cb, nil]
             else
-                i = @callbacks[what].size
-                @callbacks[what].append(cb)
+                index = @callbacks[what].size
+                @callbacks[what].append([cb, nil])
             end
-            i
+            index
         end
 
         def remove(what, index)
@@ -27,60 +27,82 @@ module OS
 
 
         def call_all(what, *args)
-            @callbacks[what].each { |cb| cb.call(*args) if cb }
+            @callbacks[what].each do |p|
+                if p and p[0]
+                    if p[1].nil?
+                        p[1] = Fiber.new(&(p[0]))
+                    end
+                    p[1].resume(*args)
+                    p[1] = nil unless p[1].alive?
+                end
+            end
         end
+
     end
 
-    @@app_stack = [ App.new ]
+    @@handlers = Handlers.new
 
     def on_draw(&block)
-        @@app_stack.last.add(:draw, block)
+        @@handlers.add(:draw, block)
     end
 
     def on_key(&block)
-        @@app_stack.last.add(:key, block)
+        @@handlers.add(:key, block)
     end
 
     def on_drag(&block)
-        @@app_stack.last.add(:drag, block)
+        @@handlers.add(:drag, block)
     end
 
     def on_click(&block)
-        @@app_stack.last.add(:click, block)
+        @@handlers.add(:click, block)
     end
     
     def on_timer(t, &block)
         Timer.default.on_timer(t);
-        @@app_stack.last.add(:timer, block)
+        @@handlers.add(:timer, block)
     end
 
     def remove_handler(what, i)
-        @@app_stack.last.remove(what, i)
+        @@handlers.remove(what, i)
     end
 
-    def self.start_app(x)
-        @@app_stack.append(App.new)
+    def self.clear_handlers
+        @@handlers = Handlers.new
     end
 
-    def self.end_app()
-        @@app_stack.pop
+    def self.get_handlers
+        @@handlers
+    end
+
+    def self.set_handlers(h)
+        @@handlers = h
     end
 
     def self.reset_handlers
         p "HANDLERS"
+        @@handlers = Handlers.new
+
+        Tween.clear()
 
         t = Timer.default
-        t.on_timer(1000) { |ms| @@app_stack.last.call_all(:timer, ms) }
+        t.on_timer(1000) { |ms| @@handlers.call_all(:timer, ms) }
         Display.default.on_draw do
-            Tween.update_all(t.seconds)
-            @@app_stack.last.call_all(:draw, t.seconds)
-        end
-        Input.default.on_key { |*args| @@app_stack.last.call_all(:key, *args) }
-        Input.default.on_drag { |*args| @@app_stack.last.call_all(:drag, *args) }
-        Input.default.on_click { |*args| @@app_stack.last.call_all(:click, *args) }
-    end
+            if @runner
+                if @runner.alive?
+                    @runner.resume
+                else
+                    @ruller = nil
+                end
+            end
 
-    reset_handlers()
+            Tween.update_all(t.seconds)
+            @@handlers.call_all(:draw, t.seconds)
+        end
+        Input.default.on_key { |*args| @@handlers.call_all(:key, *args) }
+        Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args) }
+        Input.default.on_click { |*args| @@handlers.call_all(:click, *args) }
+    end
 
     def display() @@display end
     def load_image(*args) Image.from_file(*args) end
@@ -97,6 +119,26 @@ module OS
     end
 
     @@cwd = "."
+
+    def self.sync_run(&block)
+        @runner = Fiber.new(&block)
+        @runner.resume
+    end
+
+    def self.run(name)
+        OS.clear_handlers()
+        f = Fiber.new do
+            load(name)
+        end
+        while f.alive? do
+            f.resume
+            Fiber.yield if f.alive?
+        end
+    end
+
+    def run(name)
+        OS.run(name)
+    end
 
     def ls(d = nil)
         d ||= @@cwd

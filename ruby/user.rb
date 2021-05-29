@@ -8,14 +8,14 @@
 #Display.default.on_draw { con.rotation += 0.04 }
 
 
-def snake() load("ruby/snake.rb") end
-def pong() load("ruby/pong.rb") end
+def snake() run("ruby/snake.rb") end
+def pong() run("ruby/pong.rb") end
 
 def ball
-    display = Display.default
     $bimg ||= Image.from_file('data/ball.png')
     w,h = display.size
-    ball = display.sprites.add_sprite($bimg).move(rand(w - $bimg.width), rand(h - $bimg.height))
+    ball = add_sprite($bimg).move(rand(w - $bimg.width), rand(h - $bimg.height))
+    ball.scale = 0.25
     bx,by = rand(16)-8,rand(16)-8
     tween(seconds: 10.0) do |delta|
         ball.x += bx
@@ -26,8 +26,22 @@ def ball
     end
 end
 
+
+def block_test
+
+    pressed = false
+    on_key { pressed = true }
+    puts "Press a key"
+    Fiber.yield while !pressed
+    puts "Thanks"
+
+end
+
 def maze
-    Timer.default.on_timer(4) { print rand(2) == 0 ? "╲" : "╱" }
+    500.times do
+        print rand(2) == 0 ? "╲" : "╱"
+        Fiber.yield
+    end
 end
 
 def paint

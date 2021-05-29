@@ -1,5 +1,15 @@
 
+module OS
+    def edit(s)
+        e = Editor.new
+        e.load(s)
+        e.activate
+    end
+end
+
 class Editor
+
+include OS
 
 
 def goto_line(y)
@@ -13,6 +23,12 @@ def goto_line(y)
 end
 
 def editor_key(key, mod)
+
+    if @running
+        if key == Key::F5
+        end
+        return
+    end
 
     h = @con.height/32-2
     @dirty = true
@@ -52,8 +68,10 @@ def editor_key(key, mod)
         end
     when Key::ESCAPE
         p "EXIT"
-        OS.end_app()
         clear()
+        OS.set_handlers(@os_handlers)
+        @con.buffer(0)
+        @con.goto_xy(@savex, @savey)
         return
     when Key::LEFT
         @xpos -= 1
@@ -76,13 +94,16 @@ def editor_key(key, mod)
         save()
         source = get_text()
         Display.default.clear
-        OS.start_app(@file_name)
-        on_key do |key| 
+        @running = true
+        @saved_handlers = OS.get_handlers()
+        OS.clear_handlers()
+        on_key do |key|
             if key == Key::F5
+                @running = false
                 clear()
-                OS.end_app()
-                OS.reset_handlers()
                 scale(2,2)
+                @dirty = true
+                OS.set_handlers(@saved_handlers)
             end
         end
         exec(source)
@@ -143,6 +164,8 @@ end
 
 def editor_draw(t)
 
+    return if @running
+
     @con.clear
     lasty = @con.height/32-1
     @lines.length.times do |y|
@@ -192,11 +215,13 @@ def save()
     end
 end
 
-include OS
 
 def activate()
 
-    OS.start_app('editor')
+    @os_handlers = OS.get_handlers()
+    OS.clear_handlers()
+
+    @running = false
 
     @lines = [[]] if @lines.nil? or @lines.empty?
     @ypos = 0
@@ -204,6 +229,9 @@ def activate()
     @xpos = 0
     @scrollpos = 0
     @con = Display.default.console
+    @savex,@savey = @con.get_xy()
+
+    @con.buffer(1)
 
     @line = @lines[0]
 

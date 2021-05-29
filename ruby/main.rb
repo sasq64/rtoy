@@ -1,25 +1,16 @@
-
-module Kernel
-    def puts(txt)
-        Display.default.console.print(txt.to_s + "\n")
-    end
-    def print(txt)
-        Display.default.console.print(txt.to_s)
-    end
-end
-
 # Will hook up handlers but not pollute namespace with
 # 'global methods'
 require 'os.rb'
-
-p "CLEAR"
-Display.default.clear()
-
 require 'repl.rb'
 require 'editor.rb'
+require 'turtle.rb'
+
+OS.reset_handlers()
 
 load('ruby/user.rb')
 
+p "CLEAR"
+Display.default.clear()
 
 p "RUN"
 repl = Repl.new

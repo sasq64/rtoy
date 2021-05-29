@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(hex VERSION 1.0)
+project(rtoy VERSION 1.0)
 
 include(ExternalProject)
 
@@ -53,7 +53,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 set(MRB ${PROJECT_SOURCE_DIR}/external/mruby)
-set(MRB_LIB ${MRB}/build/host/lib)
+set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/mruby/lib)
 set(MRB_INC ${MRB}/include)
 add_custom_command(
     OUTPUT ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a

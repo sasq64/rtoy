@@ -103,6 +103,29 @@ void RConsole::reg_class(mrb_state* ruby)
     MRB_SET_INSTANCE_TT(RConsole::rclass, MRB_TT_DATA);
 
     mrb_define_method(
+        ruby, RConsole::rclass, "buffer",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          auto* ptr = mrb::self_to<RConsole>(self);
+          auto [bufno] = mrb::get_args<int>(mrb);
+          if(bufno == ptr->current_buf) return mrb_nil_value();
+
+          if(ptr->buffers.size() <= bufno) {
+              ptr->buffers.resize(bufno+1);
+          }
+
+          ptr->buffers[ptr->current_buf] = ptr->console->grid;
+
+          ptr->current_buf = bufno;
+          auto& buf = ptr->buffers[bufno];
+          if(buf.empty()) {
+              buf.resize(ptr->console->grid.size());
+          }
+          ptr->console->grid = buf;
+
+          return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+    mrb_define_method(
         ruby, RConsole::rclass, "print",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);

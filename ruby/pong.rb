@@ -1,5 +1,4 @@
 
-
 $bimg = Image.from_file('data/ball.png')
 $img = Image.from_file('data/paddle.png')
 

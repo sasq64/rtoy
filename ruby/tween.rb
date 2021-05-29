@@ -89,6 +89,9 @@ class Tween
         end
     end
 
+    def self.clear()
+        @@tweens = []
+    end
 
     def self.make(*args, &block)
 

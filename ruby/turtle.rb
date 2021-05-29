@@ -1,5 +1,4 @@
 
-
 module Turtle
     include OS
 
@@ -60,3 +59,7 @@ module Turtle
 
 end
 
+def turtle
+    self.singleton_class.send(:include, Turtle)
+    self.init_turtle()
+end

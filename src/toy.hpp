@@ -6,6 +6,8 @@
 #include <string>
 
 #include <fstream>
+#include <filesystem>
+#include <set>
 
 class Toy
 {
@@ -23,7 +25,12 @@ class Toy
     }
 
     mrb_state* ruby;
+    static void exec(mrb_state* mrb, std::string const& code);
+
+    static inline std::filesystem::path ruby_path = "ruby";
+    static inline std::set<std::filesystem::path> already_loaded{};
 public:
+
 
     void init();
     void destroy();
