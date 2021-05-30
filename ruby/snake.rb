@@ -1,6 +1,6 @@
 ### SNAKE
 
-include OS
+#include OS
 
 APPLE = '⬤'
 WIDTH = 40
@@ -16,6 +16,8 @@ $keys = []
 $snake = []
 $game_over = false
 
+$handlers = OS.get_handlers
+OS.clear_handlers
 
 def create_apple
     c = ''
@@ -85,6 +87,9 @@ on_timer($speed) {
     on_timer($speed)
 }
 
+display.console.buffer(1)
+$savex, $savey = display.console.get_xy()
+
 scale(4.0, 2.0)
 
 # Draw playfield
@@ -105,4 +110,13 @@ text 0,HEIGHT-1,'┕'
 text WIDTH-1,HEIGHT-1,'┙'
 
 1.times { create_apple }
+
+
+Fiber.yield while !$game_over
+
+OS.set_handlers $handlers
+
+display.console.buffer(0)
+scale 2,2
+display.console.goto_xy($savex,$savey)
 

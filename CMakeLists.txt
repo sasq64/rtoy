@@ -101,7 +101,7 @@ target_link_libraries(pix PUBLIC SDL2 ${GL} Threads::Threads coreutils
 
 if(EMSCRIPTEN)
     set(TARGET toy.html)
-    set(MRB_LIB ${PROJECT_SOURCE_DIR}/emhost/lib)
+    set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/emhost/lib)
 else()
     set(TARGET toy)
 endif()

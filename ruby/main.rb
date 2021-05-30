@@ -15,9 +15,9 @@ Display.default.clear()
 
 p "RUN"
 
-OS.exec {
+OS.boot {
     $repl = Repl.new
-    $repl.run()
+    $repl.run_repl()
 }
 
 

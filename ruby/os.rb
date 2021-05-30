@@ -5,28 +5,22 @@ p "OS"
 module OS
 
     @@display = Display.default
+    @@boot_fiber = nil
 
     class Handlers
         def initialize()
-            @callbacks = { run:[], key:[], draw:[], drag:[], click: [], timer: [] }
+            @callbacks = { key:[], draw:[], drag:[], click: [], timer: [] }
         end
 
         def add(what, cb)
             index = @callbacks[what].index(:nil?)
             if index
-                @callbacks[what][i] = [cb, Fiber.new(&cb)]
+                @callbacks[what][i] = [cb, nil]
             else
                 index = @callbacks[what].size
-                @callbacks[what].append([cb, Fiber.new(&cb)])
+                @callbacks[what].append([cb, nil])
             end
             index
-        end
-
-        def call(what, index)
-            p = @callbacks[what][index]
-            p "F " + p[1].to_s
-            p[1].resume
-            p[1] = nil unless p[1].alive?
         end
 
         def remove(what, index)
@@ -45,16 +39,6 @@ module OS
                 end
             end
         end
-
-        def remove_done(what)
-            @callbacks[what].each_with_index do |p,i,x|
-                if p and (p[1].nil? or !p[1].alive?)
-                    @callbacks[what][i] = nil
-                end
-            end
-
-        end
-
     end
 
     @@handlers = Handlers.new
@@ -96,6 +80,9 @@ module OS
         @@handlers = h
     end
 
+    module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer
+
+
     def self.reset_handlers
         p "HANDLERS"
         @@handlers = Handlers.new
@@ -104,9 +91,14 @@ module OS
         t = Timer.default
         t.on_timer(1000) { |ms| @@handlers.call_all(:timer, ms) }
         Display.default.on_draw do
+            if @@boot_fiber
+                if @@boot_fiber.alive?
+                    @@boot_fiber.resume
+                else
+                    # TODO: QUIT
+                end
+            end
             Tween.update_all(t.seconds)
-            @@handlers.remove_done(:run)
-            @@handlers.call_all(:run)
             @@handlers.call_all(:draw, t.seconds)
         end
         Input.default.on_key { |key,mod| 
@@ -130,22 +122,20 @@ module OS
         Display.default.clear
     end
 
-    module_function :display, :text, :line, :scale, :offset, :add_sprite, :remove_sprite, :clear
+    module_function :display, :text, :line, :scale, :offset, :add_sprite, :remove_sprite, :clear, :get_char
 
     @@cwd = "."
 
-    def exec(src = nil, &block)
+    def boot(src = nil, &block)
         if src
-            pp = Proc.new { eval(src) }
-            i = @@handlers.add(:run, pp)
+            @@boot_fiber = Fiber.new { eval(src) }
         else
-            i = @@handlers.add(:run, block)
+            @@boot_fiber = Fiber.new &block
         end
-        @@handlers.call(:run, i)
-        @@handlers.remove_done(:run)
+        @@boot_fiber.resume
     end
 
-    def bexec(src = nil, &block)
+    def exec(src = nil, &block)
         block = Proc.new { eval(src) } if src
         f = Fiber.new &block
          while f.alive? do
@@ -156,7 +146,9 @@ module OS
 
     def run(name)
          f = Fiber.new do
-             load(name)
+             #load(name)
+             src = File.read(name)
+             OS.instance_eval(src)
          end
          while f.alive? do
              f.resume
@@ -198,7 +190,7 @@ module OS
         ed.activate
     end
 
-    module_function :help, :edit, :show, :ls, :exec, :sleep, :bexec
+    module_function :help, :run, :edit, :show, :ls, :exec, :sleep, :exec, :boot
 
 end
 
