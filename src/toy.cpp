@@ -80,6 +80,11 @@ void Toy::init()
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            auto n = mrb_get_argc(mrb);
+            if (n == 0) {
+                Display::default_display->console->text("\n");
+                return mrb_nil_value();
+            }
             auto [s] = mrb::get_args<std::string>(mrb);
             auto text = std::string(s) + "\n";
             Display::default_display->console->text(text);

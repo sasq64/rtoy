@@ -161,6 +161,12 @@ module OS
         list_files(d).each { |f| puts f }
     end
 
+    def gets
+        p "GETS"
+        a = IOX.read_line
+        puts
+        a
+    end
 
     def show(fn)
         img = Image.from_file(fn)
@@ -190,7 +196,7 @@ module OS
         ed.activate
     end
 
-    module_function :help, :run, :edit, :show, :ls, :exec, :sleep, :exec, :boot
+    module_function :gets, :help, :run, :edit, :show, :ls, :exec, :sleep, :exec, :boot
 
 end
 

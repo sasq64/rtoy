@@ -26,7 +26,7 @@ class Display : public RLayer
 
     int w = 1440;
     int h = 960;
-    uint32_t bg = 0x000000ff;
+    uint32_t bg = 0x0000aaff;
     std::array<float, 16> Id = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
     std::shared_ptr<RCanvas> canvas;

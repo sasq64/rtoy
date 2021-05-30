@@ -22,6 +22,25 @@ def goto_line(y)
     true
 end
 
+def run_source
+    save()
+    source = get_text()
+    Display.default.clear
+    @running = true
+    @saved_handlers = OS.get_handlers()
+    OS.clear_handlers()
+    on_key do |key|
+        if key == Key::F5
+            @running = false
+            clear()
+            scale(2,2)
+            @dirty = true
+            OS.set_handlers(@saved_handlers)
+        end
+    end
+    on_draw { eval(source) }
+end
+
 def editor_key(key, mod)
 
     if @running
@@ -91,22 +110,7 @@ def editor_key(key, mod)
     when Key::HOME
         @xpos = 0
     when Key::F5
-        save()
-        source = get_text()
-        Display.default.clear
-        @running = true
-        @saved_handlers = OS.get_handlers()
-        OS.clear_handlers()
-        on_key do |key|
-            if key == Key::F5
-                @running = false
-                clear()
-                scale(2,2)
-                @dirty = true
-                OS.set_handlers(@saved_handlers)
-            end
-        end
-        exec(source)
+        @do_run = true
     when Key::END
         @xpos = @line.length
     when Key::ENTER
@@ -163,6 +167,11 @@ def editor_key(key, mod)
 end
 
 def editor_draw(t)
+
+    if @do_run
+        @do_run = false
+        run_source()
+    end
 
     return if @running
 
@@ -222,6 +231,7 @@ def activate()
     OS.clear_handlers()
 
     @running = false
+    @do_run = false
 
     @lines = [[]] if @lines.nil? or @lines.empty?
     @ypos = 0
@@ -239,6 +249,8 @@ def activate()
     @con.goto_xy(0,0)
     @key_i = on_key { |key,mod| editor_key(key, mod) }
     @draw_i = on_draw { |t| editor_draw(t) }
+
+    loop { Fiber.yield }
 
 end
 

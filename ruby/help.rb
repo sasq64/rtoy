@@ -13,21 +13,23 @@
 
 ## The 'OS' module brings in all the functions we need
 ## such as 'circle', 'on_click' etc
-include OS
+## include OS
 
 ## 'puts' is the same as 'print' except it adds a newline.
 ## Note that parentheses in ruby are optional.
-puts "Hello world!"
+#puts "Hello world!"
 
+#a = gets
+#puts a
 
 ## The classical maze effect. We run it on a timer here to
 
-# Timer.default.on_timer(1) { print rand(2) == 0 ? "╲" : "╱" }
+#loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 1 }
 
 
 ## To paint some circles, uncomment this;
 
-# on_drag { |x,y| circle(x,y,10) }
+on_drag { |x,y| circle(x,y,10) }
 
 
 ## To instead draw lines, you need a bit more

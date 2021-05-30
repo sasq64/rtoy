@@ -118,7 +118,7 @@ GLConsole::GLConsole(int w, int h, Style _default_style)
     : width(w),
       height(h),
       default_style(_default_style),
-      font(std::make_shared<TextureFont>("data/unscii-16.ttf")),
+      font(std::make_shared<TextureFont>("data/unscii-16-full.ttf")),
       frame_buffer(w * font->char_width, h * font->char_height)
 {
 
