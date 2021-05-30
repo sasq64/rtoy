@@ -219,17 +219,17 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
 
     unsigned stack_keep = 0;
 
-    //auto result = mrb_top_run(mrb, proc, mrb_top_self(mrb), stack_keep);
-    auto* e = mrb_vm_top_start(mrb, proc, mrb_top_self(mrb), stack_keep);
-    auto* val = mrb_vm_run_cycles(mrb, e, 10);
-    if(val == nullptr) {
-        val = mrb_vm_run_cycles(mrb, e, 0x7fffffff);
-    }
-    mrb_vm_end(mrb, e);
+    auto result = mrb_top_run(mrb, proc, mrb_top_self(mrb), stack_keep);
+    /* auto* e = mrb_vm_top_start(mrb, proc, mrb_top_self(mrb), stack_keep); */
+    /* auto* val = mrb_vm_run_cycles(mrb, e, 10); */
+    /* if(val == nullptr) { */
+    /*     val = mrb_vm_run_cycles(mrb, e, 0x7fffffff); */
+    /* } */
+    /* mrb_vm_end(mrb, e); */
     if (mrb->exc) {
         fmt::print("EXCEPTION!\n");
     } else {
-        *(mrb->c->ci->stack + 1) = *val;
+        *(mrb->c->ci->stack + 1) = result;
     }
 
     mrb_gc_arena_restore(mrb, ai);

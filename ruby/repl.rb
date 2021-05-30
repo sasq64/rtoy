@@ -4,28 +4,28 @@ class Repl
 
     include OS
 
+    p "REPL"
     def run()
-        @readline = ReadLine.new
+        p "RUN"
         clear()
         puts "R-Toy READY. Type 'help' if you need it."
-        print('→')
-        @readline.start()
-        @readline.read_line { |l| eval_line(l) }
-    end
-
-    def eval_line(l)
-        puts ""
-        begin
-            eval l
-        rescue => e
-            puts "Error " + e.message
+        while true do
+            print('→')
+            line = IOX.read_line()
+            puts ""
+            begin
+                p "### EXEC START"
+                bexec line
+                p "### EXEC DONE"
+            rescue => e
+                puts "Error " + e.message
+            end
+            #return if OS.running?
+            p "SUCCESS"
+            x,y = Display.default.console.get_xy()
+            p "#{x},#{y}"
+            puts("") if x > 0
         end
-        p "SUCCESS"
-        x,y = Display.default.console.get_xy()
-        p "#{x},#{y}"
-        puts("") if x > 0
-        print("→")
-        @readline.read_line { |l| eval_line(l) }
     end
 
 end

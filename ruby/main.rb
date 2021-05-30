@@ -1,6 +1,7 @@
 # Will hook up handlers but not pollute namespace with
 # 'global methods'
 require 'os.rb'
+p "REPL"
 require 'repl.rb'
 require 'editor.rb'
 require 'turtle.rb'
@@ -13,7 +14,10 @@ p "CLEAR"
 Display.default.clear()
 
 p "RUN"
-repl = Repl.new
-repl.run()
+
+OS.exec {
+    $repl = Repl.new
+    $repl.run()
+}
 
 
