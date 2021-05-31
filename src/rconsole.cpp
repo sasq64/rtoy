@@ -136,8 +136,6 @@ void RConsole::reg_class(mrb_state* ruby)
         ruby, RConsole::rclass, "clear",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
-            ptr->console->default_style.bg = ptr->style.bg;
-            ptr->console->default_style.fg = ptr->style.fg;
             ptr->clear();
             return mrb_nil_value();
         },
@@ -222,8 +220,6 @@ void RConsole::reg_class(mrb_state* ruby)
             auto [y] = mrb::get_args<int>(mrb);
             auto w = ptr->console->width;
             auto i = w * y;
-            ptr->console->default_style.bg = ptr->style.bg;
-            ptr->console->default_style.fg = ptr->style.fg;
             for (size_t x = 0; x < w; x++) {
                 ptr->console->grid[i++] = {' ', ptr->console->default_style.fg,
                     ptr->console->default_style.bg};
@@ -241,6 +237,12 @@ void RConsole::reg_class(mrb_state* ruby)
             return mrb_ary_new_from_values(mrb, 2, values);
         },
         MRB_ARGS_REQ(3));
+}
+
+void RConsole::update()
+{
+    console->default_style.bg = style.bg;
+    console->default_style.fg = style.fg;
 }
 
 void RConsole::reset()

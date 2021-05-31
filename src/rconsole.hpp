@@ -39,6 +39,7 @@ public:
     void reset() override;
     void clear();
     void render() override;
+    void update() override;
 
     static inline RClass* rclass = nullptr;
     static inline mrb_data_type dt{"Console",

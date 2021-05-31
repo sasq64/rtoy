@@ -44,5 +44,6 @@ public:
 
     RStyle style{0xffffffff, 0x00000000, 2.0F};
     virtual void render() {}
+    virtual void update() {}
 };
 

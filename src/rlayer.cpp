@@ -58,6 +58,7 @@ void RLayer::reg_class(mrb_state* ruby)
             auto [bg] = mrb::get_args<uint32_t>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
             rlayer->style.bg = bg;
+            rlayer->update();
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -76,6 +77,7 @@ void RLayer::reg_class(mrb_state* ruby)
             auto [fg] = mrb::get_args<uint32_t>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
             rlayer->style.fg = fg;
+            rlayer->update();
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
