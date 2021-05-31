@@ -6,11 +6,18 @@
 struct RClass;
 struct mrb_state;
 
+enum BlendMode
+{
+    Blend,
+    Add
+};
+
 struct RStyle
 {
     uint32_t fg;
     uint32_t bg;
     float line_width;
+    BlendMode blend_mode = BlendMode::Blend;
 };
 
 class RLayer

@@ -31,7 +31,7 @@ pix::Image RCanvas::read_image(int x, int y, int w, int h)
     void* ptr = (void*)image.ptr;
     memset(ptr, w * h * 4, 0xff);
     canvas.set_target();
-    //glReadBuffer(GL_COLOR_ATTACHMENT0);
+    // glReadBuffer(GL_COLOR_ATTACHMENT0);
     glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
     return image;
 }
@@ -56,9 +56,8 @@ void RCanvas::clear()
     canvas.set_target();
     gl::clearColor({0});
     glClear(GL_COLOR_BUFFER_BIT);
-        fmt::print("CLEAR!\n");
+    fmt::print("CLEAR!\n");
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 }
 
 void RCanvas::draw_image(float x, float y, RImage* image)
@@ -113,7 +112,11 @@ void RCanvas::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x, y, r] = mrb::get_args<float, float, float>(mrb);
             auto* canvas = mrb::self_to<RCanvas>(self);
+            if (canvas->style.blend_mode == BlendMode::Add) {
+                glBlendFunc(GL_ONE, GL_ONE);
+            }
             canvas->draw_circle(x, y, r);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(4));

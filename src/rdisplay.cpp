@@ -159,7 +159,7 @@ void Display::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, RLayer::rclass, "bg=",
+        ruby, Display::rclass, "bg=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [bg] = mrb::get_args<uint32_t>(mrb);
             auto* display = mrb::self_to<Display>(self);
@@ -169,7 +169,7 @@ void Display::reg_class(mrb_state* ruby)
         },
         MRB_ARGS_REQ(1));
     mrb_define_method(
-        ruby, RLayer::rclass, "bg",
+        ruby, Display::rclass, "bg",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             return mrb::to_value(display->bg, mrb);

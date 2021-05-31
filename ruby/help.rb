@@ -19,17 +19,18 @@
 ## Note that parentheses in ruby are optional.
 #puts "Hello world!"
 
-#a = gets
-#puts a
+print "What is your name ? "
+name = gets()
+puts "Hello #{name}"
 
 ## The classical maze effect. We run it on a timer here to
 
-#loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 1 }
+# loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 0 }
 
 
 ## To paint some circles, uncomment this;
 
-on_drag { |x,y| circle(x,y,10) }
+# on_drag { |x,y| circle(x,y,10) }
 
 
 ## To instead draw lines, you need a bit more
@@ -40,6 +41,8 @@ on_drag { |x,y| circle(x,y,10) }
 #     line(px,py,x,y)
 #     px,py = x,y
 # }
+ 
+# loop { Fiber.yield }
 
 ## This code will add a bouncing ball that disappears after
 ## 10 seconds.

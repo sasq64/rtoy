@@ -14,7 +14,7 @@ $length = 14
 $score = 0
 $keys = []
 $snake = []
-$game_over = false
+$game_over = 0
 
 $handlers = OS.get_handlers
 OS.clear_handlers
@@ -49,7 +49,11 @@ end
 
 on_timer($speed) {
 
-    next if $game_over
+    if $game_over > 0
+        $game_over += 1
+        p $game_over
+        next
+    end
 
     boost = false
     unless $keys.empty?
@@ -77,7 +81,7 @@ on_timer($speed) {
         $length += 15
         create_apple
     elsif c != ' '
-        $game_over = true
+        $game_over = 1
         text(0, 1, "GAME OVER")
     end
 
@@ -112,7 +116,7 @@ text WIDTH-1,HEIGHT-1,'┙'
 1.times { create_apple }
 
 
-Fiber.yield while !$game_over
+Fiber.yield while $game_over < 10
 
 OS.set_handlers $handlers
 

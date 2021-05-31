@@ -4,14 +4,12 @@ class Repl
 
     include OS
 
-    p "REPL"
     def run_repl()
-        p "RUN"
         clear()
         puts "R-Toy READY. Type 'help' if you need it."
         while true do
             print('→')
-            line = IOX.read_line()
+            line = IOX.read_line(history: "toy.history")
             puts ""
             begin
                 exec line

@@ -105,24 +105,22 @@ void RConsole::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RConsole::rclass, "buffer",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          auto* ptr = mrb::self_to<RConsole>(self);
-          auto [bufno] = mrb::get_args<int>(mrb);
-          if(bufno == ptr->current_buf) return mrb_nil_value();
+            auto* ptr = mrb::self_to<RConsole>(self);
+            auto [bufno] = mrb::get_args<int>(mrb);
+            if (bufno == ptr->current_buf) return mrb_nil_value();
 
-          if(ptr->buffers.size() <= bufno) {
-              ptr->buffers.resize(bufno+1);
-          }
+            if (ptr->buffers.size() <= bufno) {
+                ptr->buffers.resize(bufno + 1);
+            }
 
-          ptr->buffers[ptr->current_buf] = ptr->console->grid;
+            ptr->buffers[ptr->current_buf] = ptr->console->grid;
 
-          ptr->current_buf = bufno;
-          auto& buf = ptr->buffers[bufno];
-          if(buf.empty()) {
-              buf.resize(ptr->console->grid.size());
-          }
-          ptr->console->grid = buf;
+            ptr->current_buf = bufno;
+            auto& buf = ptr->buffers[bufno];
+            if (buf.empty()) { buf.resize(ptr->console->grid.size()); }
+            ptr->console->grid = buf;
 
-          return mrb_nil_value();
+            return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
     mrb_define_method(
@@ -137,7 +135,10 @@ void RConsole::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RConsole::rclass, "clear",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            mrb::self_to<RConsole>(self)->clear();
+            auto* ptr = mrb::self_to<RConsole>(self);
+            ptr->console->default_style.bg = ptr->style.bg;
+            ptr->console->default_style.fg = ptr->style.fg;
+            ptr->clear();
             return mrb_nil_value();
         },
         MRB_ARGS_NONE());
@@ -221,6 +222,8 @@ void RConsole::reg_class(mrb_state* ruby)
             auto [y] = mrb::get_args<int>(mrb);
             auto w = ptr->console->width;
             auto i = w * y;
+            ptr->console->default_style.bg = ptr->style.bg;
+            ptr->console->default_style.fg = ptr->style.fg;
             for (size_t x = 0; x < w; x++) {
                 ptr->console->grid[i++] = {' ', ptr->console->default_style.fg,
                     ptr->console->default_style.bg};

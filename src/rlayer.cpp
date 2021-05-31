@@ -16,10 +16,9 @@ void RLayer::update_tx()
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
     m = glm::translate(m, glm::vec3(-1.0, 1.0, 0));
     m = glm::scale(m, glm::vec3(2.0 / width, 2.0 / height, 1.0));
-    m = glm::translate(m, glm::vec3(trans[0], - trans[1], 0));
-    m = glm::scale(
-        m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
-               static_cast<float>(height) * scale[1] / 2, 1.0));
+    m = glm::translate(m, glm::vec3(trans[0], -trans[1], 0));
+    m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
+                          static_cast<float>(height) * scale[1] / 2, 1.0));
     m = glm::translate(m, glm::vec3(1.0, -1.0, 0));
     memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
 }
@@ -54,6 +53,24 @@ void RLayer::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
+        ruby, RLayer::rclass, "bg=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [bg] = mrb::get_args<uint32_t>(mrb);
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            rlayer->style.bg = bg;
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RLayer::rclass, "bg",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            return mrb::to_value(rlayer->style.bg, mrb);
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
         ruby, RLayer::rclass, "fg=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [fg] = mrb::get_args<uint32_t>(mrb);
@@ -67,6 +84,35 @@ void RLayer::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rlayer = mrb::self_to<RLayer>(self);
             return mrb::to_value(rlayer->style.fg, mrb);
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, RLayer::rclass, "blend_mode=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            mrb_sym sym;
+            mrb_get_args(mrb, "n", &sym);
+            std::string s{mrb_sym_name(mrb, sym)};
+            fmt::print("{}\n", s);
+            if (s == "blend") {
+                rlayer->style.blend_mode = BlendMode::Blend;
+            } else if (s == "add") {
+                rlayer->style.blend_mode = BlendMode::Add;
+            } else {
+                throw std::exception();
+            }
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+    mrb_define_method(
+        ruby, RLayer::rclass, "blend_mode",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            mrb_sym sym = (rlayer->style.blend_mode == BlendMode::Blend)
+                              ? mrb_intern_lit(mrb, "blend")
+                              : mrb_intern_lit(mrb, "add");
+            return mrb_symbol_value(sym);
         },
         MRB_ARGS_NONE());
 

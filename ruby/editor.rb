@@ -34,11 +34,28 @@ def run_source
             @running = false
             clear()
             scale(2,2)
+            @con.offset(0,0)
+            display.console.fg = Color::WHITE
+            display.bg = Color::BLUE
             @dirty = true
             OS.set_handlers(@saved_handlers)
         end
     end
-    on_draw { eval(source) }
+    on_draw do
+        begin
+            eval(source)
+        rescue => e
+            clear()
+            scale(2,2)
+            @con.offset(0,0)
+            display.console.fg = Color::LIGHT_RED
+            display.bg = Color::BLACK
+            p e.backtrace[0]
+            line = e.backtrace[0].split(":")[1]
+            puts "#{e.to_s} in line #{line}"
+        end
+        loop { Fiber.yield }
+    end
 end
 
 def editor_key(key, mod)
@@ -62,6 +79,15 @@ def editor_key(key, mod)
                 OS.end_app()
                 clear()
                 return
+            end
+            if key == 'k'.ord
+                @cut_line = @line
+                @lines.delete_at(@ypos)
+                goto_line(@ypos)
+            end
+            if key == 'p'.ord
+                @lines.insert(@ypos, @cut_line)
+                goto_line(@ypos)
             end
         else
             p "NORMAL"
@@ -87,6 +113,7 @@ def editor_key(key, mod)
         end
     when Key::ESCAPE
         p "EXIT"
+        save()
         clear()
         OS.set_handlers(@os_handlers)
         @con.buffer(0)
@@ -190,7 +217,10 @@ def editor_draw(t)
                   @line[@xpos..@xpos].pack('U'), Color::WHITE, Color::ORANGE)
     end
 
-    @con.text(0, lasty, "F5 = Run ; Ctrl+Q = Quit, Shift+Ins = Paste",
+    @con.bg = Color::RED
+    @con.clear_line(lasty)
+    @con.bg = 0
+    @con.text(0, lasty, "LINE:#{@ypos+1} - F5 = Run - ESC = Exit",
               Color::WHITE, Color::RED);
 end
 
@@ -232,6 +262,8 @@ def activate()
 
     @running = false
     @do_run = false
+
+    @cut_line ||= ''
 
     @lines = [[]] if @lines.nil? or @lines.empty?
     @ypos = 0

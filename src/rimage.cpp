@@ -17,8 +17,8 @@
 #include <jpeg_decoder.h>
 
 mrb_data_type RImage::dt{"Image", [](mrb_state*, void* data) {
-                             //fmt::print("Deleting image\n");
-                             //delete (RImage*)data;
+                             fmt::print("Deleting image\n");
+                             delete (RImage*)data;
                          }};
 
 void RImage::reg_class(mrb_state* ruby)

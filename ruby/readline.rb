@@ -10,7 +10,8 @@ class LineReader
     include OS
     include Complete
 
-    def initialize()
+    def initialize(history: nil)
+        @history_file = history
         @line = []
         @pos = 0
         @ypos = 0
@@ -100,8 +101,10 @@ class LineReader
             return if @line.empty?
             if @history[-1] != @line then
                 @history.append @line
-                File.open("toy.history", "w+") do |f|
-                    @history.each { |h| f.puts(h.pack("U*")) }
+                if @history_file
+                    File.open(@history_file, "w+") do |f|
+                        @history.each { |h| f.puts(h.pack("U*")) }
+                    end
                 end
             end
             @history_pos = @history.length
@@ -127,7 +130,6 @@ class LineReader
 
     def readline_draw(t)
         return if not @dirty
-        p "RL DRAW"
         @dirty = false
         @con.goto_xy(@xpos, @ypos)
         @con.print(@line[0..@pos-1].pack('U*')) unless @pos == 0
@@ -139,8 +141,8 @@ class LineReader
     def start()
         @key_i = on_key { |key,mod| readline_key(key, mod) }
         @draw_i = on_draw { |t| readline_draw(t) }
-        if File.exists?("toy.history")
-            @history = File.open("toy.history").readlines.map(&:chomp).map { |l| l.unpack("U*") }
+        if @history_file and File.exists?(@history_file)
+            @history = File.open(@history_file).readlines.map(&:chomp).map { |l| l.unpack("U*") }
         else
             @history = []
         end
@@ -160,13 +162,10 @@ class LineReader
 
 end
 
-p OS 
-
-p "DEFINE IO"
 module IOX
-    def self.read_line()
+    def self.read_line(history: nil)
         name = nil
-        rl = LineReader.new
+        rl = LineReader.new(history: history)
         rl.read_line { |l| p "RD" ; name = l }
         rl.start
         p "RL START"
@@ -176,8 +175,4 @@ module IOX
         return name
     end
 end
-
-p IOX
-p "OK"
-
 

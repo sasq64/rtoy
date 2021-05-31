@@ -121,6 +121,10 @@ module OS
     def clear()
         Display.default.clear
     end
+    
+    def vsync()
+        Fiber.yield
+    end
 
     module_function :display, :text, :line, :scale, :offset, :add_sprite, :remove_sprite, :clear, :get_char
 

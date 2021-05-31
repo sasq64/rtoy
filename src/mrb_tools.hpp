@@ -148,6 +148,8 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
         return mrb_str_new_cstr(mrb, r.c_str());
     } else if constexpr (std::is_same_v<RET, const char*>) {
         return mrb_str_new_cstr(mrb, r);
+    } else if constexpr (std::is_same_v<RET, mrb_sym>) {
+        return mrb_sym_str(mrb, r);
     } else {
         return RET::can_not_convert;
     }
@@ -170,7 +172,6 @@ mrb_value to_value(std::array<ELEM, N> const& r, mrb_state* mrb)
         [&](ELEM const& e) { return to_value(e, mrb); });
     return mrb_ary_new_from_values(mrb, output.size(), output.data());
 }
-
 
 //! Convert ruby (mrb_value) type to native
 template <typename TARGET>
