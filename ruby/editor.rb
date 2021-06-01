@@ -33,27 +33,32 @@ def run_source
     on_key do |key|
         if key == Key::F5
             @quit_app = true
+            @dirty = true
         end
     end
 
     @quit_app = false
     begin
         p "EVAL"
+        @dirty = false
         run(@file_name, clear: false) { @quit_app }
+        Fiber.yield while !@quit_app
         @quit_app = false
         reset_display()
         clear()
         OS.set_handlers(@saved_handlers)
-    rescue => e
+    rescue Exception => e
         OS.clear_handlers()
         clear()
+        p "ERROR IN RUN"
         reset_display()
-        p e.backtrace[0]
+        p e.backtrace
         line = e.backtrace[0].split(":")[1]
+        display.console.goto_xy(0,0)
         puts "#{e.to_s} in line #{line}"
         @quit_app = false
-        get_key
         OS.set_handlers(@saved_handlers)
+        @dirty = false
     end
 
 end
@@ -91,9 +96,7 @@ def editor_key(key, mod)
     when Key::INSERT
         if mod & 1
             text = System.get_clipboard()
-            p text
             text.each_char do |t|
-                p t
                  if t == "\n"
                      @lines.insert(@ypos+1, [])
                      goto_line(@ypos+1)
@@ -107,11 +110,7 @@ def editor_key(key, mod)
         end
     when Key::ESCAPE
         p "EXIT"
-        save()
-        clear()
-        OS.set_handlers(@os_handlers)
-        @con.buffer(0)
-        @con.goto_xy(@savex, @savey)
+        @do_quit = true
         return
     when Key::LEFT
         @xpos -= 1
@@ -219,9 +218,7 @@ def set_text(text)
 
     @lines = []
     text.split("\n").each do |line|
-        p line
         @lines.append(line.unpack('U*'))
-        p @lines.last
     end
 end
 
@@ -236,7 +233,6 @@ def load(file)
     else
         @lines = [[]]
     end
-    p @lines
 end
 
 def save()
@@ -252,6 +248,7 @@ def activate()
 
     @dirty = true
     @do_run = false
+    @do_quit = false
 
     @cut_line ||= ''
 
@@ -263,7 +260,7 @@ def activate()
     @con = Display.default.console
     @savex,@savey = @con.get_xy()
 
-    @con.buffer(1)
+    #@con.buffer(1)
 
     @line = @lines[0]
 
@@ -273,10 +270,18 @@ def activate()
     @draw_i = on_draw { |t| editor_draw(t) }
 
     loop do
-        Fiber.yield while !@do_run
+        p "WAIT"
+        Fiber.yield while !@do_run and !@do_quit
+        break if @do_quit
+        p "RUN"
         @do_run = false
+        #@con.buffer(0)
         run_source()
+        #@con.buffer(1)
     end
+    OS.set_handlers(@os_handlers)
+    reset_display()
+    clear()
 
 end
 

@@ -164,7 +164,6 @@ void Display::reg_class(mrb_state* ruby)
             auto [bg] = mrb::get_args<uint32_t>(mrb);
             auto* display = mrb::self_to<Display>(self);
             display->bg = bg;
-            fmt::print("BG {:x}", display->bg);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));

@@ -11,19 +11,21 @@
 ## which is what you will see if you press F5 on an
 ## unchanged help file.
 
-## The 'OS' module brings in all the functions we need
-## such as 'circle', 'on_click' etc
-## include OS
-
 ## 'puts' is the same as 'print' except it adds a newline.
 ## Note that parentheses in ruby are optional.
-#puts "Hello world!"
 
-print "What is your name ? "
-name = gets()
-puts "Hello #{name}"
+# puts "Hello world!"
 
-## The classical maze effect. We run it on a timer here to
+
+## 'gets' is used to read a line of text
+
+# print "What is your name ? "
+# name = gets()
+# puts "Hello #{name}"
+
+
+## The classical maze effect. If we don't add a sleep
+## the loop will never yield and nothing will be shown.
 
 # loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 1 }
 
@@ -42,7 +44,6 @@ puts "Hello #{name}"
 #     px,py = x,y
 # }
  
-# loop { Fiber.yield }
 
 ## This code will add a bouncing ball that disappears after
 ## 10 seconds.

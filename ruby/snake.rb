@@ -1,3 +1,5 @@
+
+
 ### SNAKE
 
 #include OS
@@ -32,6 +34,7 @@ def step_worm
     $x += $mx
     $y += $my
     c = get_char($x,$y)
+
 
     text($x,$y,'▓')
     $snake.append($x,$y)

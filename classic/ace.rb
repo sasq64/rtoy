@@ -36,7 +36,7 @@
 ########################################################
 
 puts <<~INSTRUCTIONS
-           🂡  ACEY DUCEY CARD GAME 🂱
+           ♥  ACEY DUCEY CARD GAME ♥
    CREATIVE COMPUTING - MORRISTOWN, NEW JERSEY
   ACEY-DUCEY IS PLAYED IN THE FOLLOWING MANNER
   THE DEALER (COMPUTER) DEALS TWO CARDS FACE UP

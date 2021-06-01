@@ -82,7 +82,7 @@ module OS
 
     module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer
 
-
+    @@key_queue = nil
     def self.reset_handlers
         p "HANDLERS"
         @@handlers = Handlers.new
@@ -102,7 +102,10 @@ module OS
             @@handlers.call_all(:draw, t.seconds)
         end
         Input.default.on_key { |key,mod|
-            @key_queue.append(key) if @key_queue
+            @@key_queue.append(key) if @@key_queue
+            if @@key_queue
+                p "Now #{@@key_queue.size} keys in queue"
+            end
             @@handlers.call_all(:key, key, mod) }
         Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args)
         }
@@ -120,7 +123,7 @@ module OS
     def add_sprite(img) @@display.sprites.add_sprite(img) end
     def remove_sprite(spr) @@display.sprites.remove_sprite(spr) end
     def clear()
-        Display.default.clear
+        @@display.clear
     end
     
     def vsync()
@@ -189,11 +192,13 @@ module OS
     end
 
     def get_key()
-        if !@key_queue 
-            @key_queue = []
+        p "GEY KEY"
+        if !@@key_queue 
+            p "CREATE"
+            @@key_queue = []
         end
-        Fiber.yield while @key_queue.empty?
-        @key_queue.pop
+        Fiber.yield while @@key_queue.empty?
+        @@key_queue.pop
     end
 
     def show(fn)
