@@ -212,6 +212,11 @@ module OS
         img
     end
 
+    def cat(fn)
+        text = File.read(fn)
+        puts text
+    end
+
     def edit(f)
         ed = Editor.new
         ed.load(f)
@@ -223,10 +228,33 @@ module OS
         n.times { Fiber.yield }
     end
 
-    def help()
-        ed = Editor.new
-        ed.load('ruby/help.rb')
-        ed.activate
+    def help(what = nil)
+        if what == 'tutorial'
+            ed = Editor.new
+            ed.load('ruby/help.rb')
+            ed.activate
+        elsif what == 'intro'
+            cat('data/intro.txt')
+        elsif what == 'design'
+            cat('data/design.txt')
+        elsif what == 'games'
+            puts "ls \"games\""
+            ls('games')
+puts <<GAMES
+
+You can run a game (or any ruby file for that matter) by
+typing `run "path-to-game" `. You can also open up the
+file in the editor first, using edit "path-to-game"  and
+then pressing `F5` to run it.
+GAMES
+        else
+            puts <<HELP
+help 'intro'
+help 'tutorial'
+help 'games'
+help 'design'
+HELP
+        end
     end
 
     module_function :gets, :help, :run, :edit, :show, :ls, :exec,

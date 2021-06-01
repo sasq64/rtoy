@@ -1,0 +1,5 @@
+
+The design of R-Toy and the VHC (Virtual Home Computer)
+
+TBD... :)
+

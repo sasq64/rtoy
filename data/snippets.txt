@@ -1,0 +1,2 @@
+loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 1 }
+

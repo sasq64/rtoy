@@ -1,0 +1,16 @@
+
+R-Toy is what I like to call a Virtual Home Computer. It is
+a text based interface to an underlying imaginary computer,
+programmed in Ruby.
+
+Its ultimate goal is to replicate the magical experience of
+playing with, and learning programming on a home computer
+of the 80s, but in a way that is approachable to current
+generations of humans.
+
+It can be used to play/experiment with basic programming.
+
+It can be used to prototype small games.
+
+Mostly it can be used for fun!
+
