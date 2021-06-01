@@ -1,7 +1,6 @@
 
 require 'tween.rb'
 
-p "OS"
 module OS
 
     @@display = Display.default
@@ -15,10 +14,10 @@ module OS
         def add(what, cb)
             index = @callbacks[what].index(:nil?)
             if index
-                @callbacks[what][i] = [cb, nil]
+                @callbacks[what][index] = cb
             else
                 index = @callbacks[what].size
-                @callbacks[what].append([cb, nil])
+                @callbacks[what].append(cb)
             end
             index
         end
@@ -29,16 +28,17 @@ module OS
 
 
         def call_all(what, *args)
+            @calling = true;
             @callbacks[what].each do |p|
-                if p and p[0]
-                    if p[1].nil?
-                        p[1] = Fiber.new(&(p[0]))
-                    end
-                    p[1].resume(*args) if p[1].alive?
-                    p[1] = nil unless p[1].alive?
-                end
+                p.call(*args) if p
             end
+            @calling = false;
         end
+
+        def in_callbacks
+            @calling
+        end
+
     end
 
     @@handlers = Handlers.new
@@ -101,10 +101,11 @@ module OS
             Tween.update_all(t.seconds)
             @@handlers.call_all(:draw, t.seconds)
         end
-        Input.default.on_key { |key,mod| 
-            @@handlers.call_all(:key, key, mod)
+        Input.default.on_key { |key,mod|
+            @key_queue.append(key) if @key_queue
+            @@handlers.call_all(:key, key, mod) }
+        Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args)
         }
-        Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args) }
         Input.default.on_click { |*args| @@handlers.call_all(:click, *args) }
     end
 
@@ -123,14 +124,17 @@ module OS
     end
     
     def vsync()
+        raise "Can't vsync() in callback handlers" if @@handlers.in_callbacks
         Fiber.yield
     end
 
-    module_function :display, :text, :line, :scale, :offset, :add_sprite, :remove_sprite, :clear, :get_char
+    module_function :display, :text, :line, :scale, :offset, :add_sprite,
+        :remove_sprite, :clear, :get_char, :circle
 
     @@cwd = "."
 
     def boot(src = nil, &block)
+        #raise "Already booted" if @@boot_fiber
         if src
             @@boot_fiber = Fiber.new { eval(src) }
         else
@@ -140,24 +144,36 @@ module OS
     end
 
     def exec(src = nil, &block)
+        raise "Can't exec() in callback handlers" if @@handlers.in_callbacks
         block = Proc.new { eval(src) } if src
         f = Fiber.new &block
-         while f.alive? do
-             f.resume
-             Fiber.yield if f.alive?
-         end
+        while f.alive? do
+            f.resume
+            Fiber.yield if f.alive?
+        end
     end
 
-    def run(name)
-         f = Fiber.new do
-             #load(name)
-             src = File.read(name)
-             OS.instance_eval(src)
-         end
-         while f.alive? do
-             f.resume
-             Fiber.yield if f.alive?
-         end
+    def run(name, clear: true)
+        raise "Can't run() in callback handlers" if @@handlers.in_callbacks
+        handlers = OS.get_handlers
+        OS.clear_handlers if clear
+        f = Fiber.new do
+            src = File.read(name)
+            OS.instance_eval(src)
+        end
+        while f.alive? do
+            break if block_given? and yield
+            f.resume
+            Fiber.yield if f.alive?
+        end
+        OS.set_handlers(handlers)
+    end
+
+    def reset_display
+        scale(2,2)
+        @con.offset(0,0)
+        display.console.fg = Color::WHITE
+        display.bg = Color::BLUE
     end
 
     def ls(d = nil)
@@ -166,17 +182,24 @@ module OS
     end
 
     def gets
-        p "GETS"
-        a = IOX.read_line
+        raise "Can't gets() in callback handlers" if @@handlers.in_callbacks
+        line = IOX.read_line
         puts
-        a
+        line
+    end
+
+    def get_key()
+        if !@key_queue 
+            @key_queue = []
+        end
+        Fiber.yield while @key_queue.empty?
+        @key_queue.pop
     end
 
     def show(fn)
         img = Image.from_file(fn)
         if !img
-            puts "Failed to load image"
-            return
+            puts "Failed to load image '#{fn}'"
         end
         Display.default.clear
         Display.default.canvas.draw(0, 0, img)
@@ -191,7 +214,8 @@ module OS
     end
 
     def sleep(n)
-        (0..n).each { p  "x" ; Fiber.yield }
+        raise "Can't sleep() in callback handlers" if @@handlers.in_callbacks
+        n.times { Fiber.yield }
     end
 
     def help()
@@ -200,7 +224,8 @@ module OS
         ed.activate
     end
 
-    module_function :gets, :help, :run, :edit, :show, :ls, :exec, :sleep, :exec, :boot
+    module_function :gets, :help, :run, :edit, :show, :ls, :exec,
+        :sleep, :exec, :boot, :vsync, :get_key
 
 end
 

@@ -58,6 +58,12 @@ inline void get_spec(size_t i, const char*, char* data)
     data[i] = 'z';
 }
 
+template <>
+inline void get_spec(size_t i, mrb_value, char* data)
+{
+    data[i] = 'o';
+}
+
 template <typename T>
 struct ToMrb
 {

@@ -85,8 +85,11 @@ void Toy::init()
                 Display::default_display->console->text("\n");
                 return mrb_nil_value();
             }
-            auto [s] = mrb::get_args<std::string>(mrb);
-            auto text = std::string(s) + "\n";
+            auto [val] = mrb::get_args<mrb_value>(mrb);
+            // TODO: Dont call if already string
+            auto sval = mrb_funcall(mrb, val, "to_s", 0);
+
+            auto text = mrb::to<std::string>(sval) + "\n";
             Display::default_display->console->text(text);
             return mrb_nil_value();
         },

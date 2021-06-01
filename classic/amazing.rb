@@ -206,6 +206,4 @@ class Amazing
   end
 end
 
-p "CLASS DEFINED"
-scale 1,1
 Amazing.new.run

@@ -26,45 +26,39 @@ def run_source
     save()
     source = get_text()
     Display.default.clear
-    @running = true
+
+    p "SAVE HANDLERS"
     @saved_handlers = OS.get_handlers()
     OS.clear_handlers()
     on_key do |key|
         if key == Key::F5
-            @running = false
-            clear()
-            scale(2,2)
-            @con.offset(0,0)
-            display.console.fg = Color::WHITE
-            display.bg = Color::BLUE
-            @dirty = true
-            OS.set_handlers(@saved_handlers)
+            @quit_app = true
         end
     end
-    on_draw do
-        begin
-            eval(source)
-        rescue => e
-            clear()
-            scale(2,2)
-            @con.offset(0,0)
-            display.console.fg = Color::LIGHT_RED
-            display.bg = Color::BLACK
-            p e.backtrace[0]
-            line = e.backtrace[0].split(":")[1]
-            puts "#{e.to_s} in line #{line}"
-        end
-        loop { Fiber.yield }
+
+    @quit_app = false
+    begin
+        p "EVAL"
+        run(@file_name, clear: false) { @quit_app }
+        @quit_app = false
+        reset_display()
+        clear()
+        OS.set_handlers(@saved_handlers)
+    rescue => e
+        OS.clear_handlers()
+        clear()
+        reset_display()
+        p e.backtrace[0]
+        line = e.backtrace[0].split(":")[1]
+        puts "#{e.to_s} in line #{line}"
+        @quit_app = false
+        get_key
+        OS.set_handlers(@saved_handlers)
     end
+
 end
 
 def editor_key(key, mod)
-
-    if @running
-        if key == Key::F5
-        end
-        return
-    end
 
     h = @con.height/32-2
     @dirty = true
@@ -195,32 +189,29 @@ end
 
 def editor_draw(t)
 
-    if @do_run
-        @do_run = false
-        run_source()
-    end
-
-    return if @running
+    return unless @dirty
+    @dirty = false
 
     @con.clear
-    lasty = @con.height/32-1
-    @lines.length.times do |y|
-        next if y >= lasty
+    count = @con.height/32-1
+    count.times do |y|
         i = y + @scrollpos
+        break if i >= @lines.length
         fg = Color::WHITE
         bg = 0
         fg = Color::GREY if @lines[i][0] == '#'.ord
         @con.text(0, y, @lines[i].pack('U*'), fg, bg) if i < @lines.length
     end 
+
     if @ypos >= @scrollpos
         @con.text(@xpos, @ypos - @scrollpos, @xpos >= @line.length ? " " :
                   @line[@xpos..@xpos].pack('U'), Color::WHITE, Color::ORANGE)
     end
 
     @con.bg = Color::RED
-    @con.clear_line(lasty)
+    @con.clear_line(count)
     @con.bg = 0
-    @con.text(0, lasty, "LINE:#{@ypos+1} - F5 = Run - ESC = Exit",
+    @con.text(0, count, "LINE:#{@ypos+1} - F5 = Run - ESC = Exit",
               Color::WHITE, Color::RED);
 end
 
@@ -254,13 +245,12 @@ def save()
     end
 end
 
-
 def activate()
 
     @os_handlers = OS.get_handlers()
     OS.clear_handlers()
 
-    @running = false
+    @dirty = true
     @do_run = false
 
     @cut_line ||= ''
@@ -282,7 +272,11 @@ def activate()
     @key_i = on_key { |key,mod| editor_key(key, mod) }
     @draw_i = on_draw { |t| editor_draw(t) }
 
-    loop { Fiber.yield }
+    loop do
+        Fiber.yield while !@do_run
+        @do_run = false
+        run_source()
+    end
 
 end
 

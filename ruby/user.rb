@@ -20,8 +20,8 @@ def ball
     tween(seconds: 10.0) do |delta|
         ball.x += bx
         ball.y += by
-        bx = -bx if ball.x <= 0 or ball.x >= (w - $bimg.width)
-        by = -by if ball.y <= 0 or ball.y >= (h - $bimg.height)
+        bx = -bx if ball.x <= 0 or ball.x >= w
+        by = -by if ball.y <= 0 or ball.y >= h
         display.sprites.remove_sprite(ball) if delta >= 1.0
     end
 end

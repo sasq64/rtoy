@@ -73,12 +73,12 @@ while true # Game loop
     when 14
       "ACE"
     else
-      card
+        card.to_s
     end
   end
 
-  puts card_name(first_card.to_s)
-  puts card_name(second_card.to_s)
+  puts card_name(first_card)
+  puts card_name(second_card)
   puts
   puts
 
@@ -112,7 +112,7 @@ while true # Game loop
   puts ""
   puts "THE THIRD CARD IS:"
   third_card = rand(13) + 2
-  puts card_name(third_card.to_s)
+  puts card_name(third_card)
   puts
 
   if first_card <= third_card && third_card <= second_card

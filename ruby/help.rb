@@ -25,7 +25,7 @@ puts "Hello #{name}"
 
 ## The classical maze effect. We run it on a timer here to
 
-# loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 0 }
+# loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 1 }
 
 
 ## To paint some circles, uncomment this;

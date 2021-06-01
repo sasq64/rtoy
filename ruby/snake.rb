@@ -16,9 +16,6 @@ $keys = []
 $snake = []
 $game_over = 0
 
-$handlers = OS.get_handlers
-OS.clear_handlers
-
 def create_apple
     c = ''
     while c != ' '
@@ -91,10 +88,10 @@ on_timer($speed) {
     on_timer($speed)
 }
 
-display.console.buffer(1)
-$savex, $savey = display.console.get_xy()
 
 scale(4.0, 2.0)
+display.bg = Color::BLACK
+display.console.fg = Color::GREEN
 
 # Draw playfield
 clear()
@@ -117,10 +114,3 @@ text WIDTH-1,HEIGHT-1,'┙'
 
 
 Fiber.yield while $game_over < 10
-
-OS.set_handlers $handlers
-
-display.console.buffer(0)
-scale 2,2
-display.console.goto_xy($savex,$savey)
-

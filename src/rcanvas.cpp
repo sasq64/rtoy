@@ -56,7 +56,6 @@ void RCanvas::clear()
     canvas.set_target();
     gl::clearColor({0});
     glClear(GL_COLOR_BUFFER_BIT);
-    fmt::print("CLEAR!\n");
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
