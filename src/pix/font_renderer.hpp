@@ -61,30 +61,24 @@ class FontRenderer
         uniform vec4 fg_color;
         uniform vec4 bg_color;
         void main() {
-            //gl_FragColor = vec4(out_uv, 0, 1);
             vec4 col = texture2D(in_tex, out_uv);
             float a = col.a;
-              //  gl_FragColor = vec4(fg_color.rgb * a +
-                //    bg_color.rgb * (1.0 - a), 1.0);
             gl_FragColor = fg_color * col + bg_color * (1.0 - a);
              
         }
     )gl";
 
     gl_wrap::Program program;
-    // std::vector<uint32_t> data;
-    //gl_wrap::Texture texture;
     gl_wrap::ArrayBuffer<GL_STREAM_DRAW> text_buffer;
     gl_wrap::ElementBuffer<GL_STATIC_DRAW> index_buffer;
 
     using UV = std::array<vec2, 4>;
 
     static constexpr int max_chars = 800;
-    static constexpr int max_text_length = 256;
+    static constexpr int max_text_length = 480;
 
     size_t uv_buffer_pos;
     std::pair<int, int> next_pos;
-    // std::unordered_set<char32_t> is_wide;
     std::vector<TextObj> objects;
 
 public:

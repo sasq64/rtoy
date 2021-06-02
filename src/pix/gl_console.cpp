@@ -142,6 +142,7 @@ void GLConsole::flush()
     bool in_string = false;
 
     bool changed = false;
+        frame_buffer.set_target();
     for (int32_t y = 0; y < height; y++) {
         for (int32_t x = 0; x < width; x++) {
             auto& old = old_grid[x + y * width];
@@ -175,12 +176,12 @@ void GLConsole::flush()
             in_string = false;
         }
     }
-    if (changed) {
+    //if (changed) {
         //fmt::print("FLUSH!\n");
-        frame_buffer.set_target();
-        font->render();
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
+        //font->render();
+
+    //}
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GLConsole::scroll(int dy, int dx)

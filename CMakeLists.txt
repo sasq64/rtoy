@@ -117,6 +117,7 @@ add_executable(${TARGET}
     src/rsprites.cpp
     src/rinput.cpp
     src/rtimer.cpp
+    src/rfont.cpp
     src/pix/gl_console.cpp)
 target_include_directories(${TARGET} PUBLIC ${MRB_INC} external)
 target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)

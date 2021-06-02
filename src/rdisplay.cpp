@@ -31,9 +31,10 @@ Display::Display(mrb_state* state) : ruby(state), RLayer(0, 0)
 
     SDL_Init(SDL_INIT_VIDEO);
     window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL);
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+        SDL_WINDOWPOS_UNDEFINED, w, h,
+        SDL_WINDOW_OPENGL | (full_screen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_CreateContext(window);
     GLenum err = glewInit();
     setup();

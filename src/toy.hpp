@@ -31,6 +31,8 @@ class Toy
     static inline std::set<std::filesystem::path> already_loaded{};
 public:
 
+    Toy(bool fs);
+
 
     void init();
     void destroy();

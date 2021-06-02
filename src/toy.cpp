@@ -18,6 +18,7 @@
 #include "rinput.hpp"
 #include "rsprites.hpp"
 #include "rtimer.hpp"
+#include "rfont.hpp"
 namespace fs = std::filesystem;
 
 using namespace std::string_literals;
@@ -56,6 +57,8 @@ void Toy::init()
     RConsole::reg_class(ruby);
     puts("RCanvas");
     RCanvas::reg_class(ruby);
+    puts("RFont");
+    RFont::reg_class(ruby);
     puts("RImage");
     RImage::reg_class(ruby);
     puts("RDisplay");
@@ -304,6 +307,11 @@ bool Toy::render_loop()
 #ifdef __EMSCRIPTEN__
 #    include <emscripten.h>
 #endif
+
+Toy::Toy(bool fs)
+{
+    Display::full_screen = fs;
+}
 
 int Toy::run(std::string const& script)
 {

@@ -11,6 +11,13 @@
 def snake() run("ruby/snake.rb") end
 def pong() run("ruby/pong.rb") end
 
+def tt()
+    f = Font.from_file('data/Hack.ttf')
+    i = f.render("Testing this!", 0)
+    display.canvas.draw(10,800, i)
+    i
+end
+
 def ball
     $bimg ||= Image.from_file('data/ball.png')
     w,h = display.size

@@ -17,29 +17,12 @@ void FontRenderer::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
         if (c == 1) { continue; }
         auto it = uv_map.find(c);
         auto uv = it->second;
-
-        // Width of character quad
-        auto dx = (uv[1].x() - uv[0].x());
-        if (dx > 8000) {
-            // Handle double wide char by splitting it up in
-            // two normal sized quads.
-            // Move X coordinate down half a tile
-            dx /= 2.0;
-            uv[1].x() = uv[3].x() = (uv[0].x() + dx);
-            *target++ = uv;
-            // Then add half a tile to all X:es
-            for (auto& t : uv) {
-                t += {dx, 0};
-            }
-            *target++ = uv;
-        } else {
-            *target++ = uv;
-        }
+        *target++ = uv;
     }
-    auto size = target - uv_data.begin();
+    size_t size = target - uv_data.begin();
     // Upload UVs
     text_buffer.update(uv_data.data(), uv_buffer_pos, size * 8 * 4);
-    objects.push_back({xy, uv_buffer_pos, text32.size(), attrs});
+    objects.push_back({xy, uv_buffer_pos, size, attrs});
     uv_buffer_pos += size * 8 * 4;
 }
 

@@ -19,10 +19,10 @@ TextureFont::TextureFont(const char* name)
         add_char(c);
     }
 
-    pix::Image image{texture_width, texture_height, nullptr,
+    pix::Image image{texture_width, texture_height,
         reinterpret_cast<std::byte*>(data.data()), 0};
 
-//    pix::save_png(image, "font.png");
+    //    pix::save_png(image, "font.png");
     texture = gl_wrap::Texture(texture_width, texture_height, data, GL_RGBA);
     needs_update = false;
     puts("TextureFont");
@@ -90,6 +90,7 @@ void TextureFont::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
         if (!renderer.has_char(c)) { add_char(c); }
     }
     renderer.add_text(xy, {attrs.fg, attrs.bg, attrs.scale}, text32);
+    render();
 }
 
 void TextureFont::render()

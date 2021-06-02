@@ -1,6 +1,6 @@
 #pragma once
 #include "rlayer.hpp"
-
+#include "rfont.hpp"
 #include "pix/pix.hpp"
 
 #include <gl/texture.hpp>
@@ -13,6 +13,9 @@ class RImage;
 class RCanvas : public RLayer
 {
     gl_wrap::Texture canvas;
+
+    RFont* current_font = nullptr;
+
     std::array<float, 16> const Id = {
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 

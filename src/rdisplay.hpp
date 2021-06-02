@@ -32,6 +32,7 @@ class Display : public RLayer
     std::shared_ptr<RCanvas> canvas;
     std::shared_ptr<RSprites> sprites;
 public:
+    static inline bool full_screen = false;
     std::shared_ptr<RConsole> console;
     static inline RClass* rclass;
     static mrb_data_type dt;

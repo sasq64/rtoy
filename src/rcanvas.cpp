@@ -19,6 +19,8 @@ RCanvas::RCanvas(int w, int h) : RLayer{w, h}
     gl::clearColor({0x00ff0000});
     glClear(GL_COLOR_BUFFER_BIT);
 
+    current_font = new RFont("data/Hack.ttf");
+
     canvas.set_target();
 }
 pix::Image RCanvas::read_image(int x, int y, int w, int h)
@@ -64,7 +66,6 @@ void RCanvas::draw_image(float x, float y, RImage* image)
     canvas.set_target();
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
-    pix::save_png(image->image, "copy2.png");
     image->draw(x, y);
 }
 
@@ -120,9 +121,19 @@ void RCanvas::reg_class(mrb_state* ruby)
         },
         MRB_ARGS_REQ(4));
     mrb_define_method(
+        ruby, RCanvas::rclass, "text",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [x, y, text, size] =
+                mrb::get_args<float, float, std::string, int>(mrb);
+            auto* canvas = mrb::self_to<RCanvas>(self);
+            auto* rimage = canvas->current_font->render(text, size);
+            canvas->draw_image(x, y, rimage);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(3));
+    mrb_define_method(
         ruby, RCanvas::rclass, "draw",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            // auto [x, y, image] = mrb::get_args<float, float, RImage*>(mrb);
             mrb_float x;
             mrb_float y;
             RImage* image;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gl/gl.hpp>
+
 #include <array>
 #include <cstddef>
 #include <memory>
@@ -69,6 +71,16 @@ void set_colors(uint32_t fg, uint32_t bg);
 struct Image
 {
     Image() = default;
+    Image(unsigned w, unsigned h)
+        : width(w),
+          height(h),
+          sptr{new std::byte[w * h * 4]},
+          ptr{sptr.get()},
+          format{GL_RGBA}
+    {}
+    Image(unsigned w, unsigned h, std::byte* p, unsigned f = 0)
+        : width(w), height(h), sptr{nullptr}, ptr{p}, format{f}
+    {}
     unsigned width = 0;
     unsigned height = 0;
     std::shared_ptr<std::byte> sptr;
