@@ -14,7 +14,7 @@
 ## 'puts' is the same as 'print' except it adds a newline.
 ## Note that parentheses in ruby are optional.
 
-# puts "Hello world!"
+puts "Hello world!"
 
 
 ## 'gets' is used to read a line of text

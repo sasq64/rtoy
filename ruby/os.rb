@@ -126,6 +126,12 @@ module OS
         @@display.clear
     end
     
+    
+    def flush()
+        raise "Can't flush() in callback handlers" if @@handlers.in_callbacks
+        Fiber.yield
+    end
+
     def vsync()
         raise "Can't vsync() in callback handlers" if @@handlers.in_callbacks
         Fiber.yield
@@ -258,7 +264,7 @@ HELP
     end
 
     module_function :gets, :help, :run, :edit, :show, :ls, :exec,
-        :sleep, :exec, :boot, :vsync, :get_key
+        :sleep, :exec, :boot, :vsync, :flush, :get_key
 
 end
 
