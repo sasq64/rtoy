@@ -79,8 +79,11 @@ void FontRenderer::add_char_location(char32_t c, int x, int y, int w, int h)
     uv_map[c] = uv;
 }
 
-FontRenderer::FontRenderer(int w, int h)
-    : text_buffer(1000000), index_buffer(max_text_length * 6 * 2)
+FontRenderer::FontRenderer(int w, int h, int cw, int ch)
+    : char_width(cw),
+      char_height(ch),
+      text_buffer(1000000),
+      index_buffer(max_text_length * 6 * 2)
 {
     program = gl_wrap::Program({vertex_shader}, {pixel_shader});
 

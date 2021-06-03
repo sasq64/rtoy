@@ -51,6 +51,14 @@ void RImage::reg_class(mrb_state* ruby)
             return mrb::to_value(mrb::self_to<RImage>(self)->image.height, mrb);
         },
         MRB_ARGS_NONE());
+    mrb_define_method(
+        ruby, RImage::rclass, "split",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [w, h] = mrb::get_args<int, int>(mrb);
+            auto* image = mrb::self_to<RImage>(self);
+
+        },
+        MRB_ARGS_NONE());
 }
 
 void RImage::draw(float x, float y)

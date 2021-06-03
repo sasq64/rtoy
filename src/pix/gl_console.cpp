@@ -115,12 +115,14 @@ void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)
 }
 
 GLConsole::GLConsole(int w, int h, Style _default_style)
-    : width(w),
-      height(h),
+    : 
       default_style(_default_style),
-      font(std::make_shared<TextureFont>("data/unscii-16.ttf")),
-      frame_buffer(w * font->char_width, h * font->char_height)
+      font(std::make_shared<TextureFont>("data/unscii-16.ttf", 16)),
+      frame_buffer(w, h)
 {
+
+    width = w / font->char_width;
+    height = h / font->char_height;
 
     fflush(stdout);
     grid.resize(width * height);

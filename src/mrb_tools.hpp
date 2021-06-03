@@ -266,4 +266,27 @@ inline std::optional<std::string> check_exception(mrb_state* ruby)
     return std::nullopt;
 }
 
+// A ruby object created on the C++ side needs to handle these cases;
+// If it's kept on the native side, it needs to be _registered_ with the GC.
+// When the last native reference goes away, it shouold be unregistered.
+//
+// So we always create a shared_ptr containing that will unregister on
+// last use
+//
+//
+
+template <typename T>
+struct RubyPtr
+{
+    std::shared_ptr<T> ptr;
+
+    RubyPtr(mrb_state* mrb)
+    {
+        ptr = std::shared_ptr<T>(new T, [mrb](T* t) { mrb_gc_unregister(mrb, t); });
+        mrb_gc_register(ptr.get());
+
+    }
+
+};
+
 } // namespace mrb

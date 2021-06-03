@@ -5,14 +5,16 @@
 
 #include "pix.hpp"
 
-TextureFont::TextureFont(const char* name)
-    : font(name),
-      renderer(texture_width, texture_height),
+TextureFont::TextureFont(const char* name, int size)
+    : font(name, size),
+      renderer(texture_width, texture_height, font.get_size().first,
+          font.get_size().second),
       data(texture_width * texture_height),
       texture(texture_width, texture_height, data, GL_RGBA)
 {
 
     std::tie(char_width, char_height) = font.get_size();
+    fmt::print("FONT SIZE {}x{}\n", char_width, char_height);
 
     std::fill(data.begin(), data.end(), 0);
     for (char32_t c = 0x20; c <= 0x7f; c++) {

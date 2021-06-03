@@ -72,9 +72,9 @@ struct TextureFont
         }
     )gl";
 
+    FTFont font;
     FontRenderer renderer;
 
-    FTFont font;
     std::vector<uint32_t> data;
     gl_wrap::Texture texture;
 
@@ -93,7 +93,7 @@ struct TextureFont
     std::pair<int, int> next_pos;
     std::unordered_set<char32_t> is_wide;
 
-    explicit TextureFont(const char* name);
+    explicit TextureFont(const char* name, int size = -1);
 
     void add_char_image(char32_t c, uint32_t* pixels);
     void add_char(char32_t c);

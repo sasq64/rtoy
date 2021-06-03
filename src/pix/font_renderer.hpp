@@ -82,9 +82,10 @@ class FontRenderer
     std::vector<TextObj> objects;
 
 public:
+
     std::unordered_map<char32_t, UV> uv_map;
-    float char_width = 8;
-    float char_height = 16;
+    float char_width = 20;
+    float char_height = 39;
 
     void add_char_location(char32_t c, int x, int y, int w, int h);
 
@@ -98,5 +99,5 @@ public:
 
     void render();
 
-    FontRenderer(int w, int h);
+    FontRenderer(int w, int h, int cw, int ch);
 };

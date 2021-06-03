@@ -47,7 +47,7 @@ void Display::setup()
     RLayer::height = h;
 
     console = std::make_shared<RConsole>(
-        w / 8, h / 16, Style{0x8888ffff, 0x00008000});
+        w, h, Style{0x8888ffff, 0x00008000});
     puts("Console");
     gl::setViewport({w, h});
     fmt::print("{} {}\n", w, h);

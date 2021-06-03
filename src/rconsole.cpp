@@ -10,10 +10,10 @@
 #include <pix/pix.hpp>
 
 RConsole::RConsole(int w, int h, Style style)
-    : RLayer{w * 8, h * 16}, console(std::make_shared<GLConsole>(w, h, style))
+    : RLayer{w, h}, console(std::make_shared<GLConsole>(w, h, style))
 {
     trans = {0.0F, 0.0F};
-    scale = {2.0F, 2.0F};
+    scale = {1.0F, 1.0F};
 
     rot = 0.0F;
     update_tx();
@@ -249,6 +249,6 @@ void RConsole::reset()
 {
     transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     trans = {0.0F, 0.0F};
-    scale = {2.0F, 2.0F};
+    scale = {1.0F, 1.0F};
     update_tx();
 }
