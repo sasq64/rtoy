@@ -33,7 +33,6 @@ void FontRenderer::render()
     glDisable(GL_BLEND);
 
     program.use();
-    // texture.bind();
     text_buffer.bind();
 
     auto vp = gl_wrap::getViewport();

@@ -9,9 +9,9 @@ TextureFont::TextureFont(const char* name, int size)
     : font(name, size),
       renderer(texture_width, texture_height, font.get_size().first,
           font.get_size().second),
-      data(texture_width * texture_height),
-      texture(texture_width, texture_height, data, GL_RGBA)
+      data(texture_width * texture_height)
 {
+    namespace gl = gl_wrap;
 
     std::tie(char_width, char_height) = font.get_size();
     fmt::print("FONT SIZE {}x{}\n", char_width, char_height);
@@ -24,8 +24,8 @@ TextureFont::TextureFont(const char* name, int size)
     pix::Image image{texture_width, texture_height,
         reinterpret_cast<std::byte*>(data.data()), 0};
 
-    //    pix::save_png(image, "font.png");
-    texture = gl_wrap::Texture(texture_width, texture_height, data, GL_RGBA);
+    texture.tex = std::make_shared<gl::Texture>(
+        texture_width, texture_height, data, GL_RGBA);
     needs_update = false;
     puts("TextureFont");
 }
@@ -56,28 +56,6 @@ void TextureFont::add_char(char32_t c)
     needs_update = true;
 }
 
-void TextureFont::add_char_image(char32_t c, uint32_t* pixels)
-{
-    if (c == 1) { return; }
-    auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
-    for (int yy = 0; yy < char_height; yy++) {
-        for (int xx = 0; xx < char_width; xx++) {
-            *ptr++ = *pixels++;
-        }
-        ptr += (texture_width - char_width);
-    }
-
-    int x = next_pos.first;
-    int y = next_pos.second;
-    renderer.add_char_location(c, x, y, char_width, char_height);
-    next_pos.first += char_width;
-    if (next_pos.first >= (texture_width - char_width)) {
-        next_pos.first = 0;
-        next_pos.second += char_height;
-    }
-    needs_update = true;
-}
-
 void TextureFont::add_text(
     std::pair<float, float> xy, TextAttrs const& attrs, std::string_view text)
 {
@@ -100,7 +78,8 @@ void TextureFont::render()
     namespace gl = gl_wrap;
 
     if (needs_update) {
-        texture = gl::Texture(texture_width, texture_height, data, GL_RGBA);
+        texture.tex = std::make_shared<gl::Texture>(
+            texture_width, texture_height, data, GL_RGBA);
         needs_update = false;
     }
 

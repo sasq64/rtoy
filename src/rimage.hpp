@@ -9,13 +9,6 @@ struct RClass;
 
 namespace gl = gl_wrap;
 
-struct TexRef
-{
-    std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
-    std::shared_ptr<gl::Texture> tex;
-    void bind() { tex->bind(); }
-};
-
 struct RImage
 {
     static inline RClass* rclass = nullptr;
@@ -40,7 +33,7 @@ struct RImage
     RImage(pix::Image const& img) : image{img} {}
     void upload();
 
-    TexRef texture;
+    gl::TexRef texture;
 
     void draw(float x, float y);
 

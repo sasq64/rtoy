@@ -3,6 +3,7 @@
 #include "gl.hpp"
 
 #include <array>
+#include <memory>
 #include <vector>
 
 namespace gl_wrap {
@@ -136,5 +137,13 @@ struct Texture
         return { width, height };
     }
 };
+
+struct TexRef
+{
+    std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
+    std::shared_ptr<Texture> tex;
+    void bind() { tex->bind(); }
+};
+
 
 } // namespace gl_wrap

@@ -8,12 +8,12 @@
 #include <gl/texture.hpp>
 #include <pix/pix.hpp>
 
-#include "rimage.hpp"
+struct RImage;
 
 struct RSprite
 {
     pix::Image image;
-    TexRef texture;
+    gl_wrap::TexRef texture;
 
     float screen_width;
     float screen_height;

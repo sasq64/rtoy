@@ -74,7 +74,6 @@ class FontRenderer
 
     using UV = std::array<vec2, 4>;
 
-    static constexpr int max_chars = 800;
     static constexpr int max_text_length = 480;
 
     size_t uv_buffer_pos;

@@ -13,7 +13,6 @@
 #include <mruby/class.h>
 
 #include <algorithm>
-#include <array>
 
 mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {}};
 mrb_data_type RSprites::dt{"Sprites", [](mrb_state*, void* data) {}};
