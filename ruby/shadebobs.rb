@@ -11,7 +11,7 @@ def siny(i)
     (Math.sin(i * Math::PI / 500) + 1) * display.height / 2
 end
 
-scale 128
+scale 64
 text 0,0,"SHADE BOBS"
 
 xi = 0

@@ -95,10 +95,10 @@ FontRenderer::FontRenderer(int w, int h, int cw, int ch)
     std::vector<vec2> points;
     vec2 xy{0, 0};
     for (unsigned i = 0; i < max_text_length; i++) {
-        points.push_back(xy + vec2{0, char_height});
-        points.push_back(xy + vec2{char_width, char_height});
         points.push_back(xy);
         points.push_back(xy + vec2{char_width, 0});
+        points.push_back(xy + vec2{0, char_height});
+        points.push_back(xy + vec2{char_width, char_height});
         xy += {char_width, 0};
     }
     text_buffer.update(points, 0);

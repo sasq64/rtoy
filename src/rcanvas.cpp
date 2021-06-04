@@ -19,7 +19,7 @@ RCanvas::RCanvas(int w, int h) : RLayer{w, h}
     gl::clearColor({0x00ff0000});
     glClear(GL_COLOR_BUFFER_BIT);
 
-    current_font = new RFont("data/Hack.ttf");
+    current_font = new RFont("data/Ubuntu-B.ttf");
 
     canvas.set_target();
 }
@@ -90,8 +90,8 @@ void RCanvas::reg_class(mrb_state* ruby)
         ruby, RCanvas::rclass, "copy",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x, y, w, h] = mrb::get_args<int, int, int, int>(mrb);
-            auto* canvas = mrb::self_to<RCanvas>(self);
-            auto img = canvas->read_image(x, y, w, h);
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            auto img = rcanvas->read_image(x, y, w, h);
             pix::save_png(img, "copy.png");
             auto* image = new RImage(img);
             return mrb::new_data_obj(mrb, image);
@@ -102,8 +102,8 @@ void RCanvas::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x0, y0, x1, y1] =
                 mrb::get_args<float, float, float, float>(mrb);
-            auto* canvas = mrb::self_to<RCanvas>(self);
-            canvas->draw_line(x0, y0, x1, y1);
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            rcanvas->draw_line(x0, y0, x1, y1);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(4));
@@ -111,11 +111,11 @@ void RCanvas::reg_class(mrb_state* ruby)
         ruby, RCanvas::rclass, "circle",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x, y, r] = mrb::get_args<float, float, float>(mrb);
-            auto* canvas = mrb::self_to<RCanvas>(self);
-            if (canvas->style.blend_mode == BlendMode::Add) {
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            if (rcanvas->style.blend_mode == BlendMode::Add) {
                 glBlendFunc(GL_ONE, GL_ONE);
             }
-            canvas->draw_circle(x, y, r);
+            rcanvas->draw_circle(x, y, r);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             return mrb_nil_value();
         },
@@ -125,9 +125,9 @@ void RCanvas::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x, y, text, size] =
                 mrb::get_args<float, float, std::string, int>(mrb);
-            auto* canvas = mrb::self_to<RCanvas>(self);
-            auto* rimage = canvas->current_font->render(text, size);
-            canvas->draw_image(x, y, rimage);
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            auto* rimage = rcanvas->current_font->render(text, size);
+            rcanvas->draw_image(x, y, rimage);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));
@@ -138,8 +138,8 @@ void RCanvas::reg_class(mrb_state* ruby)
             mrb_float y;
             RImage* image;
             mrb_get_args(mrb, "ffd", &x, &y, &image, &RImage::dt);
-            auto* canvas = mrb::self_to<RCanvas>(self);
-            canvas->draw_image(x, y, image);
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            rcanvas->draw_image(x, y, image);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));
@@ -148,6 +148,24 @@ void RCanvas::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             mrb::self_to<RCanvas>(self)->clear();
             return mrb_nil_value();
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, RLayer::rclass, "font=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          auto* rcanvas = mrb::self_to<RCanvas>(self);
+          auto [font] = mrb::get_args<RFont*>(mrb);
+          rcanvas->current_font = font;
+          return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+    mrb_define_method(
+        ruby, RLayer::rclass, "font",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          //auto* rcanvas = mrb::self_to<RCanvas>(self);
+          //return mrb::to_value(rcanvas->current_font, mrb);
+          return mrb_nil_value();
         },
         MRB_ARGS_NONE());
 }

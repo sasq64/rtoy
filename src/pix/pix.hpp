@@ -14,6 +14,7 @@ using Float2 = std::pair<float, float>;
 
 void draw_quad_impl(float x, float y, float sx, float sy);
 void draw_quad();
+void draw_quad_invy();
 
 static constexpr size_t X = 0;
 static constexpr size_t Y = 1;

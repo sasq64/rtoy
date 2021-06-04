@@ -26,6 +26,34 @@ void set_colors(uint32_t fg, uint32_t bg)
     plain.setUniform("in_color", gl::Color(fg));
 }
 
+void draw_quad_invy()
+{
+    float x0 = -1;
+    float y0 = -1;
+
+    float x1 = 1;
+    float y1 = 1;
+
+    std::array vertexData{
+        x0, y0, x1, y0, x1, y1, x0, y1, 0.F, 1.F, 1.F, 1.F, 1.F, 0.F, 0.F, 0.F};
+    gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
+
+    vbo.bind();
+
+    auto& program = gl::ProgramCache::get_instance().textured;
+    program.use();
+    auto pos = program.getAttribute("in_pos");
+    auto uv = program.getAttribute("in_uv");
+    pos.enable();
+    uv.enable();
+
+    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
+    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
+    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
+    pos.disable();
+    uv.disable();
+}
+
 void draw_quad()
 {
     float x0 = -1;

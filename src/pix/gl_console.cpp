@@ -121,8 +121,8 @@ GLConsole::GLConsole(int w, int h, Style _default_style)
       frame_buffer(w, h)
 {
 
-    width = w / font->char_width;
-    height = h / font->char_height;
+    width = 256;//w / font->char_width;
+    height = 256;//h / font->char_height;
 
     fflush(stdout);
     grid.resize(width * height);
@@ -164,7 +164,7 @@ void GLConsole::flush()
                     fg = tile.fg;
                     bg = tile.bg;
                     pos = {x * font->char_width,
-                        (height - 1 - y) * font->char_height};
+                        y * font->char_height};
                     text.clear();
                     in_string = true;
                     changed = true;

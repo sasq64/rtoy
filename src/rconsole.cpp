@@ -1,6 +1,7 @@
 #include "rconsole.hpp"
 
 #include "mrb_tools.hpp"
+#include "pix/texture_font.hpp"
 #include <mruby/array.h>
 
 #include <coreutils/utf8.h>
@@ -13,7 +14,7 @@ RConsole::RConsole(int w, int h, Style style)
     : RLayer{w, h}, console(std::make_shared<GLConsole>(w, h, style))
 {
     trans = {0.0F, 0.0F};
-    scale = {1.0F, 1.0F};
+    scale = {2.0F, 2.0F};
 
     rot = 0.0F;
     update_tx();
@@ -24,19 +25,19 @@ void RConsole::clear()
     console->fill(console->default_style.fg, console->default_style.bg);
     console->flush();
     xpos = ypos = 0;
-    // console->set_cursor(0, 0);
 }
 
 void RConsole::update_pos(Cursor const& cursor)
 {
     xpos = cursor.x;
     ypos = cursor.y;
-    int w = console->width / scale[0];
+    int w = (float)width / console->font->char_width / scale[0];
+    int h = (float)height / console->font->char_height / scale[1];
     while (xpos >= w) {
         xpos -= w;
         ypos++;
     }
-    while (ypos >= console->height / scale[1]) {
+    while (ypos >= h) {
         console->scroll(-1, 0);
         ypos--;
     }
@@ -88,7 +89,7 @@ void RConsole::render()
     int hh = console->frame_buffer.height;
     pix::set_colors(0xffffffff, 0);
     pix::set_transform(transform);
-    pix::draw_quad();
+    pix::draw_quad_invy();
 }
 
 Console::Char RConsole::get(int x, int y) const
@@ -249,6 +250,6 @@ void RConsole::reset()
 {
     transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     trans = {0.0F, 0.0F};
-    scale = {1.0F, 1.0F};
+    scale = {2.0F, 2.0F};
     update_tx();
 }
