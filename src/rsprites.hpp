@@ -8,15 +8,18 @@
 #include <gl/texture.hpp>
 #include <pix/pix.hpp>
 
-class RImage;
+#include "rimage.hpp"
 
 struct RSprite
 {
     pix::Image image;
-    gl_wrap::Texture texture;
+    TexRef texture;
 
     float screen_width;
     float screen_height;
+
+    float width;
+    float height;
 
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};

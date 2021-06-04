@@ -146,7 +146,9 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>& rest)
 template <typename RET>
 mrb_value to_value(RET const& r, mrb_state* const mrb)
 {
-    if constexpr (std::is_floating_point_v<RET>) {
+    if constexpr (std::is_same_v<RET, mrb_value>) {
+        return r;
+    } else if constexpr (std::is_floating_point_v<RET>) {
         return mrb_float_value(mrb, r);
     } else if constexpr (std::is_integral_v<RET>) {
         return mrb_fixnum_value(r);
@@ -282,11 +284,10 @@ struct RubyPtr
 
     RubyPtr(mrb_state* mrb)
     {
-        ptr = std::shared_ptr<T>(new T, [mrb](T* t) { mrb_gc_unregister(mrb, t); });
+        ptr = std::shared_ptr<T>(
+            new T, [mrb](T* t) { mrb_gc_unregister(mrb, t); });
         mrb_gc_register(ptr.get());
-
     }
-
 };
 
 } // namespace mrb

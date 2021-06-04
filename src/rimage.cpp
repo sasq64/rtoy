@@ -1,6 +1,7 @@
 
 #include "rimage.hpp"
 
+#include "mruby/value.h"
 #include "rlayer.hpp"
 
 #include "mrb_tools.hpp"
@@ -10,9 +11,9 @@
 #include <mruby.h>
 #include <mruby/class.h>
 
+#include "mrb_tools.hpp"
 #include <array>
 #include <memory>
-#include "mrb_tools.hpp"
 
 #include <jpeg_decoder.h>
 
@@ -57,17 +58,47 @@ void RImage::reg_class(mrb_state* ruby)
             auto [w, h] = mrb::get_args<int, int>(mrb);
             auto* image = mrb::self_to<RImage>(self);
 
+            float u0 = image->texture.uvs[0];
+            float v0 = image->texture.uvs[1];
+            float u1 = image->texture.uvs[4];
+            float v1 = image->texture.uvs[5];
+            auto du = (u1 - u0) / w;
+            auto dv = (v1 - v0) / h;
+
+            std::vector<mrb_value> images;
+
+            float u = u0;
+            float v = v0;
+            while (true) {
+                if (u + du > u1) {
+                    u = u0;
+                    v += dv;
+                }
+                if (v + dv > v1) break;
+                auto* rimage = new RImage(image->image);
+                rimage->texture.uvs = {
+                    u, v, u + du, v, u + du, v + dv, u, v + dv};
+                images.push_back(mrb::new_data_obj(mrb, rimage));
+                u += du;
+            }
+
+            return mrb::to_value(images, mrb);
         },
-        MRB_ARGS_NONE());
+        MRB_ARGS_REQ(2));
+}
+
+void RImage::upload()
+{
+    if (texture.tex == nullptr) {
+        texture.tex = std::make_shared<gl::Texture>(
+            image.width, image.height, image.ptr, GL_RGBA, image.format);
+    }
 }
 
 void RImage::draw(float x, float y)
 {
     fmt::print("Draw {}x{} at {},{}\n", image.width, image.height, x, y);
-    if (texture.tex_id == 0) {
-        texture = gl::Texture(
-            image.width, image.height, image.ptr, GL_RGBA, image.format);
-    }
+    upload();
     texture.bind();
-    pix::draw_quad({x, y}, {image.width, image.height});
+    pix::draw_quad_uvs(x, y, image.width, image.height, texture.uvs);
 }

@@ -18,7 +18,12 @@ class TweenTarget
         @steps = steps - 1
         @to = to
         @value = from
+        @callback = nil
     end
+
+    def set_callback(cb)
+        @callback = cb
+   end
 
     def update(delta)
         if @steps > 0
@@ -36,7 +41,9 @@ class TweenTarget
             end
             @obj.send @method,*@value
         end
-        delta >= 1.0
+        done = delta >= 1.0
+        @callback.call(self) if done and @callback
+        done
     end
 end
 
@@ -62,6 +69,11 @@ class Tween
         @targets.append TweenTarget.new(obj, method, from, to, seconds, steps)
         self
     end
+
+    def when_done(&block)
+        @targets.last.set_callback(block)
+    end
+
 
     def update(t)
         delta = @total_time ? (Timer.default.seconds - @start_time) / @total_time : 0

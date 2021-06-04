@@ -25,9 +25,8 @@ void RSprite::update_tx()
     m = glm::translate(m, glm::vec3(-screen_width / 2.0 + trans[0],
                               screen_height / 2.0 - trans[1], 0));
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
-    m = glm::scale(
-        m, glm::vec3(static_cast<float>(texture.width) * scale[0] / 2,
-               static_cast<float>(texture.height) * scale[1] / -2, 1.0));
+    m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
+                          static_cast<float>(height) * scale[1] / -2, 1.0));
     memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
 }
 
@@ -60,20 +59,20 @@ void RSprites::render()
     for (auto const& sprite : sprites) {
         sprite->texture.bind();
         pix::set_transform(sprite->transform);
-        pix::draw_quad();
+        pix::draw_quad_uvs(sprite->texture.uvs);
     }
 }
 
 RSprite* RSprites::add_sprite(RImage* image)
 {
-    sprites.push_back(new RSprite{image->image, std::move(image->texture),
+    image->upload();
+    sprites.push_back(new RSprite{image->image, image->texture,
         static_cast<float>(width), static_cast<float>(height)});
-    image->texture.tex_id = image->texture.fb_id = 0;
     auto* spr = sprites.back();
-    if (spr->texture.tex_id == 0) {
-        spr->texture = gl::Texture(spr->image.width, spr->image.height,
-            spr->image.ptr, GL_RGBA, spr->image.format);
-    }
+    spr->width = image->width();
+    spr->height = image->height();
+    spr->trans[0] = image->x();
+    spr->trans[1] = image->y();
     spr->update_tx();
     return spr;
 }
@@ -166,6 +165,15 @@ void RSprites::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rspr = mrb::self_to<RSprite>(self);
             return mrb::to_value(rspr->scale[0], mrb);
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, RSprite::rclass, "pos",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rspr = mrb::self_to<RSprite>(self);
+            return mrb::to_value(
+                std::vector<float>{rspr->trans[0], rspr->trans[1]}, mrb);
         },
         MRB_ARGS_NONE());
 
