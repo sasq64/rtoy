@@ -16,8 +16,11 @@ void FontRenderer::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
     for (char32_t c : text32) {
         if (c == 1) { continue; }
         auto it = uv_map.find(c);
-        auto uv = it->second;
-        *target++ = uv;
+        auto l = it->second;
+        *target++ = l.uv;
+        if(l.tindex > 0) {
+            fmt::print("Adding {},{} {},{}\n", l.uv[0].x(), l.uv[0].y(), l.uv[2].x(), l.uv[2].y());
+        }
     }
     size_t size = target - uv_data.begin();
     // Upload UVs
@@ -75,10 +78,15 @@ void FontRenderer::add_char_location(char32_t c, int x, int y, int w, int h)
     auto fw = static_cast<float>(w);
     auto fh = static_cast<float>(h);
     UV uv = {vec2{fx, fy}, {fx + fw, fy}, {fx, fy + fh}, {fx + fw, fy + fh}};
-    uv_map[c] = uv;
+    uv_map[c] = { uv, 0 };
 }
 
-FontRenderer::FontRenderer(int w, int h, int cw, int ch)
+void FontRenderer::add_char_location(char32_t c, UV const& uv, int ti)
+{
+    uv_map[c] = { uv, ti };
+}
+
+FontRenderer::FontRenderer(int cw, int ch)
     : char_width(cw),
       char_height(ch),
       text_buffer(1000000),
@@ -87,17 +95,14 @@ FontRenderer::FontRenderer(int w, int h, int cw, int ch)
     program = gl_wrap::Program({vertex_shader}, {pixel_shader});
 
     program.use();
-    auto ts = std::make_pair(
-        1.0F / static_cast<float>(w), 1.0F / static_cast<float>(h));
-    program.setUniform("tex_scale", ts);
     program.setUniform("scale", 1.0F);
     std::vector<vec2> points;
     vec2 xy{0, 0};
     for (unsigned i = 0; i < max_text_length; i++) {
         points.push_back(xy);
         points.push_back(xy + vec2{char_width, 0});
-        points.push_back(xy + vec2{0, char_height});
         points.push_back(xy + vec2{char_width, char_height});
+        points.push_back(xy + vec2{0, char_height});
         xy += {char_width, 0};
     }
     text_buffer.update(points, 0);
@@ -109,9 +114,9 @@ FontRenderer::FontRenderer(int w, int h, int cw, int ch)
         indexes.push_back(n);
         indexes.push_back(n + 1);
         indexes.push_back(n + 2);
-        indexes.push_back(n + 1);
-        indexes.push_back(n + 3);
+        indexes.push_back(n + 0);
         indexes.push_back(n + 2);
+        indexes.push_back(n + 3);
     }
     index_buffer.set(indexes);
 }

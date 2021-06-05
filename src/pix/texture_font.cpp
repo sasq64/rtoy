@@ -1,4 +1,5 @@
 #include "texture_font.hpp"
+#include <coreutils/algorithm.h>
 #include <coreutils/utf8.h>
 #include <fmt/format.h>
 #include <gl/vec.hpp>
@@ -7,8 +8,7 @@
 
 TextureFont::TextureFont(const char* name, int size)
     : font(name, size),
-      renderer(texture_width, texture_height, font.get_size().first,
-          font.get_size().second),
+      renderer(font.get_size().first, font.get_size().second),
       data(texture_width * texture_height)
 {
     namespace gl = gl_wrap;
@@ -24,8 +24,8 @@ TextureFont::TextureFont(const char* name, int size)
     pix::Image image{texture_width, texture_height,
         reinterpret_cast<std::byte*>(data.data()), 0};
 
-    texture.tex = std::make_shared<gl::Texture>(
-        texture_width, texture_height, data, GL_RGBA);
+    textures.push_back({std::make_shared<gl::Texture>(
+        texture_width, texture_height, data, GL_RGBA)});
     needs_update = false;
     puts("TextureFont");
 }
@@ -33,12 +33,14 @@ TextureFont::TextureFont(const char* name, int size)
 void TextureFont::add_char(char32_t c)
 {
     if (c == 1) { return; }
-    auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
 
+    // First render character into texture
+    auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
     int x = next_pos.first;
     int y = next_pos.second;
     auto cw = font.render_char(c, ptr, texture_width);
 
+    // then check if this char is wide and flag it
     if (cw < char_width) { cw = char_width; }
     if (cw > char_width * 2) {
         cw = char_width * 2;
@@ -46,7 +48,14 @@ void TextureFont::add_char(char32_t c)
         is_wide.insert(c);
     }
 
-    renderer.add_char_location(c, x, y, cw, char_height);
+    float fx = (float)x / texture_width;
+    float fy = (float)y / texture_height;
+    float fw = (float)cw / texture_width;
+    float fh = (float)char_height / texture_height;
+    UV uv = {vec2{fx, fy}, {fx + fw, fy}, {fx + fw, fy + fh}, {fx, fy + fh}};
+    // Add the char UV to the renderer
+    // renderer.add_char_location(c, x, y, cw, char_height);
+    renderer.add_char_location(c, uv);
 
     next_pos.first += cw;
     if (next_pos.first >= (texture_width - char_width)) {
@@ -54,6 +63,21 @@ void TextureFont::add_char(char32_t c)
         next_pos.second += char_height;
     }
     needs_update = true;
+}
+void TextureFont::add_tile(char32_t index, gl_wrap::TexRef texture)
+{
+    // TODO: Usually multiple tiles are added from the same texture, so
+    //       cache last and check it it's the same.
+    auto it = utils::find(textures, texture);
+    int tindex = -1;
+    if (it == textures.end()) {
+        textures.push_back(texture);
+        tindex = textures.size() - 1;
+    } else {
+        tindex = it - textures.begin();
+    }
+    UV uvs = *((UV*)&texture.uvs);
+    renderer.add_char_location(index, uvs, tindex);
 }
 
 void TextureFont::add_text(
@@ -65,12 +89,40 @@ void TextureFont::add_text(
 void TextureFont::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
     std::u32string_view text32)
 {
+    int last_index = -1;
+    int lasti = 0;
+    int i = 0;
+
+    auto draw = [&] {
+        fflush(stdout);
+        renderer.add_text(xy, {attrs.fg, attrs.bg, attrs.scale},
+            text32.substr(lasti, i - lasti));
+        textures[last_index].bind();
+        renderer.render();
+        xy.first += (i - lasti) * char_width;
+        lasti = i;
+    };
+
     for (char32_t c : text32) {
-        if (c == 1) { continue; }
-        if (!renderer.has_char(c)) { add_char(c); }
+        //if (c == 1) { i++; continue; }
+
+        int tindex = renderer.get_texture_index(c);
+        if (tindex == -1) {
+            tindex = 0;
+            add_char(c);
+        }
+
+        if (last_index >= 0 && tindex != last_index) {
+            render();
+            if (lasti != i) { 
+                draw();
+            }
+        }
+        last_index = tindex;
+        i++;
     }
-    renderer.add_text(xy, {attrs.fg, attrs.bg, attrs.scale}, text32);
     render();
+    draw();
 }
 
 void TextureFont::render()
@@ -78,11 +130,8 @@ void TextureFont::render()
     namespace gl = gl_wrap;
 
     if (needs_update) {
-        texture.tex = std::make_shared<gl::Texture>(
+        textures[0].tex = std::make_shared<gl::Texture>(
             texture_width, texture_height, data, GL_RGBA);
         needs_update = false;
     }
-
-    texture.bind();
-    renderer.render();
 }

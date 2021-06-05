@@ -1,14 +1,14 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
-#include <gl/vec.hpp>
 #include <gl/buffer.hpp>
 #include <gl/color.hpp>
 #include <gl/functions.hpp>
 #include <gl/program_cache.hpp>
 #include <gl/shader.hpp>
 #include <gl/texture.hpp>
+#include <gl/vec.hpp>
+#include <string>
 
 #include <array>
 #include <tuple>
@@ -43,10 +43,9 @@ class FontRenderer
         uniform float scale;
         uniform vec2 screen_scale;
         uniform vec2 xypos;
-        uniform vec2 tex_scale;
         varying vec2 out_uv;
         void main() {
-            out_uv = in_uv * tex_scale;
+            out_uv = in_uv;
             gl_Position = vec4((in_pos * scale + xypos) * screen_scale, 0, 1);
         }
     )gl";
@@ -73,6 +72,11 @@ class FontRenderer
     gl_wrap::ElementBuffer<GL_STATIC_DRAW> index_buffer;
 
     using UV = std::array<vec2, 4>;
+    struct Location
+    {
+        UV uv;
+        int tindex;
+    };
 
     static constexpr int max_text_length = 480;
 
@@ -81,14 +85,31 @@ class FontRenderer
     std::vector<TextObj> objects;
 
 public:
+    void clear()
+    {
+        uv_map.clear();
+        /* for (auto it = uv_map.end(); it != uv_map.end();) { */
+        /*     if (it->second.tindex != 0) { */
+        /*         it = uv_map.erase(it); */
+        /*     } else { */
+        /*         it++; */
+        /*     } */
+        /* } */
+    }
 
-    std::unordered_map<char32_t, UV> uv_map;
+    std::unordered_map<char32_t, Location> uv_map;
     float char_width = 20;
     float char_height = 39;
 
     void add_char_location(char32_t c, int x, int y, int w, int h);
+    void add_char_location(char32_t c, UV const&, int tindex = 0);
 
-    bool has_char(char32_t c) const { return uv_map.count(c) > 0; }
+    int get_texture_index(char32_t c) const
+    {
+        auto it = uv_map.find(c);
+        if (it == uv_map.end()) { return -1; }
+        return it->second.tindex;
+    }
 
     void add_text(std::pair<float, float> xy, TextAttrs const& attrs,
         std::string_view text);
@@ -98,5 +119,5 @@ public:
 
     void render();
 
-    FontRenderer(int w, int h, int cw, int ch);
+    FontRenderer(int cw, int ch);
 };

@@ -57,6 +57,7 @@ void RImage::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [w, h] = mrb::get_args<int, int>(mrb);
             auto* image = mrb::self_to<RImage>(self);
+            image->upload();
 
             float u0 = image->texture.uvs[0];
             float v0 = image->texture.uvs[1];
@@ -76,6 +77,7 @@ void RImage::reg_class(mrb_state* ruby)
                 }
                 if (v + dv > v1) break;
                 auto* rimage = new RImage(image->image);
+                rimage->texture.tex = image->texture.tex;
                 rimage->texture.uvs = {
                     u, v, u + du, v, u + du, v + dv, u, v + dv};
                 images.push_back(mrb::new_data_obj(mrb, rimage));
@@ -100,5 +102,5 @@ void RImage::draw(float x, float y)
     fmt::print("Draw {}x{} at {},{}\n", image.width, image.height, x, y);
     upload();
     texture.bind();
-    pix::draw_quad_uvs(x, y, image.width, image.height, texture.uvs);
+    pix::draw_quad_uvs(x, y, width(), height(), texture.uvs);
 }

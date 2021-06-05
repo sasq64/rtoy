@@ -140,9 +140,12 @@ struct Texture
 
 struct TexRef
 {
-    std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     std::shared_ptr<Texture> tex;
+    std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     void bind() { tex->bind(); }
+    bool operator==(TexRef const& other) {
+        return tex == other.tex;
+    }
 };
 
 

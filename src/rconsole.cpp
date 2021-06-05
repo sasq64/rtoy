@@ -1,5 +1,5 @@
 #include "rconsole.hpp"
-
+#include "rimage.hpp"
 #include "mrb_tools.hpp"
 #include "pix/texture_font.hpp"
 #include <mruby/array.h>
@@ -238,6 +238,19 @@ void RConsole::reg_class(mrb_state* ruby)
             return mrb_ary_new_from_values(mrb, 2, values);
         },
         MRB_ARGS_REQ(3));
+
+    mrb_define_method(
+        ruby, RConsole::rclass, "add_tile",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          uint32_t index;
+          RImage* image;
+          mrb_get_args(mrb, "id", &index, &image, &RImage::dt);
+          auto* rconsole = mrb::self_to<RConsole>(self);
+          image->upload();
+          rconsole->console->font->add_tile(index, image->texture);
+          return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(2));
 }
 
 void RConsole::update()
@@ -252,4 +265,5 @@ void RConsole::reset()
     trans = {0.0F, 0.0F};
     scale = {2.0F, 2.0F};
     update_tx();
+    console->font->clear();
 }
