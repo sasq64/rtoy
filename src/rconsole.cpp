@@ -202,6 +202,16 @@ void RConsole::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(3));
 
     mrb_define_method(
+        ruby, RConsole::rclass, "tile_size",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* ptr = mrb::self_to<RConsole>(self);
+            auto [x, y] = mrb::get_args<int, int>(mrb);
+            ptr->console->set_tile_size(x,y);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
         ruby, RConsole::rclass, "goto_xy",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);

@@ -98,8 +98,8 @@ public:
     }
 
     std::unordered_map<char32_t, Location> uv_map;
-    float char_width = 20;
-    float char_height = 39;
+
+    void set_tile_size(float cw, float ch);
 
     void add_char_location(char32_t c, int x, int y, int w, int h);
     void add_char_location(char32_t c, UV const&, int tindex = 0);

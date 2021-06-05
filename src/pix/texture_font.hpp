@@ -39,10 +39,16 @@ private:
     void add_char(char32_t c);
 
 public:
+    // Size of chars in font
     int char_width = 0;
     int char_height = 0;
+
+    int tile_width = 0;
+
     std::unordered_set<char32_t> is_wide;
     explicit TextureFont(const char* name, int size = -1);
+
+    void set_tile_size(int tw, int th);
 
     void add_tile(char32_t index, gl_wrap::TexRef texture);
 

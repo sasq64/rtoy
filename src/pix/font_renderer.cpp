@@ -18,9 +18,6 @@ void FontRenderer::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
         auto it = uv_map.find(c);
         auto l = it->second;
         *target++ = l.uv;
-        if(l.tindex > 0) {
-            fmt::print("Adding {},{} {},{}\n", l.uv[0].x(), l.uv[0].y(), l.uv[2].x(), l.uv[2].y());
-        }
     }
     size_t size = target - uv_data.begin();
     // Upload UVs
@@ -78,34 +75,37 @@ void FontRenderer::add_char_location(char32_t c, int x, int y, int w, int h)
     auto fw = static_cast<float>(w);
     auto fh = static_cast<float>(h);
     UV uv = {vec2{fx, fy}, {fx + fw, fy}, {fx, fy + fh}, {fx + fw, fy + fh}};
-    uv_map[c] = { uv, 0 };
+    uv_map[c] = {uv, 0};
 }
 
 void FontRenderer::add_char_location(char32_t c, UV const& uv, int ti)
 {
-    uv_map[c] = { uv, ti };
+    uv_map[c] = {uv, ti};
+}
+
+void FontRenderer::set_tile_size(float cw, float ch)
+{
+    std::vector<vec2> points;
+    vec2 xy{0, 0};
+    for (unsigned i = 0; i < max_text_length; i++) {
+        points.push_back(xy);
+        points.push_back(xy + vec2{cw, 0});
+        points.push_back(xy + vec2{cw, ch});
+        points.push_back(xy + vec2{0, ch});
+        xy += {cw, 0};
+    }
+    text_buffer.update(points, 0);
 }
 
 FontRenderer::FontRenderer(int cw, int ch)
-    : char_width(cw),
-      char_height(ch),
-      text_buffer(1000000),
+    : text_buffer(1000000),
       index_buffer(max_text_length * 6 * 2)
 {
     program = gl_wrap::Program({vertex_shader}, {pixel_shader});
 
     program.use();
     program.setUniform("scale", 1.0F);
-    std::vector<vec2> points;
-    vec2 xy{0, 0};
-    for (unsigned i = 0; i < max_text_length; i++) {
-        points.push_back(xy);
-        points.push_back(xy + vec2{char_width, 0});
-        points.push_back(xy + vec2{char_width, char_height});
-        points.push_back(xy + vec2{0, char_height});
-        xy += {char_width, 0};
-    }
-    text_buffer.update(points, 0);
+    set_tile_size(cw, ch);
     uv_buffer_pos = max_text_length * 8 * 4;
 
     std::vector<uint16_t> indexes;

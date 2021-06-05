@@ -31,11 +31,16 @@ struct GLConsole : public Console
     int32_t width = 0;
     int32_t height = 0;
 
+    int tile_width = 0;
+    int tile_height = 0;
+
     std::shared_ptr<TextureFont> font;
 
     bool is_wide(char32_t) const override;
 
     gl_wrap::Texture frame_buffer;
+
+    void set_tile_size(int tw, int th);
 
     Cursor text(int x, int y, std::string const& t);
     Cursor text(int x, int y, std::string const& t, uint32_t fg, uint32_t bg);

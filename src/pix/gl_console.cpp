@@ -9,6 +9,13 @@
 
 #define Wide2 1
 
+void GLConsole::set_tile_size(int tw, int th)
+{
+    tile_width = tw;
+    tile_height = th;
+    font->set_tile_size(tw, th);
+}
+
 int GLConsole::get_width()
 {
     return width;
@@ -40,7 +47,7 @@ Cursor GLConsole::text(int x, int y, std::string const& t)
 Cursor GLConsole::text(
     int x, int y, std::string const& t, uint32_t fg, uint32_t bg)
 {
-    //fmt::print("PRINT {},{}: '{}'\n", x, y, t);
+    // fmt::print("PRINT {},{}: '{}'\n", x, y, t);
     auto text32 = utils::utf8_decode(t);
     if (x > 0 && grid[x + width * y].c == Wide2) {
         grid[x - 1 + width * y] = {' ', fg, bg};
@@ -59,7 +66,7 @@ Cursor GLConsole::text(
             grid[x + width * y] = {Wide2, fg, bg};
             x++;
         }
-        if(x >= width) {
+        if (x >= width) {
             x -= width;
             y++;
         }
@@ -115,14 +122,16 @@ void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)
 }
 
 GLConsole::GLConsole(int w, int h, Style _default_style)
-    : 
-      default_style(_default_style),
+    : default_style(_default_style),
       font(std::make_shared<TextureFont>("data/unscii-16.ttf", 16)),
       frame_buffer(w, h)
 {
 
-    width = 256;//w / font->char_width;
-    height = 256;//h / font->char_height;
+    width = 256;  // w / font->char_width;
+    height = 256; // h / font->char_height;
+
+    tile_width = font->char_width;
+    tile_height = font->char_height;
 
     fflush(stdout);
     grid.resize(width * height);
@@ -144,7 +153,7 @@ void GLConsole::flush()
     bool in_string = false;
 
     bool changed = false;
-        frame_buffer.set_target();
+    frame_buffer.set_target();
     for (int32_t y = 0; y < height; y++) {
         for (int32_t x = 0; x < width; x++) {
             auto& old = old_grid[x + y * width];
@@ -163,8 +172,7 @@ void GLConsole::flush()
                     // Start of string
                     fg = tile.fg;
                     bg = tile.bg;
-                    pos = {x * font->char_width,
-                        y * font->char_height};
+                    pos = {x * tile_width, y * tile_height};
                     text.clear();
                     in_string = true;
                     changed = true;
@@ -178,12 +186,12 @@ void GLConsole::flush()
             in_string = false;
         }
     }
-    //if (changed) {
-        //fmt::print("FLUSH!\n");
-        //font->render();
+    // if (changed) {
+    // fmt::print("FLUSH!\n");
+    // font->render();
 
     //}
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GLConsole::scroll(int dy, int dx)

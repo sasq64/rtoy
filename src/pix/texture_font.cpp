@@ -16,6 +16,7 @@ TextureFont::TextureFont(const char* name, int size)
     std::tie(char_width, char_height) = font.get_size();
     fmt::print("FONT SIZE {}x{}\n", char_width, char_height);
 
+    tile_width = char_width;
     std::fill(data.begin(), data.end(), 0);
     for (char32_t c = 0x20; c <= 0x7f; c++) {
         add_char(c);
@@ -99,7 +100,7 @@ void TextureFont::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
             text32.substr(lasti, i - lasti));
         textures[last_index].bind();
         renderer.render();
-        xy.first += (i - lasti) * char_width;
+        xy.first += (i - lasti) * tile_width;
         lasti = i;
     };
 
@@ -123,6 +124,12 @@ void TextureFont::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
     }
     render();
     draw();
+}
+
+void TextureFont::set_tile_size(int tw, int th)
+{
+    renderer.set_tile_size(tw, th);
+    tile_width = tw;
 }
 
 void TextureFont::render()
