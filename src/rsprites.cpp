@@ -150,6 +150,22 @@ void RSprites::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
+        ruby, RSprite::rclass, "img=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* spr = mrb::self_to<RSprite>(self);
+            RImage* image = nullptr;
+            mrb_get_args(mrb, "d", &image, &RImage::dt);
+            image->upload();
+            spr->image = image->image;
+            spr->texture = image->texture;
+            spr->width = image->width();
+            spr->height = image->height();
+            spr->update_tx();
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
         ruby, RSprite::rclass, "scale=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x] = mrb::get_args<float>(mrb);

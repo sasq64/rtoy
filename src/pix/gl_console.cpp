@@ -163,7 +163,7 @@ void GLConsole::flush()
                 // If tile is unchanged we also stop the string since we don't
                 // need to continue.
                 if (tile.fg != fg || tile.bg != bg || old == tile) {
-                    font->add_text(pos, {fg, bg}, text);
+                    font->render_text(pos, {fg, bg}, text);
                     in_string = false;
                 }
             }
@@ -182,7 +182,7 @@ void GLConsole::flush()
             old = tile;
         }
         if (in_string) {
-            font->add_text(pos, {fg, bg}, text);
+            font->render_text(pos, {fg, bg}, text);
             in_string = false;
         }
     }

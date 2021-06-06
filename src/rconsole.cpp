@@ -191,6 +191,15 @@ void RConsole::reg_class(mrb_state* ruby)
         },
         MRB_ARGS_REQ(3) | MRB_ARGS_REST());
 
+
+    mrb_define_method(
+        ruby, RConsole::rclass, "get_tile",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto chr = mrb::method(&RConsole::get, mrb, self);
+            return mrb::to_value((int)chr.c, mrb);
+        },
+        MRB_ARGS_REQ(2));
+
     mrb_define_method(
         ruby, RConsole::rclass, "get_char",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -199,7 +208,7 @@ void RConsole::reg_class(mrb_state* ruby)
             auto str = utils::utf8_encode(s);
             return mrb::to_value(str, mrb);
         },
-        MRB_ARGS_REQ(3));
+        MRB_ARGS_REQ(2));
 
     mrb_define_method(
         ruby, RConsole::rclass, "tile_size",
@@ -223,6 +232,16 @@ void RConsole::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RConsole::rclass, "put_char",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* ptr = mrb::self_to<RConsole>(self);
+            auto [x, y, c] = mrb::get_args<int, int, int>(mrb);
+            ptr->console->put_char(x, y, c);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(3));
 
     mrb_define_method(
         ruby, RConsole::rclass, "clear_line",
@@ -275,5 +294,6 @@ void RConsole::reset()
     trans = {0.0F, 0.0F};
     scale = {2.0F, 2.0F};
     update_tx();
+    console->set_tile_size(8, 16);
     console->font->clear();
 }

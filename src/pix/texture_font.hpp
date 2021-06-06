@@ -61,10 +61,10 @@ public:
         }
     }
 
-    void add_text(std::pair<float, float> xy, TextAttrs const& attrs,
+    void render_text(std::pair<float, float> xy, TextAttrs const& attrs,
         std::string_view text);
 
-    void add_text(std::pair<float, float> xy, TextAttrs const& attrs,
+    void render_text(std::pair<float, float> xy, TextAttrs const& attrs,
         std::u32string_view text32);
 
     void render();

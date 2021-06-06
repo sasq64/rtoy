@@ -81,13 +81,13 @@ void TextureFont::add_tile(char32_t index, gl_wrap::TexRef texture)
     renderer.add_char_location(index, uvs, tindex);
 }
 
-void TextureFont::add_text(
+void TextureFont::render_text(
     std::pair<float, float> xy, TextAttrs const& attrs, std::string_view text)
 {
-    add_text(xy, attrs, utils::utf8_decode(text));
+    render_text(xy, attrs, utils::utf8_decode(text));
 }
 
-void TextureFont::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
+void TextureFont::render_text(std::pair<float, float> xy, TextAttrs const& attrs,
     std::u32string_view text32)
 {
     int last_index = -1;
