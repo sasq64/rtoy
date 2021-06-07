@@ -85,7 +85,7 @@ endif()
 
 # Graphics
 add_library(pix STATIC src/pix/pix.cpp src/pix/font.cpp src/pix/texture_font.cpp
-    src/pix/font_renderer.cpp
+        src/pix/tile_renderer.cpp
     src/pix/gl_console.cpp external/lodepng/lodepng.cpp)
 target_include_directories(
   pix

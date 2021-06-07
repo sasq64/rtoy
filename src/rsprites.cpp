@@ -11,6 +11,7 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <mruby/class.h>
+#include <mruby/numeric.h>
 
 #include <algorithm>
 
@@ -115,7 +116,7 @@ void RSprites::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RSprite::rclass, "y=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [y] = mrb::get_args<uint32_t>(mrb);
+            auto [y] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->trans[1] = y;
             rspr->update_tx();
@@ -133,7 +134,7 @@ void RSprites::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RSprite::rclass, "x=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x] = mrb::get_args<uint32_t>(mrb);
+            auto [x] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->trans[0] = x;
             rspr->update_tx();
@@ -191,6 +192,20 @@ void RSprites::reg_class(mrb_state* ruby)
                 std::vector<float>{rspr->trans[0], rspr->trans[1]}, mrb);
         },
         MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, RSprite::rclass, "pos=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          mrb_value val;
+          mrb_get_args(mrb, "A", &val);
+          auto x = mrb_as_float(mrb, mrb_ary_ref(mrb, val, 0));
+          auto y = mrb_as_float(mrb, mrb_ary_ref(mrb, val, 1));
+          auto* rspr = mrb::self_to<RSprite>(self);
+          rspr->trans = {x, y};
+          rspr->update_tx();
+          return self;
+        },
+        MRB_ARGS_REQ(2));
 
     mrb_define_method(
         ruby, RSprite::rclass, "rotation=",

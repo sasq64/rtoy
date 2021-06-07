@@ -85,8 +85,6 @@ void RConsole::render()
     auto& program = gl_wrap::ProgramCache::get_instance().textured;
     program.use();
     console->frame_buffer.bind();
-    int ww = console->frame_buffer.width;
-    int hh = console->frame_buffer.height;
     pix::set_colors(0xffffffff, 0);
     pix::set_transform(transform);
     pix::draw_quad_invy();
@@ -190,7 +188,6 @@ void RConsole::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3) | MRB_ARGS_REST());
-
 
     mrb_define_method(
         ruby, RConsole::rclass, "get_tile",

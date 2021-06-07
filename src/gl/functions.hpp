@@ -91,12 +91,13 @@ inline void setViewport(std::pair<GLint, GLint> wh)
     gl_check("glViewport");
 }
 
-inline std::pair<GLint, GLint> getViewport()
+template <typename T = GLint>
+inline std::pair<T, T> getViewport()
 {
     std::array<GLint, 4> data; // NOLINT
     glGetIntegerv(GL_VIEWPORT, data.data());
     gl_check("glGetInteger");
-    return {data[2], data[3]};
+    return {static_cast<T>(data[2]), static_cast<T>(data[3])};
 }
 
 inline GLint getShaderi(GLuint shader, GLenum what)

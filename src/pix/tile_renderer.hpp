@@ -1,22 +1,19 @@
 #pragma once
 
-#include <cstdint>
 #include <gl/buffer.hpp>
-#include <gl/color.hpp>
 #include <gl/functions.hpp>
-#include <gl/program_cache.hpp>
+#include <gl/program.hpp>
 #include <gl/shader.hpp>
-#include <gl/texture.hpp>
 #include <gl/vec.hpp>
-#include <string>
 
 #include <array>
+#include <cstdint>
+#include <string>
 #include <tuple>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
-class FontRenderer
+class TileRenderer
 {
     struct TextAttrs
     {
@@ -33,7 +30,7 @@ class FontRenderer
         TextAttrs attrs;
     };
 
-    static inline const std::string vertex_shader =
+    static inline char const* vertex_shader =
         R"gl(
     #ifdef GL_ES
         precision mediump float;
@@ -50,7 +47,7 @@ class FontRenderer
         }
     )gl";
 
-    static inline const std::string pixel_shader =
+    static inline char const* pixel_shader =
         R"gl(
     #ifdef GL_ES
         precision mediump float;
@@ -88,21 +85,13 @@ public:
     void clear()
     {
         uv_map.clear();
-        /* for (auto it = uv_map.end(); it != uv_map.end();) { */
-        /*     if (it->second.tindex != 0) { */
-        /*         it = uv_map.erase(it); */
-        /*     } else { */
-        /*         it++; */
-        /*     } */
-        /* } */
     }
 
     std::unordered_map<char32_t, Location> uv_map;
 
     void set_tile_size(float cw, float ch);
 
-    void add_char_location(char32_t c, int x, int y, int w, int h);
-    void add_char_location(char32_t c, UV const&, int tindex = 0);
+    void add_tile_location(char32_t c, UV const&, int tindex = 0);
 
     int get_texture_index(char32_t c) const
     {
@@ -112,12 +101,9 @@ public:
     }
 
     void add_text(std::pair<float, float> xy, TextAttrs const& attrs,
-        std::string_view text);
-
-    void add_text(std::pair<float, float> xy, TextAttrs const& attrs,
         std::u32string_view text32);
 
     void render();
 
-    FontRenderer(int cw, int ch);
+    TileRenderer(int cw, int ch);
 };

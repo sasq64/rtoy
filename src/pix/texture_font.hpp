@@ -1,8 +1,8 @@
 #pragma once
 
 #include "font.hpp"
-#include "font_renderer.hpp"
 #include "gl/vec.hpp"
+#include "tile_renderer.hpp"
 
 #include <gl/texture.hpp>
 
@@ -23,7 +23,7 @@ struct TextureFont
 
 private:
     FTFont font;
-    FontRenderer renderer;
+    TileRenderer renderer;
 
     std::vector<uint32_t> data;
     std::vector<gl_wrap::TexRef> textures;
@@ -54,6 +54,7 @@ public:
 
     void clear()
     {
+        next_pos = {0,0};
         textures.resize(1);
         renderer.clear();
         for (char32_t c = 0x20; c <= 0x7f; c++) {

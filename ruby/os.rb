@@ -11,6 +11,10 @@ module OS
             @callbacks = { key:[], draw:[], drag:[], click: [], timer: [] }
         end
 
+        def empty?(what)
+            @callbacks[what].empty?
+        end
+
         def add(what, cb)
             index = @callbacks[what].index(:nil?)
             if index
@@ -82,7 +86,7 @@ module OS
 
     module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer
 
-    @@key_queue = nil
+    @@key_queue = []
     def self.reset_handlers
         p "HANDLERS"
         @@handlers = Handlers.new
@@ -101,14 +105,16 @@ module OS
             Tween.update_all(t.seconds)
             @@handlers.call_all(:draw, t.seconds)
         end
-        Input.default.on_key { |key,mod|
-            @@key_queue.append(key) if @@key_queue
-            if @@key_queue
-                p "Now #{@@key_queue.size} keys in queue"
+        Input.default.on_key do |key,mod|
+            @@get_key = key
+            if @@handlers.empty?(:key)
+                @@key_queue.append(key)
+            else
+                @@handlers.call_all(:key, key, mod)
+                @@key_queue = []
             end
-            @@handlers.call_all(:key, key, mod) }
-        Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args)
-        }
+        end
+        Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args) }
         Input.default.on_click { |*args| @@handlers.call_all(:click, *args) }
     end
 
@@ -198,13 +204,9 @@ module OS
     end
 
     def get_key()
-        p "GEY KEY"
-        if !@@key_queue 
-            p "CREATE"
-            @@key_queue = []
-        end
-        Fiber.yield while @@key_queue.empty?
-        @@key_queue.pop
+        @@get_key = nil
+        Fiber.yield until @@get_key
+        @@get_key
     end
 
     def show(fn)

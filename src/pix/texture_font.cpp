@@ -56,7 +56,7 @@ void TextureFont::add_char(char32_t c)
     UV uv = {vec2{fx, fy}, {fx + fw, fy}, {fx + fw, fy + fh}, {fx, fy + fh}};
     // Add the char UV to the renderer
     // renderer.add_char_location(c, x, y, cw, char_height);
-    renderer.add_char_location(c, uv);
+    renderer.add_tile_location(c, uv);
 
     next_pos.first += cw;
     if (next_pos.first >= (texture_width - char_width)) {
@@ -78,7 +78,7 @@ void TextureFont::add_tile(char32_t index, gl_wrap::TexRef texture)
         tindex = it - textures.begin();
     }
     UV uvs = *((UV*)&texture.uvs);
-    renderer.add_char_location(index, uvs, tindex);
+    renderer.add_tile_location(index, uvs, tindex);
 }
 
 void TextureFont::render_text(

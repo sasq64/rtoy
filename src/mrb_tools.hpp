@@ -198,6 +198,12 @@ TARGET to(mrb_value obj)
     }
 }
 
+template <typename TARGET>
+TARGET to_vector(mrb_value obj)
+{
+
+}
+
 template <class CLASS, class RET, class... ARGS, size_t... A>
 RET method(RET (CLASS::*f)(ARGS...), mrb_state* mrb, mrb_value self,
     std::index_sequence<A...> is)

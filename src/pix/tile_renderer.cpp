@@ -1,13 +1,7 @@
-#include "font_renderer.hpp"
+#include "tile_renderer.hpp"
 #include <coreutils/utf8.h>
 
-void FontRenderer::add_text(
-    std::pair<float, float> xy, TextAttrs const& attrs, std::string_view text)
-{
-    add_text(xy, attrs, utils::utf8_decode(text));
-}
-
-void FontRenderer::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
+void TileRenderer::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
     std::u32string_view text32)
 {
     // Generate UVs for this text
@@ -26,7 +20,7 @@ void FontRenderer::add_text(std::pair<float, float> xy, TextAttrs const& attrs,
     uv_buffer_pos += size * 8 * 4;
 }
 
-void FontRenderer::render()
+void TileRenderer::render()
 {
     namespace gl = gl_wrap;
 
@@ -35,7 +29,7 @@ void FontRenderer::render()
     program.use();
     text_buffer.bind();
 
-    auto vp = gl_wrap::getViewport();
+    auto vp = gl_wrap::getViewport<float>();
     auto ss = std::make_pair(2.0F / vp.first, 2.0F / vp.second);
     program.setUniform("screen_scale", ss);
 
@@ -68,22 +62,12 @@ void FontRenderer::render()
     glEnable(GL_BLEND);
 }
 
-void FontRenderer::add_char_location(char32_t c, int x, int y, int w, int h)
-{
-    auto fx = static_cast<float>(x);
-    auto fy = static_cast<float>(y);
-    auto fw = static_cast<float>(w);
-    auto fh = static_cast<float>(h);
-    UV uv = {vec2{fx, fy}, {fx + fw, fy}, {fx, fy + fh}, {fx + fw, fy + fh}};
-    uv_map[c] = {uv, 0};
-}
-
-void FontRenderer::add_char_location(char32_t c, UV const& uv, int ti)
+void TileRenderer::add_tile_location(char32_t c, UV const& uv, int ti)
 {
     uv_map[c] = {uv, ti};
 }
 
-void FontRenderer::set_tile_size(float cw, float ch)
+void TileRenderer::set_tile_size(float cw, float ch)
 {
     std::vector<vec2> points;
     vec2 xy{0, 0};
@@ -97,7 +81,7 @@ void FontRenderer::set_tile_size(float cw, float ch)
     text_buffer.update(points, 0);
 }
 
-FontRenderer::FontRenderer(int cw, int ch)
+TileRenderer::TileRenderer(int cw, int ch)
     : text_buffer(1000000),
       index_buffer(max_text_length * 6 * 2)
 {
