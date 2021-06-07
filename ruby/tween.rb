@@ -36,10 +36,12 @@ class TweenTarget
             elsif @from.kind_of? Array
                 @value = by_elem(@from, by_elem(@to, @from, :-).
                                  map{|x| x * delta}, :+)
+                @obj.send @method,*@value
             else
                 @value = @from + (@to - @from) * delta
+                p @value
+                @obj.send @method,@value
             end
-            @obj.send @method,*@value
         end
         done = delta >= 1.0
         @callback.call(self) if done and @callback
@@ -54,6 +56,7 @@ class Tween
                    seconds:nil, &block)
         @block = block
         @targets = []
+        seconds = o if o.kind_of? Numeric
         @obj = o || obj
         @method = m || method
         @on_done = on_done
@@ -63,8 +66,31 @@ class Tween
     end
 
     def target(o = @obj, m = @method, obj:nil, method:nil, from:nil,
+               to_pos: nil, from_pos: nil, to_rot: nil, from_rot: nil,
                to:nil, seconds:1.0, steps:0)
         obj ||= o
+        if to_rot
+            from = obj.rotation
+            to = to_rot
+            method = :rotation=
+        end
+        if from_rot
+            to = obj.rotation
+            from = from_rot
+            method = :rotation=
+            obj.rotation = from
+        end
+        if to_pos
+            from = obj.pos
+            to = to_pos
+            method = :pos=
+        end
+        if from_pos
+            to = obj.pos
+            from = from_pos
+            method = :pos=
+            obj.pos = from
+        end
         method ||= m
         @targets.append TweenTarget.new(obj, method, from, to, seconds, steps)
         self

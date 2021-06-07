@@ -184,28 +184,28 @@ void RSprites::reg_class(mrb_state* ruby)
         },
         MRB_ARGS_NONE());
 
-    mrb_define_method(
-        ruby, RSprite::rclass, "pos",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rspr = mrb::self_to<RSprite>(self);
-            return mrb::to_value(
-                std::vector<float>{rspr->trans[0], rspr->trans[1]}, mrb);
-        },
-        MRB_ARGS_NONE());
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "pos", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         return mrb::to_value( */
+    /*             std::vector<float>{rspr->trans[0], rspr->trans[1]}, mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
 
-    mrb_define_method(
-        ruby, RSprite::rclass, "pos=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          mrb_value val;
-          mrb_get_args(mrb, "A", &val);
-          auto x = mrb_as_float(mrb, mrb_ary_ref(mrb, val, 0));
-          auto y = mrb_as_float(mrb, mrb_ary_ref(mrb, val, 1));
-          auto* rspr = mrb::self_to<RSprite>(self);
-          rspr->trans = {x, y};
-          rspr->update_tx();
-          return self;
-        },
-        MRB_ARGS_REQ(2));
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "pos=", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*       mrb_value val; */
+    /*       mrb_get_args(mrb, "A", &val); */
+    /*       auto x = mrb_as_float(mrb, mrb_ary_ref(mrb, val, 0)); */
+    /*       auto y = mrb_as_float(mrb, mrb_ary_ref(mrb, val, 1)); */
+    /*       auto* rspr = mrb::self_to<RSprite>(self); */
+    /*       rspr->trans = {static_cast<float>(x), static_cast<float>(y)}; */
+    /*       rspr->update_tx(); */
+    /*       return self; */
+    /*     }, */
+    /*     MRB_ARGS_REQ(2)); */
 
     mrb_define_method(
         ruby, RSprite::rclass, "rotation=",

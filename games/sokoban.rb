@@ -47,6 +47,14 @@ class Sokoban
         end
     end
 
+    def to_spr(p)
+        p * 64 + [32,32]
+    end
+
+    def from_spr(p)
+        (p - [32,32]) / 64
+    end
+
     def init_level(level)
 
         con = display.console
@@ -54,46 +62,48 @@ class Sokoban
 
         @boxes = []
         @player = nil
-        x,y = 0,0
+        @moves = 0
+        @game_won = false
+        p = vec2(0,0)
         level.each do |l|
             l.each do |t,spr|
                 p spr
-                con.put_char(x,y,t+256) unless t == 0
+                con.put_char(p.x,p.y,t+256) unless t == 0
                 if spr != 0
                     s = add_sprite(@tiles[spr])
-                    s.move(x*64+32, y*64+32)
+                    s.pos = to_spr(p)
                     if spr == BOX
                         @boxes.append(s)
                     elsif spr == PLAYER
                         @player  = s
                     end
                 end
-                x += 1
+                p.x += 1
             end
-            x = 0
-            y += 1
+            p.x = 0
+            p.y += 1
         end
         check_boxes()
     end
 
     def tile_at(pos)
-        px,py = pos[0]*64+32,pos[1]*64+32
+        sp = to_spr(pos)
         @boxes.each { |box|
-            return BOX,box if box.pos == [px,py]
+            return BOX,box if box.pos == sp
         }
         return display.console.get_tile(*pos) - 256, nil
     end
 
-    def check_boxes()
+    def check_boxes(b = nil)
         counter = 0
         @boxes.each do |box|
-            x,y = (box.x-32)/64,(box.y-32)/64
-            t = display.console.get_tile(x,y) - 256
+            p = from_spr(box.pos)
+            t = display.console.get_tile(p.x, p.y) - 256
             if t == GOAL
-                box.img = @tiles[GOAL_BOX]
+                box.img = @tiles[GOAL_BOX] unless b && b != box
                 counter += 1
             else
-                box.img = @tiles[BOX]
+                box.img = @tiles[BOX] unless b && b != box
             end
         end
         counter == @boxes.length
@@ -109,48 +119,43 @@ class Sokoban
         init_level(@levels[@current_level])
         @moves = 0
 
+        delta = { Key::LEFT => [-1,0],
+                  Key::RIGHT => [1,0],
+                  Key::UP => [0,-1],
+                  Key::DOWN => [0,1] }
+
         on_key do |key|
-            if key == Key::ENTER
-                init_level(@levels[@current_level])
-                next
-            end
-            if key == Key::F1
-                @current_level += 1
-                init_level(@levels[@current_level])
-                next
-            end
-            sx,sy = @player.x,@player.y
-            x,y = [(sx-32)/64, (sy-32)/64]
-            dx,dy = 0,0
-            case key
-            when Key::LEFT
-                dx = -1
-            when Key::RIGHT
-                dx = 1
-            when Key::UP
-                dy = -1
-            when Key::DOWN
-                dy = 1
-            end
-            target = [x + dx, y + dy]
-            starget = [sx+dx*64,sy+dy*64]
+            init_level(@levels[@current_level]) if key == 'r'.ord
+            @current_level += 1 if key == 'n'.ord
+            @current_level -= 1 if key == 'p'.ord
+            d = delta[key]
+            next unless d
+            d = vec2(*d)
+            pos = from_spr(@player.pos)
+            target = pos + d
             t,box = tile_at(target)
             next if t == WALL
             if t == BOX
-                t2,box2 = tile_at([x + dx * 2, y + dy * 2])
+                box_target = pos + d * 2
+                t2,box2 = tile_at(box_target)
                 if t2 != WALL and t2 != BOX
-                    box.move((x+dx*2)*64+32, (y+dy*2)*64+32)
-                    if check_boxes()
-                        display.canvas.text(5,5,"Success!", 50)
+                    box.pos = to_spr(box_target)
+                    gw = check_boxes(box)
+                    if !@game_won && gw
+                        @current_level += 1
                     end
+                    @game_won = gw
                 else
                     next
                 end
+                @moves += 1
             end
-            @moves += 1
-            @player.move(*starget)
-            display.canvas.clear
-            display.canvas.text(display.width - 250, 10, "Moves #{@moves}", 50)
+            @player.pos = to_spr(target)
+            cv = display.canvas
+            cv.clear
+            cv.text(display.width - 250, 10, "Moves #{@moves}", 50)
+            cv.text(10, 10, "Level solved!", 50) if @game_won
+            cv.text(10, display.height - 60, "Level #{@current_level+1}", 50)
         end
     end
 
