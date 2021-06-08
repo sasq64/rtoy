@@ -4,6 +4,7 @@
 
 #include <mruby.h>
 #include <mruby/data.h>
+#include "mrb_tools.hpp"
 
 #include <array>
 #include <memory>

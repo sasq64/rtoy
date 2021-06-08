@@ -19,8 +19,6 @@ RCanvas::RCanvas(int w, int h) : RLayer{w, h}
     gl::clearColor({0x00ff0000});
     glClear(GL_COLOR_BUFFER_BIT);
 
-    current_font = new RFont("data/Ubuntu-B.ttf");
-
     canvas.set_target();
 }
 pix::Image RCanvas::read_image(int x, int y, int w, int h)
@@ -81,10 +79,27 @@ void RCanvas::render()
     pix::draw_quad();
 }
 
+void RCanvas::init(mrb_state* mrb)
+{
+    auto* font = new RFont("data/Ubuntu-B.ttf");
+    current_font = mrb::RubyPtr{mrb, mrb::new_data_obj(mrb, font)};
+}
+
 void RCanvas::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Canvas", RLayer::rclass);
+    rclass = mrb_define_class(ruby, "Canvas", RCanvas::rclass);
     MRB_SET_INSTANCE_TT(RCanvas::rclass, MRB_TT_DATA);
+
+    /* mrb_define_method( */
+    /*     ruby, RCanvas::rclass, "initialize", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rcanvas = mrb::self_to<RCanvas>(self); */
+    /*         auto* font = new RFont("data/Ubuntu-B.ttf"); */
+    /*         rcanvas->current_font = */
+    /*             mrb::RubyPtr{mrb, mrb::new_data_obj(mrb, font)}; */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
 
     mrb_define_method(
         ruby, RCanvas::rclass, "copy",
@@ -126,7 +141,9 @@ void RCanvas::reg_class(mrb_state* ruby)
             auto [x, y, text, size] =
                 mrb::get_args<float, float, std::string, int>(mrb);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
-            auto* rimage = rcanvas->current_font->render(text, size);
+
+            auto* rimage =
+                rcanvas->current_font.as<RFont>()->render(text, size);
             rcanvas->draw_image(x, y, rimage);
             return mrb_nil_value();
         },
@@ -152,20 +169,19 @@ void RCanvas::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, RLayer::rclass, "font=",
+        ruby, RCanvas::rclass, "font=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          auto* rcanvas = mrb::self_to<RCanvas>(self);
-          auto [font] = mrb::get_args<RFont*>(mrb);
-          rcanvas->current_font = font;
-          return mrb_nil_value();
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            auto [font] = mrb::get_args<mrb_value>(mrb);
+            rcanvas->current_font = mrb::RubyPtr{mrb, font};
+            return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
     mrb_define_method(
-        ruby, RLayer::rclass, "font",
+        ruby, RCanvas::rclass, "font",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          //auto* rcanvas = mrb::self_to<RCanvas>(self);
-          //return mrb::to_value(rcanvas->current_font, mrb);
-          return mrb_nil_value();
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            return rcanvas->current_font;
         },
         MRB_ARGS_NONE());
 }

@@ -283,17 +283,34 @@ inline std::optional<std::string> check_exception(mrb_state* ruby)
 //
 //
 
-template <typename T>
 struct RubyPtr
 {
-    std::shared_ptr<T> ptr;
+    std::shared_ptr<void> ptr;
 
-    RubyPtr(mrb_state* mrb)
-    {
-        ptr = std::shared_ptr<T>(
-            new T, [mrb](T* t) { mrb_gc_unregister(mrb, t); });
-        mrb_gc_register(ptr.get());
+    operator mrb_value() const { // NOLINT
+        return mrb_obj_value(ptr.get());
     }
+
+    explicit operator bool() const {
+        return ptr.operator bool();
+    }
+
+    RubyPtr() = default;
+
+    RubyPtr(mrb_state* mrb, mrb_value mv)
+    {
+        ptr = std::shared_ptr<void>(
+            mrb_obj_ptr(mv), [mrb](void* t) { mrb_gc_unregister(mrb, mrb_obj_value(t)); });
+        mrb_gc_register(mrb, mv);
+    }
+
+    template <typename T>
+    T* as()
+    {
+        return self_to<T>(mrb_obj_value(ptr.get()));
+    }
+
+    void clear() { ptr = nullptr; }
 };
 
 } // namespace mrb

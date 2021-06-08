@@ -52,6 +52,7 @@ void Display::setup()
     gl::setViewport({w, h});
     fmt::print("{} {}\n", w, h);
     canvas = std::make_shared<RCanvas>(w, h);
+    canvas->init(ruby);
     sprites = std::make_shared<RSprites>(w, h);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

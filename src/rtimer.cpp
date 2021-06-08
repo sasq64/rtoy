@@ -4,9 +4,9 @@
 
 #include "error.hpp"
 #include "mrb_tools.hpp"
+#include <mruby/object.h>
 
 using namespace std::chrono_literals;
-using namespace std::string_literals;
 using clk = std::chrono::steady_clock;
 
 double RTimer::get_seconds()
@@ -15,9 +15,7 @@ double RTimer::get_seconds()
     auto elapsed = now - start_t;
     auto ms =
         std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-
-    auto t = static_cast<double>(ms) / 1000;
-    return t;
+    return static_cast<double>(ms) / 1000;
 }
 
 void RTimer::update()
@@ -25,7 +23,9 @@ void RTimer::update()
     auto now = clk::now();
     auto seconds = get_seconds();
     while (now >= next_timer) {
-        if (timer_handler.w != 0) { call_proc(ruby, timer_handler, seconds); }
+        if (timer_handler) {
+            call_proc(ruby, timer_handler, seconds);
+        }
         next_timer += 1ms * timer_interval;
     }
 }
@@ -59,9 +59,8 @@ void RTimer::reg_class(mrb_state* ruby)
             mrb_value blk;
             mrb_get_args(mrb, "i&", &n, &blk);
             timer->timer_interval = n;
-            if (blk.w != 0) {
-                timer->timer_handler = blk;
-                mrb_gc_register(mrb, timer->timer_handler);
+            if (!mrb_nil_p(blk)) {
+                timer->timer_handler = mrb::RubyPtr{mrb, blk};
             }
             return mrb_nil_value();
         },
@@ -70,7 +69,7 @@ void RTimer::reg_class(mrb_state* ruby)
 
 void RTimer::reset()
 {
-    SET_NIL_VALUE(timer_handler);
+    timer_handler.clear();
 }
 
 RTimer::RTimer(mrb_state* _ruby) : ruby{_ruby}

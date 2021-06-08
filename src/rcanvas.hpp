@@ -1,10 +1,11 @@
 #pragma once
-#include "rlayer.hpp"
-#include "rfont.hpp"
 #include "pix/pix.hpp"
+#include "rfont.hpp"
+#include "rlayer.hpp"
 
 #include <gl/texture.hpp>
 
+#include "mrb_tools.hpp"
 #include <mruby.h>
 #include <mruby/data.h>
 
@@ -14,7 +15,7 @@ class RCanvas : public RLayer
 {
     gl_wrap::Texture canvas;
 
-    RFont* current_font = nullptr;
+    mrb::RubyPtr current_font;
 
     std::array<float, 16> const Id = {
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
@@ -24,6 +25,7 @@ class RCanvas : public RLayer
     void draw_circle(float x, float y, float r);
     void draw_image(float x, float y, RImage* image);
 public:
+    void init(mrb_state* mrb);
     static inline RClass* rclass;
     static inline mrb_data_type dt{"Canvas",
         [](mrb_state*,
