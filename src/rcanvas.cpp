@@ -145,6 +145,7 @@ void RCanvas::reg_class(mrb_state* ruby)
             auto* rimage =
                 rcanvas->current_font.as<RFont>()->render(text, size);
             rcanvas->draw_image(x, y, rimage);
+            delete rimage;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));
