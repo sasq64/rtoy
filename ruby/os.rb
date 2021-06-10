@@ -47,6 +47,15 @@ class Sprite
     end
 end
 
+class Layer
+    def scale=(v)
+        a = v.to_a
+        set_scale(a[0], a[1])
+    end
+    def scale()
+        Vec2.new(*get_scale())
+    end
+end
 
 
 module OS
@@ -176,7 +185,7 @@ module OS
     def line(x, y, x2, y2) @@display.canvas.line(x, y, x2, y2) end
     def circle(x, y, r) @@display.canvas.circle(x, y, r) end
     def get_char(x, y) @@display.console.get_char(x, y) end
-    def scale(x, y = x) @@display.console.scale(x,y) end
+    def scale(x, y = x) @@display.console.scale = [x,y] end
     def offset(x, y) @@display.console.offset(x,y) end
     def add_sprite(img) @@display.sprites.add_sprite(img) end
     def remove_sprite(spr) @@display.sprites.remove_sprite(spr) end
@@ -205,7 +214,7 @@ module OS
         if src
             @@boot_fiber = Fiber.new { eval(src) }
         else
-            @@boot_fiber = Fiber.new &block
+            @@boot_fiber = Fiber.new(&block)
         end
         @@boot_fiber.resume
     end
@@ -213,7 +222,7 @@ module OS
     def exec(src = nil, &block)
         raise "Can't exec() in callback handlers" if @@handlers.in_callbacks
         block = Proc.new { eval(src) } if src
-        f = Fiber.new &block
+        f = Fiber.new(&block)
         while f.alive? do
             f.resume
             Fiber.yield if f.alive?

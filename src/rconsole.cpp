@@ -1,7 +1,7 @@
 #include "rconsole.hpp"
-#include "rimage.hpp"
 #include "mrb_tools.hpp"
 #include "pix/texture_font.hpp"
+#include "rimage.hpp"
 #include <mruby/array.h>
 
 #include <coreutils/utf8.h>
@@ -31,8 +31,14 @@ void RConsole::update_pos(Cursor const& cursor)
 {
     xpos = cursor.x;
     ypos = cursor.y;
-    int w = (float)width / console->font->char_width / scale[0];
-    int h = (float)height / console->font->char_height / scale[1];
+    // Calcluate visibilw size.
+    // TODO: Include tile_size? wrap attributes ?
+    int w = static_cast<int>(static_cast<float>(width) /
+                             static_cast<float>(console->font->char_width) /
+                             scale[0]);
+    int h = static_cast<int>(static_cast<float>(height) /
+                             static_cast<float>(console->font->char_height) /
+                             scale[1]);
     while (xpos >= w) {
         xpos -= w;
         ypos++;
@@ -106,7 +112,7 @@ void RConsole::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             auto [bufno] = mrb::get_args<int>(mrb);
-            if (bufno == ptr->current_buf) return mrb_nil_value();
+            if (bufno == ptr->current_buf) { return mrb_nil_value(); }
 
             if (ptr->buffers.size() <= bufno) {
                 ptr->buffers.resize(bufno + 1);
@@ -133,7 +139,7 @@ void RConsole::reg_class(mrb_state* ruby)
 
     mrb_define_method(
         ruby, RConsole::rclass, "clear",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             ptr->clear();
             return mrb_nil_value();
@@ -193,7 +199,7 @@ void RConsole::reg_class(mrb_state* ruby)
         ruby, RConsole::rclass, "get_tile",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto chr = mrb::method(&RConsole::get, mrb, self);
-            return mrb::to_value((int)chr.c, mrb);
+            return mrb::to_value(static_cast<int>(chr.c), mrb);
         },
         MRB_ARGS_REQ(2));
 
@@ -212,7 +218,7 @@ void RConsole::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             auto [x, y] = mrb::get_args<int, int>(mrb);
-            ptr->console->set_tile_size(x,y);
+            ptr->console->set_tile_size(x, y);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -259,22 +265,22 @@ void RConsole::reg_class(mrb_state* ruby)
         ruby, RConsole::rclass, "get_xy",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
-            mrb_value values[2] = {
+            std::array values{
                 mrb::to_value(ptr->xpos, mrb), mrb::to_value(ptr->ypos, mrb)};
-            return mrb_ary_new_from_values(mrb, 2, values);
+            return mrb_ary_new_from_values(mrb, 2, values.data());
         },
         MRB_ARGS_REQ(3));
 
     mrb_define_method(
         ruby, RConsole::rclass, "add_tile",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          uint32_t index;
-          RImage* image;
-          mrb_get_args(mrb, "id", &index, &image, &RImage::dt);
-          auto* rconsole = mrb::self_to<RConsole>(self);
-          image->upload();
-          rconsole->console->font->add_tile(index, image->texture);
-          return mrb_nil_value();
+            uint32_t index = 0;
+            RImage* image = nullptr;
+            mrb_get_args(mrb, "id", &index, &image, &RImage::dt);
+            auto* rconsole = mrb::self_to<RConsole>(self);
+            image->upload();
+            rconsole->console->font->add_tile(index, image->texture);
+            return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
 }

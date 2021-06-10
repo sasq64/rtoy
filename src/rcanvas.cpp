@@ -87,7 +87,7 @@ void RCanvas::init(mrb_state* mrb)
 
 void RCanvas::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Canvas", RCanvas::rclass);
+    rclass = mrb_define_class(ruby, "Canvas", RLayer::rclass);
     MRB_SET_INSTANCE_TT(RCanvas::rclass, MRB_TT_DATA);
 
     /* mrb_define_method( */
@@ -151,18 +151,19 @@ void RCanvas::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RCanvas::rclass, "draw",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            mrb_float x;
-            mrb_float y;
-            RImage* image;
+            mrb_float x{};
+            mrb_float y{};
+            RImage* image{};
             mrb_get_args(mrb, "ffd", &x, &y, &image, &RImage::dt);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
-            rcanvas->draw_image(x, y, image);
+            rcanvas->draw_image(
+                static_cast<float>(x), static_cast<float>(y), image);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));
     mrb_define_method(
         ruby, RCanvas::rclass, "clear",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
             mrb::self_to<RCanvas>(self)->clear();
             return mrb_nil_value();
         },
@@ -179,7 +180,7 @@ void RCanvas::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(1));
     mrb_define_method(
         ruby, RCanvas::rclass, "font",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
             auto* rcanvas = mrb::self_to<RCanvas>(self);
             return rcanvas->current_font;
         },

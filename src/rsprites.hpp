@@ -15,11 +15,11 @@ struct RSprite
     pix::Image image;
     gl_wrap::TexRef texture;
 
-    float screen_width;
-    float screen_height;
+    float screen_width{};
+    float screen_height{};
 
-    float width;
-    float height;
+    float width{};
+    float height{};
 
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
@@ -27,7 +27,7 @@ struct RSprite
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0;
 
-    mrb_value obj;
+    mrb_value obj{};
     static inline RClass* rclass;
     static mrb_data_type dt;
 

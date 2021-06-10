@@ -19,7 +19,7 @@
 
 mrb_data_type RImage::dt{"Image", [](mrb_state*, void* data) {
                              fmt::print("Deleting image\n");
-                             delete (RImage*)data;
+                             delete static_cast<RImage*>(data);
                          }};
 
 void RImage::reg_class(mrb_state* ruby)
@@ -34,8 +34,8 @@ void RImage::reg_class(mrb_state* ruby)
             mrb_get_args(mrb, "z", &name);
             auto img = pix::load_png(name);
             if (img.ptr == nullptr) { return mrb_nil_value(); }
-            auto* image = new RImage(img);
-            return mrb::new_data_obj(mrb, image);
+            auto* rimage = new RImage(img);
+            return mrb::new_data_obj(mrb, rimage);
         },
         MRB_ARGS_REQ(1));
 
@@ -56,15 +56,15 @@ void RImage::reg_class(mrb_state* ruby)
         ruby, RImage::rclass, "split",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [w, h] = mrb::get_args<int, int>(mrb);
-            auto* image = mrb::self_to<RImage>(self);
-            image->upload();
+            auto* thiz = mrb::self_to<RImage>(self);
+            thiz->upload();
 
-            float u0 = image->texture.uvs[0];
-            float v0 = image->texture.uvs[1];
-            float u1 = image->texture.uvs[4];
-            float v1 = image->texture.uvs[5];
-            auto du = (u1 - u0) / w;
-            auto dv = (v1 - v0) / h;
+            float u0 = thiz->texture.uvs[0];
+            float v0 = thiz->texture.uvs[1];
+            float u1 = thiz->texture.uvs[4];
+            float v1 = thiz->texture.uvs[5];
+            auto du = (u1 - u0) / static_cast<float>(w);
+            auto dv = (v1 - v0) / static_cast<float>(h);
 
             std::vector<mrb_value> images;
 
@@ -75,9 +75,9 @@ void RImage::reg_class(mrb_state* ruby)
                     u = u0;
                     v += dv;
                 }
-                if (v + dv > v1) break;
-                auto* rimage = new RImage(image->image);
-                rimage->texture.tex = image->texture.tex;
+                if (v + dv > v1) { break; }
+                auto* rimage = new RImage(thiz->image);
+                rimage->texture.tex = thiz->texture.tex;
                 rimage->texture.uvs = {
                     u, v, u + du, v, u + du, v + dv, u, v + dv};
                 images.push_back(mrb::new_data_obj(mrb, rimage));

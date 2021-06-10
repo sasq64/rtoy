@@ -5,7 +5,6 @@
 #include <mruby/value.h>
 #include <string>
 
-#include <fstream>
 #include <filesystem>
 #include <set>
 
@@ -24,15 +23,14 @@ class Toy
         return contents;
     }
 
-    mrb_state* ruby;
+    mrb_state* ruby = nullptr;
     static void exec(mrb_state* mrb, std::string const& code);
 
     static inline std::filesystem::path ruby_path = "ruby";
     static inline std::set<std::filesystem::path> already_loaded{};
 public:
 
-    Toy(bool fs);
-
+    explicit Toy(bool fs);
 
     void init();
     void destroy();

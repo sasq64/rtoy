@@ -4,21 +4,23 @@
 #include <mruby/compile.h>
 #include <mruby/value.h>
 
-#include <filesystem>
 #include <pix/gl_console.hpp>
-#include <string>
-#include <thread>
 
 #include "error.hpp"
 #include "mrb_tools.hpp"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
 #include "rdisplay.hpp"
+#include "rfont.hpp"
 #include "rimage.hpp"
 #include "rinput.hpp"
 #include "rsprites.hpp"
 #include "rtimer.hpp"
-#include "rfont.hpp"
+
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <thread>
 namespace fs = std::filesystem;
 
 using namespace std::string_literals;
@@ -74,7 +76,7 @@ void Toy::init()
         ruby, ruby->kernel_module, "exec",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [source] = mrb::get_args<std::string>(mrb);
-            fmt::print("Load string {}\n", strlen(source));
+            fmt::print("Load string {}\n", source.length());
             to_run = source;
             return mrb_nil_value();
         },
@@ -112,9 +114,9 @@ void Toy::init()
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [name] = mrb::get_args<std::string>(mrb);
             fmt::print("Loading {}\n", name);
-            FILE* fp = fopen(name, "rbe");
+            FILE* fp = fopen(name.c_str(), "rbe");
             if (fp != nullptr) {
-                //mrb_load_file(mrb, fp);
+                // mrb_load_file(mrb, fp);
                 fseek(fp, 0, SEEK_END);
                 auto sz = ftell(fp);
                 fseek(fp, 0, SEEK_SET);
@@ -192,7 +194,7 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     // cxt->lineno = 1;
     auto ai = mrb_gc_arena_save(mrb);
     auto* parser = mrb_parser_new(mrb);
-    if (parser == NULL) {
+    if (parser == nullptr) {
         fputs("create parser state error\n", stderr);
         return;
     }
@@ -206,7 +208,8 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
         printf("line %d: %s\n", parser->warn_buffer[0].lineno, msg);
         mrb_locale_free(msg);
         return;
-    } else if (parser->nerr > 0) {
+    }
+    if (parser->nerr > 0) {
         char* msg = mrb_locale_from_utf8(parser->error_buffer[0].message, -1);
         printf("line %d: %s\n", parser->error_buffer[0].lineno, msg);
         mrb_locale_free(msg);
@@ -214,11 +217,11 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     }
     struct RProc* proc = mrb_generate_code(mrb, parser);
     mrb_parser_free(parser);
-    if (proc == NULL) { return; }
+    if (proc == nullptr) { return; }
 
-    if (mrb->c->cibase->u.env) {
+    if (mrb->c->cibase->u.env != nullptr) {
         struct REnv* e = mrb_vm_ci_env(mrb->c->cibase);
-        if (e && MRB_ENV_LEN(e) < proc->body.irep->nlocals) {
+        if ((e != nullptr) && MRB_ENV_LEN(e) < proc->body.irep->nlocals) {
             printf("MODIFY\n");
             MRB_ENV_SET_LEN(e, proc->body.irep->nlocals);
         }
@@ -226,7 +229,7 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
 
     struct RClass* target = mrb->object_class;
     MRB_PROC_SET_TARGET_CLASS(proc, target);
-    if (mrb->c->ci) { mrb_vm_ci_target_class_set(mrb->c->ci, target); }
+    if (mrb->c->ci != nullptr) { mrb_vm_ci_target_class_set(mrb->c->ci, target); }
 
     unsigned stack_keep = 0;
 
@@ -237,14 +240,14 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     /*     val = mrb_vm_run_cycles(mrb, e, 0x7fffffff); */
     /* } */
     /* mrb_vm_end(mrb, e); */
-    if (mrb->exc) {
+    if (mrb->exc != nullptr) {
         fmt::print("EXCEPTION!\n");
     } else {
         *(mrb->c->ci->stack + 1) = result;
     }
 
     mrb_gc_arena_restore(mrb, ai);
-    //mrb_parser_free(parser);
+    // mrb_parser_free(parser);
     // mrbc_context_free(mrb, cxt);
 }
 

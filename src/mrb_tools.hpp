@@ -17,6 +17,7 @@ extern "C"
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -104,22 +105,27 @@ template <class... ARGS, size_t... A>
 auto get_args(
     mrb_state* mrb, std::vector<mrb_value>* restv, std::index_sequence<A...>)
 {
+    // A tuple to store the arguments. Types are converted to mruby
     std::tuple<typename ToMrb<ARGS>::To...> input;
 
+    // Build spec string, one character per type, plus a trailing '*' to capture
+    // remaining arguments
     std::array<char, sizeof...(ARGS) + 2> spec;
     spec[sizeof...(ARGS)] = '*';
     spec[sizeof...(ARGS) + 1] = 0;
     (void)std::tuple{(get_spec(A, std::get<A>(input), spec.data()), 0)...};
 
+
     mrb_int n = 0;
     mrb_value* rest{};
     mrb_get_args(mrb, spec.data(), &std::get<A>(input)..., &rest, &n);
+    std::tuple<ARGS...> converted { static_cast<ARGS>(std::get<A>(input))... };
     if (n > 0) {
         for (int i = 0; i < n; i++) {
             restv->push_back(rest[i]);
         }
     }
-    return input;
+    return converted;
 }
 
 //! Get function args according to type list
@@ -169,7 +175,8 @@ mrb_value to_value(std::vector<ELEM> const& r, mrb_state* mrb)
     std::vector<mrb_value> output(r.size());
     std::transform(r.begin(), r.end(), output.begin(),
         [&](ELEM const& e) { return to_value(e, mrb); });
-    return mrb_ary_new_from_values(mrb, output.size(), output.data());
+    return mrb_ary_new_from_values(
+        mrb, static_cast<mrb_int>(output.size()), output.data());
 }
 
 template <typename ELEM, size_t N>
@@ -178,7 +185,8 @@ mrb_value to_value(std::array<ELEM, N> const& r, mrb_state* mrb)
     std::vector<mrb_value> output(r.size());
     std::transform(r.begin(), r.end(), output.begin(),
         [&](ELEM const& e) { return to_value(e, mrb); });
-    return mrb_ary_new_from_values(mrb, output.size(), output.data());
+    return mrb_ary_new_from_values(
+        mrb, static_cast<mrb_int>(output.size()), output.data());
 }
 
 //! Convert ruby (mrb_value) type to native
@@ -200,15 +208,13 @@ TARGET to(mrb_value obj)
 
 template <typename TARGET>
 TARGET to_vector(mrb_value obj)
-{
-
-}
+{}
 
 template <class CLASS, class RET, class... ARGS, size_t... A>
 RET method(RET (CLASS::*f)(ARGS...), mrb_state* mrb, mrb_value self,
     std::index_sequence<A...> is)
 {
-    auto* ptr = (CLASS*)DATA_PTR(self);
+    auto* ptr = static_cast<CLASS*>(DATA_PTR(self));
     auto input = get_args<ARGS...>(mrb, nullptr, is);
     return (ptr->*f)(std::get<A>(input)...);
 }
@@ -217,7 +223,7 @@ template <class CLASS, class RET, class... ARGS, size_t... A>
 RET method(RET (CLASS::*f)(ARGS...) const, mrb_state* mrb, mrb_value self,
     std::index_sequence<A...> is)
 {
-    auto* ptr = (CLASS*)DATA_PTR(self);
+    auto* ptr = static_cast<CLASS*>(DATA_PTR(self));
     auto input = get_args<ARGS...>(mrb, nullptr, is);
     return (ptr->*f)(std::get<A>(input)...);
 }
@@ -274,33 +280,27 @@ inline std::optional<std::string> check_exception(mrb_state* ruby)
     return std::nullopt;
 }
 
-// A ruby object created on the C++ side needs to handle these cases;
-// If it's kept on the native side, it needs to be _registered_ with the GC.
-// When the last native reference goes away, it shouold be unregistered.
-//
-// So we always create a shared_ptr containing that will unregister on
-// last use
-//
-//
-
+// Hold an mrb_value referencing an object on the native side.
+// As long as we have a reference (via the shared_ptr) it will
+// not be garbage collected.
 struct RubyPtr
 {
     std::shared_ptr<void> ptr;
 
-    operator mrb_value() const { // NOLINT
+    operator mrb_value() const // NOLINT
+    {
         return mrb_obj_value(ptr.get());
     }
 
-    explicit operator bool() const {
-        return ptr.operator bool();
-    }
+    explicit operator bool() const { return ptr.operator bool(); }
 
     RubyPtr() = default;
 
     RubyPtr(mrb_state* mrb, mrb_value mv)
     {
-        ptr = std::shared_ptr<void>(
-            mrb_obj_ptr(mv), [mrb](void* t) { mrb_gc_unregister(mrb, mrb_obj_value(t)); });
+        assert((mv.w & 7) == 0); // TODO: Use macro
+        ptr = std::shared_ptr<void>(mrb_ptr(mv),
+            [mrb](void* t) { mrb_gc_unregister(mrb, mrb_obj_value(t)); });
         mrb_gc_register(mrb, mv);
     }
 
