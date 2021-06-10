@@ -8,6 +8,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+cmake_policy(SET CMP0072 NEW)
+
 if(WIN32)
   add_compile_options(/utf-8)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES
