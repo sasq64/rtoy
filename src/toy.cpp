@@ -1,3 +1,4 @@
+
 #include "toy.hpp"
 
 #include <mruby.h>

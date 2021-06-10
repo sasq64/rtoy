@@ -15,6 +15,12 @@
 #include <glm/glm.hpp>
 #include <mruby/compile.h>
 #include <pix/pix.hpp>
+#ifdef __APPLE__
+    #include "TargetConditionals.h"
+    #if TARGET_OS_OSX
+        #define OSX
+    #endif
+#endif
 
 mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
                               auto* display = static_cast<Display*>(data);
@@ -30,8 +36,13 @@ Display::Display(mrb_state* state) : ruby(state), RLayer(0, 0)
     memcpy(Id.data(), glm::value_ptr(m), 16 * 4);
 
     SDL_Init(SDL_INIT_VIDEO);
-    window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED, w, h,
+    window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+#ifdef OSX
+        w/2, h/2,
+        SDL_WINDOW_ALLOW_HIGHDPI |
+#else
+        w, h,
+#endif
         SDL_WINDOW_OPENGL | (full_screen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
     // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -42,7 +53,7 @@ Display::Display(mrb_state* state) : ruby(state), RLayer(0, 0)
 
 void Display::setup()
 {
-    SDL_GetWindowSize(window, &w, &h);
+    SDL_GL_GetDrawableSize(window, &w, &h);
     RLayer::width = w;
     RLayer::height = h;
 
