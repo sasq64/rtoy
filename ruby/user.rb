@@ -20,15 +20,15 @@ end
 
 def ball
     $bimg ||= Image.from_file('data/ball.png')
-    w,h = display.size
-    ball = add_sprite($bimg).move(rand(w - $bimg.width), rand(h - $bimg.height))
+    sz = display.size
+    ball = add_sprite($bimg).move(rand(sz.x - $bimg.width), rand(sz.y - $bimg.height))
     ball.scale = 0.25
     bx,by = rand(16)-8,rand(16)-8
     tween(seconds: 10.0) do |delta|
         ball.x += bx
         ball.y += by
-        bx = -bx if ball.x <= 0 or ball.x >= w
-        by = -by if ball.y <= 0 or ball.y >= h
+        bx = -bx if ball.x <= 0 or ball.x >= sz.x
+        by = -by if ball.y <= 0 or ball.y >= sz.y
         display.sprites.remove_sprite(ball) if delta >= 1.0
     end
 end

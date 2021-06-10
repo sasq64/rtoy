@@ -67,7 +67,7 @@ class LineReader
         p "RL KEY #{key}\n"
 
         case key
-        when 0x20..0x7e
+        when 0x20..0xffffff
             @line.insert(@pos, key)
             @pos += 1
         when Key::F3

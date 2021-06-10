@@ -5,6 +5,7 @@
 #include "keycodes.h"
 #include "mrb_tools.hpp"
 
+#include <coreutils/utf8.h>
 #include <mruby/class.h>
 
 #include <SDL.h>
@@ -48,7 +49,10 @@ void RInput::poll_events()
             call_proc(ruby, click_handler, e.button.x, e.button.y);
         } else if (e.type == SDL_TEXTINPUT) {
             fmt::print("TEXT '{}'\n", e.text.text);
-            call_proc(ruby, key_handler, e.text.text[0], 0);
+            auto text32 = utils::utf8_decode(e.text.text);
+            for(auto s : text32) {
+                call_proc(ruby, key_handler, s, 0);
+            }
         } else if (e.type == SDL_KEYDOWN) {
             if (e.key.keysym.sym == SDLK_F12) {
                 do_reset = true;
@@ -57,9 +61,8 @@ void RInput::poll_events()
             auto& ke = e.key;
             auto code = sdl2key(ke.keysym.sym);
             auto mod = ke.keysym.mod;
-            fmt::print("KEY {:x}\n", ke.keysym.sym);
-            fmt::print("MOD {:x}\n", mod);
             if (code < 0x20 || code > 0x1fffc || (mod & 0xc0) != 0) {
+                fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
                 call_proc(ruby, key_handler, code, mod);
             }
         } else if (e.type == SDL_QUIT) {

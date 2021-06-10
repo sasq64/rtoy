@@ -42,15 +42,6 @@ void RLayer::reg_class(mrb_state* ruby)
             return mrb::to_value(rlayer->height, mrb);
         },
         MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, RLayer::rclass, "size",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            mrb_value values[2] = {mrb::to_value(rlayer->width, mrb),
-                mrb::to_value(rlayer->height, mrb)};
-            return mrb_ary_new_from_values(mrb, 2, values);
-        },
-        MRB_ARGS_NONE());
 
     mrb_define_method(
         ruby, RLayer::rclass, "bg=",

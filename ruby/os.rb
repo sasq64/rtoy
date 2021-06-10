@@ -57,6 +57,11 @@ class Layer
     end
 end
 
+class Display
+    def size
+        Vec2.new(width, height)
+    end
+end
 
 module OS
 
