@@ -15,6 +15,12 @@ if(WIN32)
   set(WARN_EXT /W2)
 endif()
 
+if(APPLE)
+    add_compile_options(-fno-aligned-new)
+    include_directories(/usr/local/include)
+    link_directories(/usr/local/lib)
+endif()
+
 if(CMAKE_CXX_COMPILER MATCHES "/em\\+\\+(-[a-zA-Z0-9.])?$")
   message(" * Emscripten")
   set(CMAKE_CXX_COMPILER_ID "Emscripten")
@@ -93,7 +99,8 @@ target_include_directories(
   PRIVATE external/lodepng)
 target_include_directories(pix PUBLIC src)
 #set(GL GLESv2)
-set(GL GL GLEW)
+find_package(OpenGL)
+set(GL ${OPENGL_LIBRARIES} GLEW)
 target_link_libraries(pix PUBLIC SDL2 ${GL} Threads::Threads coreutils
                                  ${SDL2_LIBRARIES} freetype)
 
@@ -131,7 +138,7 @@ target_link_libraries(${TARGET} PRIVATE
     fmt::fmt)
 
 if(EMSCRIPTEN)
-    
+
     target_link_options(toy.html PRIVATE "SHELL:-s MAX_WEBGL_VERSION=2")
     target_link_options(toy.html PRIVATE "SHELL:--preload-file ../../data@data")
     target_link_options(toy.html PRIVATE "SHELL:--preload-file ../../ruby@ruby")
