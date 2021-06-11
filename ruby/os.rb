@@ -291,12 +291,6 @@ module OS
         puts text
     end
 
-    def edit(f)
-        ed = Editor.new
-        ed.load(f)
-        ed.activate
-    end
-
     def sleep(n)
         raise "Can't sleep() in callback handlers" if @@handlers.in_callbacks
         n.times { Fiber.yield }
@@ -331,7 +325,7 @@ HELP
         end
     end
 
-    module_function :gets, :help, :run, :edit, :show, :ls, :exec,
+    module_function :gets, :help, :run, :show, :ls, :exec,
         :sleep, :exec, :boot, :vsync, :flush, :get_key
 
 end

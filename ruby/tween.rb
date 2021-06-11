@@ -9,15 +9,32 @@ def by_elem(a, b, method)
     [a, b].transpose.map {|x| x.reduce(method)}
 end
 
+class TweenFunc
+    def self.ease_out_back(t)
+        s = 1.70158
+        t -= 1
+        (t*t*((s+1)*t + s) + 1);
+    end
+
+    def self.smooth_step(t)
+        t*t*(3-2*t)
+    end
+
+    def self.linear(t)
+        t
+    end
+end
+
 class TweenTarget
 
-    def initialize(obj, method, from, to, seconds, steps)
+    def initialize(obj, method, from, to, seconds, steps, func)
         @obj = obj
         @method = method
         @from = from
         @steps = steps - 1
         @to = to
         @value = from
+        @func = func
         @callback = nil
     end
 
@@ -31,15 +48,15 @@ class TweenTarget
         end
         delta = 1.0 if delta > 1.0
         if delta >= 0
+            d = TweenFunc.send @func, delta
             if @from.nil?
                 @obj.send @method
             elsif @from.kind_of? Array
                 @value = by_elem(@from, by_elem(@to, @from, :-).
-                                 map{|x| x * delta}, :+)
+                                 map{|x| x * d}, :+)
                 @obj.send @method,*@value
             else
-                @value = @from + (@to - @from) * delta
-                p @value
+                @value = @from + (@to - @from) * d
                 @obj.send @method,@value
             end
         end
@@ -65,41 +82,63 @@ class Tween
 
     end
 
-    def target(o = @obj, m = @method, obj:nil, method:nil, from:nil,
-               to_pos: nil, from_pos: nil, to_rot: nil, from_rot: nil,
-               to:nil, seconds:1.0, steps:0)
+    def target(*args, obj:nil, method:nil, seconds:1.0, steps:0, **kwargs)
+        #p kwargs
+        #p args
+        m = nil
+        o = nil
+        from = nil
+        to = nil
+        func = :linear
+        args.each do |arg|
+            if Symbol === arg && TweenFunc.respond_to?(arg)
+                func = arg
+            elsif o == nil
+                o = arg
+            elsif m = nil
+                m = arg
+            end
+        end
         obj ||= o
-        if to_rot
-            from = obj.rotation
-            to = to_rot
-            method = :rotation=
-        end
-        if from_rot
-            to = obj.rotation
-            from = from_rot
-            method = :rotation=
-            obj.rotation = from
-        end
-        if to_pos
-            from = obj.pos
-            to = to_pos
-            method = :pos=
-        end
-        if from_pos
-            to = obj.pos
-            from = from_pos
-            method = :pos=
-            obj.pos = from
-        end
         method ||= m
-        @targets.append TweenTarget.new(obj, method, from, to, seconds, steps)
+        kwargs.each do |key,val|
+            #p key
+            case key
+            when :from
+                from = val
+            when :to
+                to = val
+            when :to_rot
+                from = obj.rotation
+                to = val
+                method = :rotation=
+            when :from_rot
+                to = obj.rotation
+                from = val
+                method = :rotation=
+                obj.rotation = from
+            when :to_pos
+                from = obj.pos
+                to = val
+                method = :pos=
+            when :to_scale
+                from = obj.scale
+                to = val
+                method = :scale=
+            when :from_pos
+                to = obj.pos
+                from = val
+                method = :pos=
+                obj.pos = from
+            end
+        end
+        @targets.append TweenTarget.new(obj, method, from, to, seconds, steps, func)
         self
     end
 
     def when_done(&block)
         @targets.last.set_callback(block)
     end
-
 
     def update(t)
         delta = @total_time ? (Timer.default.seconds - @start_time) / @total_time : 0

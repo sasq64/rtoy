@@ -1,10 +1,18 @@
 
 module OS
-    def edit(s)
-        e = Editor.new
-        e.load(s)
-        e.activate
+    @@current_file = "scratch.rb"
+    def edit(f = nil)
+        f = @@current_file if not f
+        #unless File.file?(f)
+        #    puts "Can not edit #{f}"
+        #    return
+        #end
+        @@current_file = f
+        ed = Editor.new
+        ed.load(f)
+        ed.activate
     end
+    module_function :edit
 end
 
 class Editor
@@ -67,9 +75,8 @@ def editor_key(key, mod)
 
     h = @con.height/32-2
     @dirty = true
-    p "KEY #{key}"
     case key
-    when 0x20..0x7e
+    when 0x20..0xffffff
         if mod & 0xc0 != 0
             if key == 's'.ord
                 save()
@@ -80,16 +87,15 @@ def editor_key(key, mod)
                 return
             end
             if key == 'k'.ord
-                @cut_line = @line
+                @cut_line = @line.dup
                 @lines.delete_at(@ypos)
                 goto_line(@ypos)
             end
             if key == 'p'.ord
-                @lines.insert(@ypos, @cut_line)
+                @lines.insert(@ypos, @cut_line.dup)
                 goto_line(@ypos)
             end
         else
-            p "NORMAL"
             @line.insert(@xpos, key)
             @xpos += 1
         end

@@ -65,6 +65,12 @@ inline void get_spec(size_t i, mrb_value, char* data)
     data[i] = 'o';
 }
 
+template <>
+inline void get_spec(size_t i, mrb_bool, char* data)
+{
+    data[i] = 'b';
+}
+
 template <typename T>
 struct ToMrb
 {
@@ -114,7 +120,6 @@ auto get_args(
     spec[sizeof...(ARGS)] = '*';
     spec[sizeof...(ARGS) + 1] = 0;
     (void)std::tuple{(get_spec(A, std::get<A>(input), spec.data()), 0)...};
-
 
     mrb_int n = 0;
     mrb_value* rest{};
