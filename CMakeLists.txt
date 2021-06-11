@@ -63,12 +63,12 @@ endif()
 set(MRB ${PROJECT_SOURCE_DIR}/external/mruby)
 set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/mruby/lib)
 set(MRB_INC ${MRB}/include)
-add_custom_command(
-    OUTPUT ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
-    COMMAND MRUBY_CONFIG=${PROJECT_SOURCE_DIR}/mruby.cfg rake -f ${MRB}/Rakefile -j8)
+# add_custom_command(
+#     OUTPUT ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
+#     COMMAND MRUBY_CONFIG=${PROJECT_SOURCE_DIR}/mruby.cfg rake -f ${MRB}/Rakefile -j8)
 
-add_custom_target(mruby ALL
-    DEPENDS ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a mruby.cfg)
+# add_custom_target(mruby ALL
+#     DEPENDS ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a mruby.cfg)
 
 
 add_subdirectory(external/fmt)
@@ -110,7 +110,7 @@ target_link_libraries(pix PUBLIC SDL2 ${GL} Threads::Threads coreutils
 
 if(EMSCRIPTEN)
     set(TARGET toy.html)
-    set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/emhost/lib)
+    set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/embuild/lib)
 else()
     set(TARGET toy)
 endif()

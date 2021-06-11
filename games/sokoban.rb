@@ -1,5 +1,4 @@
-
-
+# Sokoban for R-Toy
 class Sokoban
 
     include OS
