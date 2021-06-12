@@ -23,6 +23,64 @@ class TweenFunc
     def self.linear(t)
         t
     end
+
+    def self.in_sine(t)
+        1 - Math::cos(t * (Math::PI/2))
+    end
+
+    def self.out_sine(t)
+        Math::sin(t * (Math::PI/2))
+    end
+
+    def self.in_out_sine(t)
+        -0.5 * (Math::cos(Math::PI*t) - 1);
+    end
+
+    def self.out_bounce(t)
+       n1 = 7.5625;
+       d1 = 2.75;
+       if t < 1 / d1
+           n1 * t * t
+       elsif t < 2 / d1
+           n1 * (t -= 1.5 / d1) * t + 0.75
+       elsif t < 2.5 / d1
+           n1 * (t -= 2.25 / d1) * t + 0.9375
+       else
+           n1 * (t -= 2.625 / d1) * t + 0.984375
+       end
+    end
+
+    def self.in_out_bounce
+        t < 0.5 ? (1 - out_bounce(1 - 2 * t)) / 2
+                : (1 + out_bounce(2 * t - 1)) / 2
+    end
+
+    def self.in_bounce(t)
+        1 - out_bounce(1-t)
+    end
+
+    def self.sine(t)
+        (Math::sin(t * (Math::PI*2) - Math::PI/2) + 1.0)/2.0;
+    end
+
+    def self.in_elastic(t)
+        c4 = (2 * Math::PI) / 3;
+        t == 0 ? 0 : t == 1 ? 1
+        : -2**(10 * t - 10) * Math::sin((t * 10 - 10.75) * c4);
+    end
+
+    def self.out_elastic(t)
+        c4 = (2 * Math::PI) / 3;
+        t == 0 ? 0 : t == 1 ? 1
+        : -2**(-10 * t) * Math::sin((t * 10 - 10.75) * c4) + 1;
+    end
+
+    def self.in_out_elastic(t)
+        c5 = (2 * Math::PI) / 4.5
+        t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ?
+        -(2**(20 * t - 10) * Math::sin((20 * t - 11.125) * c5)) / 2
+        : (2**(-20 * t + 10) * Math::sin((20 * t - 11.125) * c5)) / 2 + 1;
+    end
 end
 
 class TweenTarget
@@ -83,8 +141,8 @@ class Tween
     end
 
     def target(*args, obj:nil, method:nil, seconds:1.0, steps:0, **kwargs)
-        #p kwargs
-        #p args
+        p kwargs
+        p args
         m = nil
         o = nil
         from = nil
