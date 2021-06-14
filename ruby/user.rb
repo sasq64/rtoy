@@ -66,7 +66,8 @@ def paint2
 end
 
 def rot()
-    tween(seconds:2.0).target(display.console, :rotation=, from:0, to: 2 * Math::PI)
+    tween(seconds:2.0, obj: display.console).
+        target(method: :rotation=, from:0, to: 2 * Math::PI)
 end
 
 def circle_tween()

@@ -125,19 +125,25 @@ void Toy::init()
             auto [name] = mrb::get_args<std::string>(mrb);
             fmt::print("Loading {}\n", name);
             FILE* fp = fopen(name.c_str(), "rbe");
+                    auto* ctx = mrbc_context_new(mrb);
+                    ctx->capture_errors = true;
+                    mrbc_filename(mrb, ctx, name.c_str());
+                    ctx->lineno = 1;
+            mrb_load_file_cxt(mrb, fp, ctx);
+            mrbc_context_free(mrb, ctx);
             if (fp != nullptr) {
-                // mrb_load_file(mrb, fp);
-                fseek(fp, 0, SEEK_END);
-                auto sz = ftell(fp);
-                fseek(fp, 0, SEEK_SET);
-                std::string s;
-                s.resize(sz + 1);
-                fread(s.data(), sz, 1, fp);
-                s[sz] = 0;
-                fclose(fp);
-                exec(mrb, s);
+            /*     // mrb_load_file(mrb, fp); */
+            /*     fseek(fp, 0, SEEK_END); */
+            /*     auto sz = ftell(fp); */
+            /*     fseek(fp, 0, SEEK_SET); */
+            /*     std::string s; */
+            /*     s.resize(sz + 1); */
+            /*     fread(s.data(), sz, 1, fp); */
+            /*     s[sz] = 0; */
+            /*     fclose(fp); */
+            /*     exec(mrb, s); */
                 if (auto err = mrb::check_exception(mrb)) {
-                    fmt::print("Error: {}\n", *err);
+                    fmt::print("LOAD Error: {}\n", *err);
                     exit(1);
                 }
             }
@@ -162,10 +168,15 @@ void Toy::init()
 
                 FILE* fp = fopen(("ruby/"s + name).c_str(), "rbe");
                 if (fp != nullptr) {
-                    mrb_load_file(mrb, fp);
+                    auto* ctx = mrbc_context_new(mrb);
+                    ctx->capture_errors = true;
+                    mrbc_filename(mrb, ctx, name.c_str());
+                    ctx->lineno = 1;
+                    mrb_load_file_cxt(mrb, fp, ctx);
+                    mrbc_context_free(mrb, ctx);
                     fclose(fp);
                     if (auto err = mrb::check_exception(mrb)) {
-                        fmt::print("Error: {}\n", *err);
+                        fmt::print("REQUIRE Error: {}\n", *err);
                         exit(1);
                     }
                 }
@@ -287,6 +298,10 @@ bool Toy::render_loop()
         }
         display->console->clear();
         display->console->console->text(0, 0, e.text);
+        int y = 2;
+        for(auto& bt : e.backtrace) {
+            display->console->console->text(2, y++, bt);
+        }
     }
 
     if ((input != nullptr) && input->should_reset()) {
@@ -308,8 +323,8 @@ bool Toy::render_loop()
         mrb_load_string(ruby, to_run.c_str());
         if (auto err = mrb::check_exception(ruby)) {
             ErrorState::stack.push_back(
-                {ErrorType::Exception, std::string(*err)});
-            fmt::print("Error: {}\n", *err);
+                {ErrorType::Exception, {}, std::string(*err)});
+            fmt::print("RUN Error: {}\n", *err);
         }
         to_run.clear();
     }
@@ -335,7 +350,7 @@ int Toy::run(std::string const& script)
     auto source = read_all(ruby_file);
     mrb_load_string(ruby, source.c_str());
     if (auto err = mrb::check_exception(ruby)) {
-        fmt::print("Error: {}\n", *err);
+        fmt::print("START Error: {}\n", *err);
         exit(1);
     }
     puts("Loaded");

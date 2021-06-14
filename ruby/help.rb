@@ -47,20 +47,18 @@ puts "Hello world!"
 
 ## This code will add a bouncing ball that disappears after
 ## 10 seconds.
-
-# display = Display.default
-# bimg = Image.from_file('data/ball.png')
-# w,h = display.size
-# ball = add_sprite(bimg).move(rand(w), rand(h))
-# ball.scale = 0.25
-# bx,by = rand(16)-8,rand(16)-8
-# tween(seconds: 10.0) do |delta|
-#     ball.x += bx
-#     ball.y += by
-#     bx = -bx if ball.x <= 0 or ball.x >= w
-#     by = -by if ball.y <= 0 or ball.y >= h
-#     remove_sprite(ball) if delta >= 1.0
-# end
+display = Display.default
+bimg = Image.from_file('data/ball.png')
+w,h = display.size
+ball = add_sprite(bimg).move(rand(w), rand(h))
+ball.scale = 0.25
+v = Vec2.rand(16,16) - [8,8]
+tween(seconds: 10.0) do |delta|
+    ball.pos += v
+    v.x = -v.x if ball.x <= 0 or ball.x >= w
+    v.y = -v.y if ball.y <= 0 or ball.y >= h
+    remove_sprite(ball) if delta >= 1.0
+end
 
 ## If you want to play with turtle graphics, type 'turtle' at
 ## the prompt.

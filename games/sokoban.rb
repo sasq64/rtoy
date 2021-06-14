@@ -47,11 +47,11 @@ class Sokoban
     end
 
     def to_spr(p)
-        p * 64 + [32,32]
+        p * 64
     end
 
     def from_spr(p)
-        (p - [32,32]) / 64
+        p / 64
     end
 
     def init_level(level)
@@ -79,8 +79,7 @@ class Sokoban
                 end
                 p.x += 1
             end
-            p.x = 0
-            p.y += 1
+            p = vec2(0, p.y+1)
         end
         check_boxes()
     end

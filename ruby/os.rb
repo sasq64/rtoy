@@ -5,10 +5,10 @@ class Vec2
     def initialize(x, y = nil)
         @data = [x,y]
     end
-    def x() @data[0] end
-    def y() @data[1] end
     def x=(x) @data[0] = x ; end
     def y=(y) @data[1] = y ; end
+    def x() @data[0] end
+    def y() @data[1] end
     def to_s() @data.to_s ; end
     def to_a() @data end
 
@@ -150,7 +150,7 @@ module OS
         @@handlers = h
     end
 
-    module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer
+    module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer, :vec2
 
     @@key_queue = []
     def self.reset_handlers
@@ -173,7 +173,7 @@ module OS
         end
         Input.default.on_key do |key,mod|
             @@get_key = key
-            if @@handlers.empty?(:key)
+            if @@handlers.empty?(:key) 
                 @@key_queue.append(key)
             else
                 @@handlers.call_all(:key, key, mod)
@@ -182,6 +182,7 @@ module OS
         end
         Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args) }
         Input.default.on_click { |*args| @@handlers.call_all(:click, *args) }
+        p "HANDLERS DONE"
     end
 
     def display() @@display end
@@ -240,7 +241,9 @@ module OS
         OS.clear_handlers if clear
         f = Fiber.new do
             src = File.read(name)
-            OS.instance_eval(src)
+            p "LOAD #{name}"
+            OS.instance_eval(src, name, 1)
+            #Kernel.load(name)
         end
         while f.alive? do
             break if block_given? and yield
@@ -308,15 +311,13 @@ module OS
         elsif what == 'games'
             puts "ls \"games\""
             ls('games')
-puts <<GAMES
-
+            puts <<GAMES
 You can run a game (or any ruby file for that matter) by
 typing `run "path-to-game" `. You can also open up the
 file in the editor first, using edit "path-to-game"  and
 then pressing `F5` to run it.
 GAMES
-        else
-            puts <<HELP
+        else puts <<HELP
 help 'intro'
 help 'tutorial'
 help 'games'

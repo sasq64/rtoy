@@ -24,14 +24,13 @@ void RSprite::update_tx()
     m = glm::translate(m, glm::vec3(-screen_width / 2.0 + trans[0],
                               screen_height / 2.0 - trans[1], 0));
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
+    m = glm::translate(m, glm::vec3(width/2, -height/2, 0));
     m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
                           static_cast<float>(height) * scale[1] / -2, 1.0));
     memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
 }
 
-RSprites::RSprites(int w, int h) : RLayer{w, h}
-{
-}
+RSprites::RSprites(int w, int h) : RLayer{w, h} {}
 
 void RSprites::reset()
 {
@@ -55,6 +54,9 @@ void RSprites::render()
     // pix::set_transform(transform);
     for (auto const& sprite : sprites) {
         sprite->texture.bind();
+        pix::set_colors((style.fg & 0xffffff00) |
+                            static_cast<uint32_t>(sprite->alpha * 255),
+            style.bg);
         pix::set_transform(sprite->transform);
         pix::draw_quad_uvs(sprite->texture.uvs);
     }
@@ -120,6 +122,7 @@ void RSprites::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
+
     mrb_define_method(
         ruby, RSprite::rclass, "y",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -148,6 +151,15 @@ void RSprites::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
+        ruby, RSprite::rclass, "img",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rspr = mrb::self_to<RSprite>(self);
+            auto* rimage = new RImage(rspr->image);
+            return mrb::new_data_obj(mrb, rimage);
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
         ruby, RSprite::rclass, "img=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* spr = mrb::self_to<RSprite>(self);
@@ -162,6 +174,23 @@ void RSprites::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RSprite::rclass, "alpha=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [x] = mrb::get_args<float>(mrb);
+            auto* rspr = mrb::self_to<RSprite>(self);
+            rspr->alpha = x;
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+    mrb_define_method(
+        ruby, RSprite::rclass, "alpha",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rspr = mrb::self_to<RSprite>(self);
+            return mrb::to_value(rspr->alpha, mrb);
+        },
+        MRB_ARGS_NONE());
 
     mrb_define_method(
         ruby, RSprite::rclass, "scale=",
@@ -191,6 +220,7 @@ void RSprites::reg_class(mrb_state* ruby)
             return mrb::to_value(rsprite->rot, mrb);
         },
         MRB_ARGS_REQ(1));
+
     mrb_define_method(
         ruby, RSprite::rclass, "rotation",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {

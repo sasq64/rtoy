@@ -17,12 +17,12 @@ text 0,0,"SHADE BOBS"
 xi = 0
 yi = 0
 loop do
-    vsync()
-    display.canvas.clear()
+    display.canvsas.clear()
     display.console.offset((sinx(xi) - display.width) * 2.6, 0)
     300.times { |j|
         circle (sinx(xi+j*7) + sinx(xi + 190 +j*5)) / 2, siny(yi+j*13), 100
     }
     xi += 2
     yi += 3
+    vsync()
 end

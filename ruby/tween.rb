@@ -50,7 +50,7 @@ class TweenFunc
        end
     end
 
-    def self.in_out_bounce
+    def self.in_out_bounce(t)
         t < 0.5 ? (1 - out_bounce(1 - 2 * t)) / 2
                 : (1 + out_bounce(2 * t - 1)) / 2
     end
@@ -107,8 +107,10 @@ class TweenTarget
         delta = 1.0 if delta > 1.0
         if delta >= 0
             d = TweenFunc.send @func, delta
+            p @obj
+            p @method
             if @from.nil?
-                @obj.send @method
+                @obj.send @method,d
             elsif @from.kind_of? Array
                 @value = by_elem(@from, by_elem(@to, @from, :-).
                                  map{|x| x * d}, :+)
@@ -127,6 +129,7 @@ end
 class Tween
     @@tweens = []
 
+
     def initialize(o = nil, m = nil, obj:nil, method:nil, on_done: nil,
                    seconds:nil, &block)
         @block = block
@@ -140,62 +143,88 @@ class Tween
 
     end
 
-    def target(*args, obj:nil, method:nil, seconds:1.0, steps:0, **kwargs)
+    def target(**kwargs)
         p kwargs
-        p args
-        m = nil
-        o = nil
-        from = nil
-        to = nil
-        func = :linear
-        args.each do |arg|
-            if Symbol === arg && TweenFunc.respond_to?(arg)
-                func = arg
-            elsif o == nil
-                o = arg
-            elsif m = nil
-                m = arg
-            end
-        end
-        obj ||= o
-        method ||= m
+
+        r = {
+            obj: @obj,
+            method: @method,
+            func: :linear,
+            seconds: @total_time,
+            steps: 0
+        }
+
+        # m = nil
+        # o = nil
+        # from = nil
+        # to = nil
+        # func = :linear
+        # args.each do |arg|
+        #     if Symbol === arg && TweenFunc.respond_to?(arg)
+        #         func = arg
+        #     elsif o == nil
+        #         o = arg
+        #     elsif m = nil
+        #         m = arg
+        #     end
+        # end
+        # obj ||= o
+        # method ||= m
+
         kwargs.each do |key,val|
             #p key
             case key
-            when :from
-                from = val
-            when :to
-                to = val
             when :to_rot
-                from = obj.rotation
-                to = val
-                method = :rotation=
+                r[:from] = r[:obj].rotation
+                r[:to] = val
+                r[:method] = :rotation=
             when :from_rot
-                to = obj.rotation
-                from = val
-                method = :rotation=
-                obj.rotation = from
+                r[:to] = r[:obj].rotation
+                r[:from] = val
+                r[:method] = :rotation=
+                r[:obj].rotation = val
             when :to_pos
-                from = obj.pos
-                to = val
-                method = :pos=
+                r[:from] = r[:obj].pos
+                r[:to] = val
+                r[:method] = :pos=
             when :to_scale
-                from = obj.scale
-                to = val
-                method = :scale=
+                r[:from] = r[:obj].scale
+                r[:to] = val
+                r[:method] = :scale=
+            when :from_scale
+                r[:to] = r[:obj].scale
+                r[:from] = val
+                r[:method] = :scale=
+                r[:obj].scale = val
             when :from_pos
-                to = obj.pos
-                from = val
-                method = :pos=
-                obj.pos = from
+                r[:to] = r[:obj].pos
+                r[:from] = val
+                r[:method] = :pos=
+                r[:obj].pos = val
+            when :to_alpha
+                r[:from] = r[:obj].alpha
+                r[:to] = val
+                r[:method] = :alpha=
+            when :from_alpha
+                r[:to] = r[:obj].alpha
+                r[:from] = val
+                r[:method] = :alpha=
+                r[:obj].alpha = val
+            else
+                r[key] = val
             end
         end
-        @targets.append TweenTarget.new(obj, method, from, to, seconds, steps, func)
+
+        p r
+        @targets.append TweenTarget.new(
+            r[:obj], r[:method], r[:from], r[:to],
+            r[:seconds], r[:steps], r[:func])
         self
     end
 
     def when_done(&block)
         @targets.last.set_callback(block)
+        self
     end
 
     def update(t)

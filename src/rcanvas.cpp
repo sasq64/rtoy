@@ -115,13 +115,24 @@ void RCanvas::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RCanvas::rclass, "line",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x0, y0, x1, y1] =
-                mrb::get_args<float, float, float, float>(mrb);
+            auto n = mrb_get_argc(mrb);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
-            rcanvas->draw_line(x0, y0, x1, y1);
+            if (n == 4) {
+                auto [x0, y0, x1, y1] =
+                    mrb::get_args<float, float, float, float>(mrb);
+                if (x0 != x1 || y0 != y1) {
+                    rcanvas->draw_line(x0, y0, x1, y1);
+                }
+                rcanvas->last_point = {x1, y1};
+            } else if (n == 2) {
+                auto [x1, y1] = mrb::get_args<float, float>(mrb);
+                rcanvas->draw_line(rcanvas->last_point.first,
+                    rcanvas->last_point.second, x1, y1);
+                rcanvas->last_point = {x1, y1};
+            }
             return mrb_nil_value();
         },
-        MRB_ARGS_REQ(4));
+        MRB_ARGS_REQ(2));
     mrb_define_method(
         ruby, RCanvas::rclass, "circle",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
