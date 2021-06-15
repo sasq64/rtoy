@@ -27,7 +27,7 @@ sprites.each do |s|
     tween(obj: s, seconds: 2.0).
       target(from_pos: vec2(display.width,800), func: :in_bounce).
       target(to_alpha: 1, func: :smooth_step).
-      target(to_rot: 2 * Math::PI).
+      target(to_rot: 2 * Math::PI, func: :in_sine).
       when_done {
           display.canvas.draw(s.x, s.y, s.img) 
           remove_sprite(s) 

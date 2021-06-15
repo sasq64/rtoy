@@ -11,7 +11,6 @@ RFont::RFont(std::string const& fname) : font(fname.c_str()) {}
 
 RImage* RFont::render(std::string const& txt, int n)
 {
-    fmt::print(">>> {} size\n", n);
     font.set_pixel_size(n);
     auto [w, h] = font.text_size(txt);
     pix::Image img(w, h);

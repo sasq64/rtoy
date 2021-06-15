@@ -5,6 +5,9 @@
 # the method
 #
 
+class TweenError < StandardError
+end
+
 def by_elem(a, b, method)
     [a, b].transpose.map {|x| x.reduce(method)}
 end
@@ -107,8 +110,6 @@ class TweenTarget
         delta = 1.0 if delta > 1.0
         if delta >= 0
             d = TweenFunc.send @func, delta
-            p @obj
-            p @method
             if @from.nil?
                 @obj.send @method,d
             elsif @from.kind_of? Array
@@ -129,6 +130,8 @@ end
 class Tween
     @@tweens = []
 
+    LEGALS = [ :obj, :method, :func, :seconds, :steps ]
+    REQUIRED = [ :obj, :method, :seconds, :from, :to ]
 
     def initialize(o = nil, m = nil, obj:nil, method:nil, on_done: nil,
                    seconds:nil, &block)
@@ -144,7 +147,6 @@ class Tween
     end
 
     def target(**kwargs)
-        p kwargs
 
         r = {
             obj: @obj,
@@ -154,25 +156,7 @@ class Tween
             steps: 0
         }
 
-        # m = nil
-        # o = nil
-        # from = nil
-        # to = nil
-        # func = :linear
-        # args.each do |arg|
-        #     if Symbol === arg && TweenFunc.respond_to?(arg)
-        #         func = arg
-        #     elsif o == nil
-        #         o = arg
-        #     elsif m = nil
-        #         m = arg
-        #     end
-        # end
-        # obj ||= o
-        # method ||= m
-
         kwargs.each do |key,val|
-            #p key
             case key
             when :to_rot
                 r[:from] = r[:obj].rotation
@@ -211,11 +195,21 @@ class Tween
                 r[:method] = :alpha=
                 r[:obj].alpha = val
             else
-                r[key] = val
+                if LEGALS.include?(key)
+                    r[key] = val
+                else
+                    raise TweenError.new "Unknown key #{key}"
+                end
             end
         end
 
-        p r
+        REQUIRED.each { |x|
+            raise TweenError.new "Missing attribute :#{x} for tween" unless r[x] 
+        }
+
+        raise TweenError.new "Unknown easing :#{r[:func]}" unless 
+            Symbol === r[:func] && TweenFunc.respond_to?(r[:func])
+
         @targets.append TweenTarget.new(
             r[:obj], r[:method], r[:from], r[:to],
             r[:seconds], r[:steps], r[:func])
