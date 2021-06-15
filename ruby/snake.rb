@@ -2,7 +2,7 @@
 
 ### SNAKE
 
-#include OS
+#extend OS
 
 APPLE = '⬤'
 WIDTH = 40

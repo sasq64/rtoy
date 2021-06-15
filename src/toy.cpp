@@ -74,16 +74,6 @@ void Toy::init()
     RTimer::reg_class(ruby);
 
     mrb_define_module_function(
-        ruby, ruby->kernel_module, "exec",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [source] = mrb::get_args<std::string>(mrb);
-            fmt::print("Load string {}\n", source.length());
-            to_run = source;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto n = mrb_get_argc(mrb);
@@ -116,38 +106,6 @@ void Toy::init()
           auto [what] = mrb::get_args<bool>(mrb);
           assert(what);
           return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "load",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [name] = mrb::get_args<std::string>(mrb);
-            fmt::print("Loading {}\n", name);
-            FILE* fp = fopen(name.c_str(), "rbe");
-                    auto* ctx = mrbc_context_new(mrb);
-                    ctx->capture_errors = true;
-                    mrbc_filename(mrb, ctx, name.c_str());
-                    ctx->lineno = 1;
-            mrb_load_file_cxt(mrb, fp, ctx);
-            mrbc_context_free(mrb, ctx);
-            if (fp != nullptr) {
-            /*     // mrb_load_file(mrb, fp); */
-            /*     fseek(fp, 0, SEEK_END); */
-            /*     auto sz = ftell(fp); */
-            /*     fseek(fp, 0, SEEK_SET); */
-            /*     std::string s; */
-            /*     s.resize(sz + 1); */
-            /*     fread(s.data(), sz, 1, fp); */
-            /*     s[sz] = 0; */
-            /*     fclose(fp); */
-            /*     exec(mrb, s); */
-                if (auto err = mrb::check_exception(mrb)) {
-                    fmt::print("LOAD Error: {}\n", *err);
-                    exit(1);
-                }
-            }
-            return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
 
@@ -208,69 +166,6 @@ void Toy::init()
         MRB_ARGS_REQ(1));
 }
 
-void Toy::exec(mrb_state* mrb, std::string const& code)
-{
-    // auto* cxt = mrbc_context_new(mrb);
-    // cxt->capture_errors = TRUE;
-    // cxt->lineno = 1;
-    auto ai = mrb_gc_arena_save(mrb);
-    auto* parser = mrb_parser_new(mrb);
-    if (parser == nullptr) {
-        fputs("create parser state error\n", stderr);
-        return;
-    }
-    parser->s = code.c_str();
-    parser->send = code.c_str() + code.length();
-    parser->lineno = 1;
-    mrbc_context* cxt = nullptr;
-    mrb_parser_parse(parser, cxt);
-    if (parser->nwarn > 0) {
-        char* msg = mrb_locale_from_utf8(parser->warn_buffer[0].message, -1);
-        printf("line %d: %s\n", parser->warn_buffer[0].lineno, msg);
-        mrb_locale_free(msg);
-        return;
-    }
-    if (parser->nerr > 0) {
-        char* msg = mrb_locale_from_utf8(parser->error_buffer[0].message, -1);
-        printf("line %d: %s\n", parser->error_buffer[0].lineno, msg);
-        mrb_locale_free(msg);
-        return;
-    }
-    struct RProc* proc = mrb_generate_code(mrb, parser);
-    mrb_parser_free(parser);
-    if (proc == nullptr) { return; }
-
-    if (mrb->c->cibase->u.env != nullptr) {
-        struct REnv* e = mrb_vm_ci_env(mrb->c->cibase);
-        if ((e != nullptr) && MRB_ENV_LEN(e) < proc->body.irep->nlocals) {
-            printf("MODIFY\n");
-            MRB_ENV_SET_LEN(e, proc->body.irep->nlocals);
-        }
-    }
-
-    struct RClass* target = mrb->object_class;
-    MRB_PROC_SET_TARGET_CLASS(proc, target);
-    if (mrb->c->ci != nullptr) { mrb_vm_ci_target_class_set(mrb->c->ci, target); }
-
-    unsigned stack_keep = 0;
-
-    auto result = mrb_top_run(mrb, proc, mrb_top_self(mrb), stack_keep);
-    /* auto* e = mrb_vm_top_start(mrb, proc, mrb_top_self(mrb), stack_keep); */
-    /* auto* val = mrb_vm_run_cycles(mrb, e, 10); */
-    /* if(val == nullptr) { */
-    /*     val = mrb_vm_run_cycles(mrb, e, 0x7fffffff); */
-    /* } */
-    /* mrb_vm_end(mrb, e); */
-    if (mrb->exc != nullptr) {
-        fmt::print("EXCEPTION!\n");
-    } else {
-        *(mrb->c->ci->stack + 1) = result;
-    }
-
-    mrb_gc_arena_restore(mrb, ai);
-    // mrb_parser_free(parser);
-    // mrbc_context_free(mrb, cxt);
-}
 
 void Toy::destroy()
 {

@@ -24,7 +24,7 @@ void RSprite::update_tx()
     m = glm::translate(m, glm::vec3(-screen_width / 2.0 + trans[0],
                               screen_height / 2.0 - trans[1], 0));
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
-    m = glm::translate(m, glm::vec3(width/2, -height/2, 0));
+    m = glm::translate(m, glm::vec3(width/2 * scale[0], -height/2 *scale[1], 0));
     m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
                           static_cast<float>(height) * scale[1] / -2, 1.0));
     memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
@@ -52,11 +52,15 @@ void RSprites::render()
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
     // pix::set_transform(transform);
+    float last_alpha = -1;
     for (auto const& sprite : sprites) {
         sprite->texture.bind();
-        pix::set_colors((style.fg & 0xffffff00) |
-                            static_cast<uint32_t>(sprite->alpha * 255),
-            style.bg);
+        if(last_alpha != sprite->alpha) {
+            pix::set_colors((style.fg & 0xffffff00) |
+                                static_cast<uint32_t>(sprite->alpha * 255),
+                style.bg);
+            last_alpha = sprite->alpha;
+        }
         pix::set_transform(sprite->transform);
         pix::draw_quad_uvs(sprite->texture.uvs);
     }

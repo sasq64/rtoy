@@ -130,7 +130,7 @@ end
 class Tween
     @@tweens = []
 
-    LEGALS = [ :obj, :method, :func, :seconds, :steps ]
+    LEGALS = [ :obj, :method, :func, :seconds, :steps, :from, :to ]
     REQUIRED = [ :obj, :method, :seconds, :from, :to ]
 
     def initialize(o = nil, m = nil, obj:nil, method:nil, on_done: nil,

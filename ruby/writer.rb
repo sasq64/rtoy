@@ -1,3 +1,4 @@
+display.bg = 0
 clear
 font = Font.from_file('data/Ubuntu-B.ttf')
 text = %w(
@@ -9,21 +10,17 @@ text = %w(
 
 margin = 20
 pos = vec2(20,0)
-space = 30
+space = 80
 edge = display.width - margin
 
-sprites = text.map do |word|
-    img = font.render(word, 100)
+text.each do |word|
+    img = font.render(word, 200)
     if pos.x + img.width > edge
-        pos = vec2(margin, pos.y + 100)
+        pos = vec2(margin, pos.y + 200)
     end
     s = add_sprite(img).move(*pos)
     s.alpha = 0
     pos += [img.width + space, 0]
-    s
-end
-
-sprites.each do |s|
     tween(obj: s, seconds: 2.0).
       target(from_pos: vec2(display.width,800), func: :in_bounce).
       target(to_alpha: 1, func: :smooth_step).

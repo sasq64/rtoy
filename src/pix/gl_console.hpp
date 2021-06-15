@@ -34,6 +34,8 @@ struct GLConsole : public Console
     int tile_width = 0;
     int tile_height = 0;
 
+    std::vector<int> dirty;
+
     std::shared_ptr<TextureFont> font;
 
     bool is_wide(char32_t) const override;

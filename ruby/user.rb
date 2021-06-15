@@ -7,8 +7,11 @@
 # s.scale = 0.25
 #Display.default.on_draw { con.rotation += 0.04 }
 
+p "SELF :" + self.to_s
 
-def snake() run("ruby/snake.rb") end
+module User
+
+def self.snake() run("ruby/snake.rb") end
 def pong() run("ruby/pong.rb") end
 
 def tt()
@@ -78,3 +81,4 @@ def circle_tween()
                to: [500,500,250])
 end
 
+end

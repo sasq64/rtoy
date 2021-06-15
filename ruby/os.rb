@@ -186,6 +186,10 @@ module OS
     end
 
     def display() @@display end
+    def console() @@display.console end
+    def canvas() @@display.canvas end
+    def sprites() @@display.sprites end
+
     def load_image(*args) Image.from_file(*args) end
     def text(*args) @@display.console.text(*args) end
     def line(x, y, x2, y2) @@display.canvas.line(x, y, x2, y2) end
@@ -210,7 +214,8 @@ module OS
         Fiber.yield
     end
 
-    module_function :display, :text, :line, :scale, :offset, :add_sprite,
+    module_function :display, :console, :canvas, :sprites,
+        :text, :line, :scale, :offset, :add_sprite,
         :remove_sprite, :clear, :get_char, :circle
 
     @@cwd = "."
@@ -242,8 +247,9 @@ module OS
         f = Fiber.new do
             src = File.read(name)
             p "LOAD #{name}"
-            OS.instance_eval(src, name, 1)
-            #Kernel.load(name)
+            m = Module.new
+            m.send(:extend, OS)
+            m.instance_eval(src, name, 1)
         end
         while f.alive? do
             break if block_given? and yield
