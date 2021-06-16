@@ -202,6 +202,15 @@ module OS
     def clear()
         @@display.clear
     end
+
+    def self.returns(m)
+        case m
+        when :display Display
+        when :console Console
+        when :canvas Canvas
+        else nil
+        end
+    end
     
     
     def flush()

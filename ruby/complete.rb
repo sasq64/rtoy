@@ -8,6 +8,8 @@ module Complete
 #    @commands = ["ls", "cd", "cat"]
 #end
 
+# Return the longest common prefix from an array of strings;
+# ie ['aax', 'aap', 'aaa'] => 'aa'
 def longest_common_prefix(strs)
   return '' if strs.empty?
   min, max = strs.minmax
@@ -15,12 +17,7 @@ def longest_common_prefix(strs)
   min[0...idx]
 end
 
-
-def compl(str, alternatives)
-    matching = alternatives.select { |a| a.start_with?(str) }
-    longest_common_prefix(matching)
-end
-
+# 'Accept' the current completion and clear the current list
 def accept()
     @alternatives = nil
 end
@@ -29,8 +26,36 @@ def alternatives
     return @alternatives
 end
 
+# Split ie Class::method.other.last
+def split_reference(ref)
+    result = []
+    current = ''
+    last_t = false
+    ref.each_char do |c|
+        t = '.:'.include?(c) 
+        if t == last_t
+            current << c
+        else
+            result << current unless current.empty?
+            current = c
+            last_t = t
+        end
+    end
+    result << current unless current.empty?
+    result
+end
+
 
 # Complete `line` using current state
+# Algorithm:
+# * Scan backwards until start of expression is found.
+# * Split expression into symbols and separators.
+# * Check sym.return_type(:sym1), etc until we fail (no return type)
+#   or reach the end.
+# * If we didn't fail we have 'obj' + 'incomplete'
+# ex
+# Module::Class.method
+# method(arrgs..).
 def complete(full_line)
 
     p full_line
@@ -39,13 +64,13 @@ def complete(full_line)
     return "" if full_line.include?('"') or full_line.include?("'")
     
     # Scan backwards from line end until we found the start of the
-    # last 'symbol reference'; ie anyting consisting of symbols
+    # last 'symbol reference'; ie anything consisting of symbols
     # separated by dots or double colons
     i = full_line.size-1
     while i >= 0
         c = full_line[i]
         if ('a'..'z') === c or ('A'..'Z') === c or
-           ('0'..'9') === c or '.$@_<>=:'.include?(c)
+           ('0'..'9') === c or '.$@_:'.include?(c)
             i -= 1
             next
         end
@@ -62,7 +87,6 @@ def complete(full_line)
     # line is what we want to complete
     line = full_line[i+1..-1]
 
-
     p "LINE:" + line
     p "PREF:" + prefix
 
@@ -70,37 +94,24 @@ def complete(full_line)
         @alternatives = list_files()
     end
 
-
-    # Scan backwards again to see if we have a complete object
-    # reference that we should evaluate. If we do, it goes into
-    # `objname`.
-    # `incomplete` is the string we should complete, and is either
-    # a member of `objname` or a "global".
-    i = line.length-1
-    while i > 0
-        break if line[i] == '.' or line[i] == ':'
-        i -= 1
-    end
-    if i != 0 
-        incomplete = line[i+1..]
-        first = line[0..i]
-        while i > 0
-            break if line[i] != '.' and line[i] != ':'
-            i -= 1
-        end
-        objname = line[0..i]
-    else
-        objname = ''
-        first = ''
-        incomplete = line
+    parts = split_reference(line)
+    incomplete = parts.last
+    objname = nil
+    first = ''
+    p parts
+    if parts.size > 2
+        objname = parts[0]
+        first = parts[0..-2].join
     end
 
+    parts.each do |p|
+    end
 
 
     p "FIRST:" + first
-    p "OBJ:" + objname
+    p "OBJ:" + (objname ? objname : '')
     p "INCOMPLETE:" + incomplete
-    obj = i == 0 ? nil : eval(objname)
+    obj = objname ? eval(objname) : nil
     p obj
 
     if @alternatives.nil?
@@ -140,7 +151,7 @@ def complete(full_line)
         $ano += 1
     end
 
-    @alternatives.sort
+    @alternatives.sort!
 
     p @alternatives
 

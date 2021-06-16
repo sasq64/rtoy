@@ -19,9 +19,14 @@ class TestCompleter < MiniTest::Test
 
     include Complete
 
+    def test_split
+        s = split_reference 'Hello::method.more.go'
+        p s
+    end
+
     def test_operators
         accept()
-        l = complete('MyCoolClass.<')
+        #l = complete('MyCoolClass.<')
     end
 
     def test_simple_completion
