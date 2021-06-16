@@ -10,13 +10,14 @@ text = %w(
 
 margin = 20
 pos = vec2(20,0)
-space = 80
 edge = display.width - margin
+size = 40
+space = size/3
 
 text.each do |word|
-    img = font.render(word, 200)
+    img = font.render(word, size)
     if pos.x + img.width > edge
-        pos = vec2(margin, pos.y + 200)
+        pos = vec2(margin, pos.y + size)
     end
     s = add_sprite(img).move(*pos)
     s.alpha = 0

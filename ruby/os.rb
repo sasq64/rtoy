@@ -37,6 +37,39 @@ class Vec2
     end
 end
 
+class Sprites
+    def self.returns(s)
+        case s
+        when :add_sprite
+            Sprite
+        else
+            nil
+        end
+    end
+end
+
+class Canvas
+    def self.returns(s)
+        case s
+        when :font
+            Font
+        else
+            nil
+        end
+    end
+end
+
+class Font
+    def self.returns(s)
+        case s
+        when :render
+            Image
+        else
+            nil
+        end
+    end
+end
+
 class Sprite
     def pos=(v)
         a = v.to_a
@@ -44,6 +77,15 @@ class Sprite
     end
     def pos()
         Vec2.new(x, y)
+    end
+
+    def self.returns(s)
+        case s
+        when :img
+            Image
+        else
+            nil
+        end
     end
 end
 
@@ -61,6 +103,22 @@ class Display
     def size
         Vec2.new(width, height)
     end
+
+    def self.returns(s)
+        case s
+        when :canvas
+            Canvas
+        when :sprites
+            Sprites
+        when :console
+            Console
+        else
+            nil
+        end
+    end
+    #def returns(s)
+    #    Dispaly.returns(s)
+    #end
 end
 
 module OS
@@ -203,7 +261,7 @@ module OS
         @@display.clear
     end
 
-    def returns(m)
+    def self.returns(m)
         case m
         when :display
             Display
@@ -211,10 +269,11 @@ module OS
             Console
         when :canvas
             Canvas
+        when :sprites
+            Sprites
         else nil
         end
     end
-    module_function :returns
     
     
     def flush()

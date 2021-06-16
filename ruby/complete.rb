@@ -70,7 +70,7 @@ def complete(full_line, this = nil)
     while i >= 0
         c = full_line[i]
         if ('a'..'z') === c or ('A'..'Z') === c or
-           ('0'..'9') === c or '.$@_:'.include?(c)
+           ('0'..'9') === c or '.$@_:?!='.include?(c)
             i -= 1
             next
         end
@@ -99,6 +99,11 @@ def complete(full_line, this = nil)
     # Now we have 'sym', sep, 'sym', sep, 'sym' ...
 
     p "PARTS " + parts.to_s
+
+    if parts.last == '.' || parts.last == '::'
+        parts << ''
+    end
+
     incomplete = parts.pop
     obj = nil
     first = parts.join
@@ -112,7 +117,7 @@ def complete(full_line, this = nil)
             # last sep was '.', this part is a method,
             # lets see if we can figure out what it returns
             p obj.class
-            if obj.instance_methods.include?(:returns)
+            if obj.methods.include?(:returns)
                 p ">> #{obj} from #{p.to_s}"
                 obj = obj.returns(p.to_sym)
                 return "" unless obj
@@ -164,7 +169,8 @@ def complete(full_line, this = nil)
         end
 
         $ano = 0
-        @alternatives = full_list.select { |a| a.start_with?(incomplete) }
+        @alternatives = full_list.select { |a| a.start_with?(incomplete) &&
+                                           !'<=>+[_!`'.include?(a[0]) }
         if @alternatives.empty?
             @alternatives = full_list.select { |a| a.include?(incomplete) }
             return "" if @alternatives.empty?
