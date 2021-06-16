@@ -4,9 +4,9 @@ module Complete
 
 @alternatives = nil
 
-def initialize
-    @commands = ["ls", "cd", "cat"]
-end
+#def initialize
+#    @commands = ["ls", "cd", "cat"]
+#end
 
 def longest_common_prefix(strs)
   return '' if strs.empty?
@@ -22,8 +22,11 @@ def compl(str, alternatives)
 end
 
 def accept()
-    p "ACCEPT"
     @alternatives = nil
+end
+
+def alternatives
+    return @alternatives
 end
 
 
@@ -42,7 +45,7 @@ def complete(full_line)
     while i >= 0
         c = full_line[i]
         if ('a'..'z') === c or ('A'..'Z') === c or
-           ('0'..'9') === c or '.$@_:'.include?(c)
+           ('0'..'9') === c or '.$@_<>=:'.include?(c)
             i -= 1
             next
         end
@@ -106,15 +109,11 @@ def complete(full_line)
                 full_list = global_variables().map(&:to_s)
             elsif incomplete[0] >= 'A' && incomplete[0] <= 'Z'
                 full_list = []
-                ObjectSpace.each_object(Class) { |o|
-                    s = o.to_s
-                    full_list.append(s) if s[0] != '#'
-                }
                 ObjectSpace.each_object(Module) { |o|
                     s = o.to_s
-                    full_list.append(s) if s[0] != '#'
+                    full_list.append(s) if s[0] != '#' && !s.include?(':')
                 }
-                p full_list
+                #p full_list
             else
                 full_list = self.public_methods().map(&:to_s)
             end
@@ -123,7 +122,6 @@ def complete(full_line)
             if obj.class == Module
                 full_list += obj.send("constants").map(&:to_s)
             end
-            p full_list
         end
 
         $ano = 0
@@ -141,6 +139,10 @@ def complete(full_line)
         result = @alternatives[$ano % @alternatives.size]
         $ano += 1
     end
+
+    @alternatives.sort
+
+    p @alternatives
 
     return prefix + (obj ? first : "") + result
 
