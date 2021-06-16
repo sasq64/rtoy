@@ -2,6 +2,13 @@ require 'minitest/autorun'
 
 require_relative 'ruby/complete.rb'
 
+class MyCoolClass
+    def hey_people
+    end
+    def goodbye
+    end
+end
+
 module MyCoolModule
     class Sub
         def my_fun_method()
@@ -10,9 +17,21 @@ module MyCoolModule
 
     def self.my_mod_method()
     end
-end
 
-class MyCoolClass
+    def self.get_class
+        nil
+    end
+
+    def self.returns(s)
+        puts s
+        puts s.class
+        return MyCoolClass if s == :get_class
+        puts "FAIL"
+        return nil
+    end
+
+
+
 end
 
 class TestCompleter < MiniTest::Test
@@ -43,5 +62,12 @@ class TestCompleter < MiniTest::Test
         accept()
         l = complete(l + ".my")
         assert_equal l, "puts MyCoolModule.my_mod_method"
+        accept()
+        assert_equal "", complete(l + ".other")
+        accept()
+
+        assert_equal "puts MyCoolModule.get_class.hey_people",
+            complete("puts MyCoolModule.get_class.hey")
+
     end
 end

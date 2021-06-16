@@ -56,9 +56,9 @@ end
 # ex
 # Module::Class.method
 # method(arrgs..).
-def complete(full_line)
+def complete(full_line, this = nil)
 
-    p full_line
+    p "  COMPLETE ###   :" +full_line
 
     # We can't handle strings so lets not even try
     return "" if full_line.include?('"') or full_line.include?("'")
@@ -95,24 +95,47 @@ def complete(full_line)
     end
 
     parts = split_reference(line)
-    incomplete = parts.last
-    objname = nil
-    first = ''
-    p parts
-    if parts.size > 2
-        objname = parts[0]
-        first = parts[0..-2].join
-    end
 
+    # Now we have 'sym', sep, 'sym', sep, 'sym' ...
+
+    p "PARTS " + parts.to_s
+    incomplete = parts.pop
+    obj = nil
+    first = parts.join
+    is_instance = !obj.nil?
+
+    # Figure out our target object by iterating
+    # over the symbols
     parts.each do |p|
+        next if p == '.' || p == '::'
+        if obj
+            # last sep was '.', this part is a method,
+            # lets see if we can figure out what it returns
+            p obj.class
+            if obj.instance_methods.include?(:returns)
+                p ">> #{obj} from #{p.to_s}"
+                obj = obj.returns(p.to_sym)
+                return "" unless obj
+                is_instance = true
+            else
+                # We cant figure out what this returns
+                return "";
+            end
+        else
+            if p[0] == p[0].upcase
+                obj = eval('::' + p)
+            else
+                obj = this
+            end
+        end
     end
 
 
     p "FIRST:" + first
-    p "OBJ:" + (objname ? objname : '')
     p "INCOMPLETE:" + incomplete
-    obj = objname ? eval(objname) : nil
-    p obj
+    p "OBJ:" + (obj ? obj.to_s : "nil")
+
+
 
     if @alternatives.nil?
         if obj.nil?
@@ -124,15 +147,20 @@ def complete(full_line)
                     s = o.to_s
                     full_list.append(s) if s[0] != '#' && !s.include?(':')
                 }
-                #p full_list
+                #p full_list
             else
                 full_list = self.public_methods().map(&:to_s)
             end
         else
-            full_list = obj.send("public_methods", true).map(&:to_s)
+            if is_instance
+                full_list = obj.send("instance_methods").map(&:to_s)
+            else
+                full_list = obj.send("public_methods").map(&:to_s)
+            end
             if obj.class == Module
                 full_list += obj.send("constants").map(&:to_s)
             end
+            p full_list
         end
 
         $ano = 0

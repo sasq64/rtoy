@@ -84,7 +84,7 @@ class LineReader
             history_up()
         when Key::TAB
             unless @line.empty?
-                l = complete(@line.pack('U*'))
+                l = complete(@line.pack('U*'), OS)
                 unless l.empty?
                     @line = l.unpack('U*')
                     @pos = @line.length

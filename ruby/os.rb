@@ -203,14 +203,18 @@ module OS
         @@display.clear
     end
 
-    def self.returns(m)
+    def returns(m)
         case m
-        when :display Display
-        when :console Console
-        when :canvas Canvas
+        when :display
+            Display
+        when :console
+            Console
+        when :canvas
+            Canvas
         else nil
         end
     end
+    module_function :returns
     
     
     def flush()
