@@ -57,7 +57,7 @@ def complete_file(fn)
     n = longest_common_prefix(files)
     p "GOT " + n
     return n if n.empty?
-    '"' + n + '"'
+    File.exist?(n) ? '"' + n + '"' : n
 end
 
 
@@ -141,9 +141,9 @@ def complete(full_line, this = nil)
             # last sep was '.', this part is a method,
             # lets see if we can figure out what it returns
             p obj.class
-            if obj.methods.include?(:returns)
+            if obj.methods.include?(:get_return_type)
                 p ">> #{obj} from #{p.to_s}"
-                obj = obj.returns(p.to_sym)
+                obj = obj.get_return_type(p.to_sym)
                 return "" unless obj
                 is_instance = true
             else
@@ -159,12 +159,9 @@ def complete(full_line, this = nil)
         end
     end
 
-
     p "FIRST:" + first
     p "INCOMPLETE:" + incomplete
     p "OBJ:" + (obj ? obj.to_s : "nil")
-
-
 
     if @alternatives.nil?
         if obj.nil?

@@ -1,6 +1,21 @@
 
 require 'tween.rb'
 
+module Ret
+    @@return_types = {}
+
+    def returns(type, meth)
+        p "RET Method #{meth}, type #{type}"
+        @@return_types[meth] = type
+    end
+
+    def get_return_type(method)
+        type = @@return_types[method]
+        p ">> RET for #{method} is #{type}"
+        type
+    end
+end
+
 class Vec2
     def initialize(x, y = nil)
         @data = [x,y]
@@ -38,39 +53,23 @@ class Vec2
 end
 
 class Sprites
-    def self.returns(s)
-        case s
-        when :add_sprite
-            Sprite
-        else
-            nil
-        end
-    end
+    extend Ret
+    returns Sprite, :add_sprite
 end
 
 class Canvas
-    def self.returns(s)
-        case s
-        when :font
-            Font
-        else
-            nil
-        end
-    end
+    extend Ret
+    returns Font, :font
 end
 
 class Font
-    def self.returns(s)
-        case s
-        when :render
-            Image
-        else
-            nil
-        end
-    end
+    extend Ret
+    returns Image, :render
 end
 
 class Sprite
+    extend Ret
+
     def pos=(v)
         a = v.to_a
         move(a[0], a[1])
@@ -79,14 +78,7 @@ class Sprite
         Vec2.new(x, y)
     end
 
-    def self.returns(s)
-        case s
-        when :img
-            Image
-        else
-            nil
-        end
-    end
+    returns Image,:img
 end
 
 class Layer
@@ -104,7 +96,7 @@ class Display
         Vec2.new(width, height)
     end
 
-    def self.returns(s)
+    def self.get_return_type(s)
         case s
         when :canvas
             Canvas
@@ -116,12 +108,11 @@ class Display
             nil
         end
     end
-    #def returns(s)
-    #    Dispaly.returns(s)
-    #end
 end
 
 module OS
+
+    extend Ret
 
     @@display = Display.default
     @@boot_fiber = nil
@@ -243,39 +234,31 @@ module OS
         p "HANDLERS DONE"
     end
 
+    returns Display,
     def display() @@display end
+    returns Console,
     def console() @@display.console end
+    returns Canvas,
     def canvas() @@display.canvas end
+    returns Sprites,
     def sprites() @@display.sprites end
 
+    returns Image,
     def load_image(*args) Image.from_file(*args) end
+
     def text(*args) @@display.console.text(*args) end
     def line(x, y, x2, y2) @@display.canvas.line(x, y, x2, y2) end
     def circle(x, y, r) @@display.canvas.circle(x, y, r) end
     def get_char(x, y) @@display.console.get_char(x, y) end
     def scale(x, y = x) @@display.console.scale = [x,y] end
     def offset(x, y) @@display.console.offset(x,y) end
+    returns Sprite,
     def add_sprite(img) @@display.sprites.add_sprite(img) end
     def remove_sprite(spr) @@display.sprites.remove_sprite(spr) end
     def clear()
         @@display.clear
     end
 
-    def self.returns(m)
-        case m
-        when :display
-            Display
-        when :console
-            Console
-        when :canvas
-            Canvas
-        when :sprites
-            Sprites
-        else nil
-        end
-    end
-    
-    
     def flush()
         raise "Can't flush() in callback handlers" if @@handlers.in_callbacks
         Fiber.yield
