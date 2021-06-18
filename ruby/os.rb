@@ -92,22 +92,14 @@ class Layer
 end
 
 class Display
+    extend Ret
     def size
         Vec2.new(width, height)
     end
 
-    def self.get_return_type(s)
-        case s
-        when :canvas
-            Canvas
-        when :sprites
-            Sprites
-        when :console
-            Console
-        else
-            nil
-        end
-    end
+    returns Canvas, :canvas
+    returns Sprites, :sprites
+    returns Console, :console
 end
 
 module OS

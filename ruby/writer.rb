@@ -11,7 +11,7 @@ text = %w(
 margin = 20
 pos = vec2(20,0)
 edge = display.width - margin
-size = 40
+size = 100
 space = size/3
 
 text.each do |word|
