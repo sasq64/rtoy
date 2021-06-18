@@ -103,9 +103,9 @@ void Toy::init()
     mrb_define_module_function(
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-          auto [what] = mrb::get_args<bool>(mrb);
-          assert(what);
-          return mrb_nil_value();
+            auto [what] = mrb::get_args<bool>(mrb);
+            assert(what);
+            return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
 
@@ -155,17 +155,18 @@ void Toy::init()
             auto dir = fs::path(ds);
             auto parent = fs::canonical(root_path / dir);
             std::vector<std::string> files;
-            for (auto&& p : fs::directory_iterator(parent)) {
-                auto real_path = dir == "." ? p.path().filename()
-                                            : dir / p.path().filename();
-                fmt::print("{}/{}\n", p.path().string(), real_path.string());
-                files.emplace_back(real_path);
+            if (fs::is_directory(parent)) {
+                for (auto&& p : fs::directory_iterator(parent)) {
+                    auto real_path = dir == "." ? p.path().filename()
+                                                : dir / p.path().filename();
+                    fmt::print("{}\n", real_path.string());
+                    files.emplace_back(real_path);
+                }
             }
             return mrb::to_value(files, mrb);
         },
         MRB_ARGS_REQ(1));
 }
-
 
 void Toy::destroy()
 {
@@ -194,7 +195,7 @@ bool Toy::render_loop()
         display->console->clear();
         display->console->console->text(0, 0, e.text);
         int y = 2;
-        for(auto& bt : e.backtrace) {
+        for (auto& bt : e.backtrace) {
             display->console->console->text(2, y++, bt);
         }
     }

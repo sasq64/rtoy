@@ -1,5 +1,4 @@
 
-
 module Complete
 
 @alternatives = nil
@@ -45,6 +44,22 @@ def split_reference(ref)
     result
 end
 
+def complete_file(fn)
+    fn.delete!('"')
+    p fn
+    parts = fn.split('/')
+    last = parts.pop
+    p last
+    d = parts.empty? ? '.' : parts.join('/')
+    files = list_files(d).select do |f|
+        f.start_with?(fn)
+    end
+    n = longest_common_prefix(files)
+    p "GOT " + n
+    return n if n.empty?
+    '"' + n + '"'
+end
+
 
 # Complete `line` using current state
 # Algorithm:
@@ -59,6 +74,15 @@ end
 def complete(full_line, this = nil)
 
     p "  COMPLETE ###   :" +full_line
+
+    parts = full_line.split
+    if parts.first == 'ls' || parts.first == 'edit' || parts.first == 'run'
+        return "" if parts.size < 2
+        x = complete_file(parts[1])
+        parts[1] = x unless x.empty?
+        return parts.join(' ')
+    end
+
 
     # We can't handle strings so lets not even try
     return "" if full_line.include?('"') or full_line.include?("'")

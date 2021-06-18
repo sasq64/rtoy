@@ -1,5 +1,10 @@
 require 'minitest/autorun'
 
+def list_files(s)
+    Dir.entries(s)
+end
+
+#require_relative 'ruby/os.rb'
 require_relative 'ruby/complete.rb'
 
 class MyCoolClass
@@ -37,6 +42,15 @@ end
 class TestCompleter < MiniTest::Test
 
     include Complete
+
+    def test_filename
+        f = complete_file('ru')
+        assert_equal '"ruby"', f
+        f = complete_file('ruby/r')
+        assert_equal '"ruby/re"', f
+        f = complete_file('ruby/co')
+        assert_equal '"ruby/complete.rb"', f
+    end
 
     def test_split
         s = split_reference 'Hello::method.more.go'
