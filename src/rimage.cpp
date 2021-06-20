@@ -15,7 +15,35 @@
 #include <array>
 #include <memory>
 
+#include <gif_load.h>
 #include <jpeg_decoder.h>
+
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+pix::Image load_gif(std::string const& name)
+{
+
+    auto sz = fs::file_size(name);
+    std::vector<uint8_t> data(sz);
+    FILE* fp = fopen(name.c_str(), "rbe");
+    fread(data.data(), 1, sz, fp);
+    fclose(fp);
+
+    GIF_Load(
+        data.data(), static_cast<long>(data.size()),
+        [](void* data, struct GIF_WHDR* h) { 
+            fmt::print("Found frame {}x{} at {},{} ({}x{}) {} colors\n",
+            h->frxd, h->fryd, h->frxo, h->fryo, h->xdim, h->ydim, h->clrs);
+            // TODO
+            // Create w*y RGBA image, copy pixels
+            // Needs to return array of images or take a block
+            //
+        },
+        nullptr, nullptr, 0L);
+    return pix::Image{};
+}
 
 mrb_data_type RImage::dt{
     "Image", [](mrb_state*, void* data) { delete static_cast<RImage*>(data); }};
@@ -30,7 +58,13 @@ void RImage::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             const char* name{};
             mrb_get_args(mrb, "z", &name);
-            auto img = pix::load_png(name);
+            fs::path p = name;
+            pix::Image img;
+            if (p.extension() == ".gif") {
+                img = load_gif(name);
+            } else {
+                img = pix::load_png(name);
+            }
             if (img.ptr == nullptr) { return mrb_nil_value(); }
             auto* rimage = new RImage(img);
             return mrb::new_data_obj(mrb, rimage);
