@@ -17,6 +17,7 @@
 #include "rinput.hpp"
 #include "rsprites.hpp"
 #include "rtimer.hpp"
+#include "raudio.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -72,6 +73,8 @@ void Toy::init()
     RSprites::reg_class(ruby);
     puts("RTimer");
     RTimer::reg_class(ruby);
+    puts("RAudio");
+    RAudio::reg_class(ruby);
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",

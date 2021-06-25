@@ -124,7 +124,7 @@ auto get_args(
     mrb_int n = 0;
     mrb_value* rest{};
     mrb_get_args(mrb, spec.data(), &std::get<A>(input)..., &rest, &n);
-    std::tuple<ARGS...> converted { static_cast<ARGS>(std::get<A>(input))... };
+    std::tuple<ARGS...> converted{static_cast<ARGS>(std::get<A>(input))...};
     if (n > 0) {
         for (int i = 0; i < n; i++) {
             restv->push_back(rest[i]);
@@ -202,10 +202,10 @@ TARGET to(mrb_value obj)
         return std::string_view(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
     } else if constexpr (std::is_same_v<TARGET, std::string>) {
         return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
-    } else if constexpr (std::is_floating_point_v<TARGET>) {
-        return mrb_float(obj);
-    } else if constexpr (std::is_integral_v<TARGET>) {
-        return mrb_fixnum(obj);
+    } else if constexpr (std::is_arithmetic_v<TARGET>) {
+        if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
+        if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
+        throw std::exception();
     } else {
         throw std::exception();
     }

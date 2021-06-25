@@ -4,21 +4,25 @@
 A ruby play & development environment inspired by the home computers of the 80s.
 
 
-## Prerequisites
+## Build for Linux/OSX
 
+#### Prerequisites
 make, cmake, ruby/rake, SDL2, OpenGL, glew, freetype
 
+#### Update submodules and build
 ```
 git submodule update --init
 make
 ```
+
+#### Run
 ```
 bulds/debug/toy
 ```
 
-### Emscripten
+## Build for Web (Emscripten)
 
-* Set up emsripten (https://emscripten.org/docs/getting_started/downloads.html)
+* Set up emscripten (https://emscripten.org/docs/getting_started/downloads.html)
 ```
 make emtoy
 ```

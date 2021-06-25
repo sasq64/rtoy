@@ -75,6 +75,7 @@ add_subdirectory(external/fmt)
 add_subdirectory(external/CLI11)
 add_subdirectory(external/coreutils)
 add_subdirectory(external/glm)
+add_subdirectory(external/doctest)
 #option(SKIP_PERFORMANCE_COMPARISON "" ON)
 #add_subdirectory(external/doctest)
 #add_subdirectory(external/cpp-httplib)
@@ -103,8 +104,18 @@ target_include_directories(pix PUBLIC src)
 #set(GL GLESv2)
 find_package(OpenGL)
 set(GL ${OPENGL_LIBRARIES} GLEW)
-target_link_libraries(pix PUBLIC SDL2 ${GL} Threads::Threads coreutils
-                                 ${SDL2_LIBRARIES} freetype)
+
+target_link_libraries(pix PUBLIC SDL2 ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES} freetype)
+
+set(RESAMPLE external/libresample)
+add_library(resample
+    ${RESAMPLE}/src/resample.c
+    ${RESAMPLE}/src/resamplesubs.c
+    ${RESAMPLE}/src/filterkit.c
+)
+target_include_directories(resample PRIVATE ${RESAMPLE}/include)
+
+
 
 ############## MAIN TARGET ###################################################
 
@@ -127,17 +138,22 @@ add_executable(${TARGET}
     src/rinput.cpp
     src/rtimer.cpp
     src/rfont.cpp
+    src/raudio.cpp
     src/pix/gl_console.cpp)
 target_include_directories(${TARGET} PUBLIC ${MRB_INC} external)
 target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)
 target_link_libraries(${TARGET} PRIVATE
     pix
     glm::glm
+    resample
     Threads::Threads
     CLI11::CLI11
     ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
     ${CMAKE_DL_LIBS}
     fmt::fmt)
+
+#add_executable(toytest src/tests/testmain.cpp src/tests/resample_test.cpp)
+#target_link_libraries(toytest PRIVATE fmt::fmt doctest::doctest resample)
 
 if(EMSCRIPTEN)
 

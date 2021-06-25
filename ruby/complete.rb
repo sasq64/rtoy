@@ -91,17 +91,18 @@ def complete(full_line, this = nil)
     # last 'symbol reference'; ie anything consisting of symbols
     # separated by dots or double colons
     i = full_line.size-1
+    paren = 0
     while i >= 0
         c = full_line[i]
-        if ('a'..'z') === c or ('A'..'Z') === c or
-           ('0'..'9') === c or '.$@_:?!='.include?(c)
-            i -= 1
-            next
+        if paren == 0
+            if ('a'..'z') === c or ('A'..'Z') === c or
+               ('0'..'9') === c or '.$@_:?!='.include?(c)
+                i -= 1
+                next
+            end
         end
-        if c == ')' and i > 0 and full_line[i-1] == '('
-            i -= 2
-            next
-        end
+        paren += 1 if c == ')' 
+        paren -= 1 if c == '(' 
         break
     end
     p "I:" + i.to_s

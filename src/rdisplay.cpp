@@ -35,7 +35,7 @@ Display::Display(mrb_state* state) : ruby(state), RLayer(0, 0)
     glm::mat4x4 m(1.0F);
     memcpy(Id.data(), glm::value_ptr(m), 16 * 4);
 
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
 #ifdef OSX
         w/2, h/2,
