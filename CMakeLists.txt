@@ -77,7 +77,6 @@ add_subdirectory(external/coreutils)
 add_subdirectory(external/glm)
 add_subdirectory(external/doctest)
 #option(SKIP_PERFORMANCE_COMPARISON "" ON)
-#add_subdirectory(external/doctest)
 #add_subdirectory(external/cpp-httplib)
 
 if(EMSCRIPTEN)
@@ -101,21 +100,19 @@ target_include_directories(
   PUBLIC ${SDL2_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} /usr/local/include/SDL2
   PRIVATE external/lodepng)
 target_include_directories(pix PUBLIC src)
-#set(GL GLESv2)
 find_package(OpenGL)
 set(GL ${OPENGL_LIBRARIES} GLEW)
 
-target_link_libraries(pix PUBLIC SDL2 ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES} freetype)
+target_link_libraries(
+    pix
+    PUBLIC SDL2 ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES} freetype)
 
-set(RESAMPLE external/libresample)
-add_library(resample
-    ${RESAMPLE}/src/resample.c
-    ${RESAMPLE}/src/resamplesubs.c
-    ${RESAMPLE}/src/filterkit.c
-)
-target_include_directories(resample PRIVATE ${RESAMPLE}/include)
-
-
+# set(RESAMPLE external/libresample)
+# add_library(resample
+#     ${RESAMPLE}/src/resample.c
+#     ${RESAMPLE}/src/resamplesubs.c
+#     ${RESAMPLE}/src/filterkit.c)
+# target_include_directories(resample PRIVATE ${RESAMPLE}/include)
 
 ############## MAIN TARGET ###################################################
 
@@ -145,7 +142,6 @@ target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)
 target_link_libraries(${TARGET} PRIVATE
     pix
     glm::glm
-    resample
     Threads::Threads
     CLI11::CLI11
     ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
@@ -156,7 +152,6 @@ target_link_libraries(${TARGET} PRIVATE
 #target_link_libraries(toytest PRIVATE fmt::fmt doctest::doctest resample)
 
 if(EMSCRIPTEN)
-
     target_link_options(toy.html PRIVATE "SHELL:-s MAX_WEBGL_VERSION=2")
     target_link_options(toy.html PRIVATE "SHELL:--preload-file ../../data@data")
     target_link_options(toy.html PRIVATE "SHELL:--preload-file ../../ruby@ruby")
@@ -165,3 +160,4 @@ if(EMSCRIPTEN)
 else()
     #add_dependencies(toy mruby)
 endif()
+

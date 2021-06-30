@@ -91,10 +91,9 @@ public:
         // fmt::print("{}->{}\n", delta, low);
         if (target != nullptr) { memset(target, 0, width * height * 4); }
         for (auto c : txt) {
-            /* load glyph image into the slot (erase previous one) */
             auto error = FT_Load_Char(face, c, FT_LOAD_RENDER);
             FT_GlyphSlot slot = face->glyph;
-            if (error) continue; /* ignore errors */
+            if (error) { continue; } /* ignore errors */
             // fmt::print("{}x{} pixels to y={}\n", slot->bitmap.width,
             // slot->bitmap.rows, delta - face->glyph->bitmap_top);
             if (target) {

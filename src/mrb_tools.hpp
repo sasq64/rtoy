@@ -266,6 +266,7 @@ mrb_data_type* get_data_type()
 {
     return &C::dt;
 }
+
 // Create a new instance of a data class `D`
 template <typename D>
 mrb_value new_data_obj(mrb_state* mrb, D* data)

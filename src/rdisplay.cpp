@@ -124,6 +124,20 @@ void Display::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
+        ruby, Display::rclass, "width",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            return mrb::to_value(display->width, mrb);
+        },
+        MRB_ARGS_NONE());
+    mrb_define_method(
+        ruby, Display::rclass, "height",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            return mrb::to_value(display->height, mrb);
+        },
+        MRB_ARGS_NONE());
+    mrb_define_method(
         ruby, Display::rclass, "on_draw",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);

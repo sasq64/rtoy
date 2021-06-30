@@ -1,7 +1,5 @@
 #pragma once
 
-#include <libresample.h>
-
 #include <array>
 #include <atomic>
 #include <fmt/format.h>
@@ -62,46 +60,4 @@ struct Ring
 
     // Available to read
     size_t available() const { return write_pos - read_pos; }
-};
-
-template <int SIZE>
-struct Resampler
-{
-    float targetHz;
-    float inputHz;
-    bool active = false;
-    void* r;
-    Ring<float, SIZE> fifo;
-    explicit Resampler(float hz = 22050) : targetHz(hz), inputHz(hz)
-    {
-        r = resample_open(1, 0.5, 40.0);
-        set_hz(hz);
-    }
-
-    void set_hz(float hz)
-    {
-        active = hz != targetHz;
-        inputHz = hz;
-    }
-
-    void write(float* samples, size_t size)
-    {
-        auto factor = targetHz / inputHz;
-        /* if (factor == 1.0F) { */
-        /*     fifo.write(samples, size); */
-        /*     return; */
-        /* } */
-
-        int used = 0;
-        fmt::print("Factor {}\n", factor);
-        std::array<float, 16384> target; // NOLINT
-        int count = resample_process(r, factor, samples, static_cast<int>(size),
-            0, &used, target.data(), target.size());
-        fmt::print("{} {}\n", count, used);
-        fifo.write(target.data(), count);
-    }
-
-    size_t add(float* target, size_t n) { return fifo.add(target, n); }
-
-    size_t read(float* target, size_t n) { return fifo.read(target, n); }
 };
