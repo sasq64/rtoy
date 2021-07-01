@@ -235,6 +235,14 @@ module OS
     returns Sprites,
     def sprites() @@display.sprites end
 
+    returns Audio,
+    def audio() Audio.default end
+
+    def say(text)
+        sound = audio.speak(text)
+        audio.play(sound)
+    end
+
     returns Image,
     def load_image(*args) Image.from_file(*args) end
 

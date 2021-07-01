@@ -11,6 +11,7 @@ struct Sound
     static mrb_data_type dt;
 };
 
+
 class RAudio
 {
     struct Channel
@@ -45,7 +46,8 @@ class RAudio
     uint64_t sample_count = 0;
     Ring<float, 16384> out_buffer;
     std::array<Channel, 32> channels;
-
+    int next_channel = 0;
+    void* voice;
     void fill_audio(uint8_t* data, int len);
     void mix(size_t samples_len);
 

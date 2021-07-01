@@ -137,10 +137,15 @@ add_executable(${TARGET}
     src/rfont.cpp
     src/raudio.cpp
     src/pix/gl_console.cpp)
-target_include_directories(${TARGET} PUBLIC ${MRB_INC} external)
+target_include_directories(${TARGET} PUBLIC ${MRB_INC} external external/flite/include)
 target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)
+target_link_options(${TARGET} PRIVATE -L${PROJECT_SOURCE_DIR}/external/flite/build/x86_64-linux-gnu/lib)
 target_link_libraries(${TARGET} PRIVATE
     pix
+    flite_cmu_us_kal
+    flite_usenglish
+    flite_cmulex 
+    flite
     glm::glm
     Threads::Threads
     CLI11::CLI11

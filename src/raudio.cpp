@@ -2,8 +2,12 @@
 
 #include <SDL2/SDL_audio.h>
 
+#include <flite.h>
+
 #define DR_WAV_IMPLEMENTATION
 #include <dr_libs/dr_wav.h>
+
+extern "C" cst_voice* register_cmu_us_kal(const char* voxdir);
 
 mrb_data_type Sound::dt{
     "Sound", [](mrb_state*, void* ptr) { delete static_cast<Sound*>(ptr); }};
@@ -28,6 +32,9 @@ RAudio::RAudio(mrb_state* _ruby) : ruby{_ruby}
 
     fmt::print("Audio format {} {} vs {}\n", have.format, have.freq, dev);
     SDL_PauseAudioDevice(dev, 0);
+    flite_init();
+
+    voice = register_cmu_us_kal(nullptr);
 }
 
 // Pull 'count' samples from all channels into out buffer
@@ -90,12 +97,23 @@ void RAudio::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RAudio::rclass, "play",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* audio = mrb::self_to<RAudio>(self);
             Sound* sound{};
             mrb_float freq = 0;
             mrb_int chan = 0;
-            mrb_get_args(mrb, "idf", &chan, &sound, &Sound::dt, &freq);
+            auto n = mrb_get_argc(mrb);
+            if (n == 3) {
+                mrb_get_args(mrb, "idf", &chan, &sound, &Sound::dt, &freq);
+            } else if (n == 2) {
+                mrb_get_args(mrb, "id", &chan, &sound, &Sound::dt);
+                freq = sound->freq;
+            } else if (n == 1) {
+                mrb_get_args(mrb, "d", &sound, &Sound::dt);
+                freq = sound->freq;
+                chan = audio->next_channel;
+                audio->next_channel = (audio->next_channel + 2) % 32;
+            }
             fmt::print("chan {}, freq {}\n", chan, freq);
-            auto* audio = mrb::self_to<RAudio>(self);
             sound->freq = static_cast<float>(freq);
             audio->set_sound(chan, *sound);
             return mrb_nil_value();
@@ -153,10 +171,32 @@ void RAudio::reg_class(mrb_state* ruby)
             sound->freq = static_cast<float>(freq);
             sound->channels = channels;
             sound->data.resize(frames);
-            for(size_t i = 0; i < frames; i++) {
-                sound->data[i] = sample_data[i*2];
+            for (size_t i = 0; i < frames; i++) {
+                sound->data[i] = sample_data[i * 2];
             }
             drwav_free(sample_data, nullptr);
+            return mrb::new_data_obj(mrb, sound);
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RAudio::rclass, "speak",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [text] = mrb::get_args<std::string>(mrb);
+
+            auto* audio = mrb::self_to<RAudio>(self);
+            auto* wav = flite_text_to_wave(
+                text.c_str(), static_cast<cst_voice*>(audio->voice));
+            fmt::print("SPEECH {} {}\n", wav->num_samples, wav->sample_rate);
+
+            auto* sound = new Sound();
+            sound->freq = static_cast<float>(wav->sample_rate);
+            sound->channels = wav->num_channels;
+            sound->data.resize(wav->num_samples);
+            for (size_t i = 0; i < sound->data.size(); i++) {
+                sound->data[i] = static_cast<float>(wav->samples[i]) / 0x7fff;
+            }
+            delete_wave(wav);
             return mrb::new_data_obj(mrb, sound);
         },
         MRB_ARGS_REQ(1));
