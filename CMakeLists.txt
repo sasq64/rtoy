@@ -63,13 +63,13 @@ endif()
 set(MRB ${PROJECT_SOURCE_DIR}/external/mruby)
 set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/mruby/lib)
 set(MRB_INC ${MRB}/include)
-# add_custom_command(
-#     OUTPUT ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
-#     COMMAND MRUBY_CONFIG=${PROJECT_SOURCE_DIR}/mruby.cfg rake -f ${MRB}/Rakefile -j8)
 
+# add_custom_command(
+#  OUTPUT ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
+#  COMMAND
+#  MRUBY_CONFIG=${PROJECT_SOURCE_DIR}/mruby.cfg rake -f ${MRB}/Rakefile -j8)
 # add_custom_target(mruby ALL
 #     DEPENDS ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a mruby.cfg)
-
 
 add_subdirectory(external/fmt)
 add_subdirectory(external/CLI11)
@@ -79,48 +79,48 @@ add_subdirectory(external/doctest)
 #option(SKIP_PERFORMANCE_COMPARISON "" ON)
 #add_subdirectory(external/cpp-httplib)
 
-if(EMSCRIPTEN)
-    add_compile_options(-sUSE_FREETYPE=1)
-    add_compile_options(-sUSE_SDL=2)
-    add_compile_options(-sFETCH=1)
-    add_compile_options(-sERROR_ON_UNDEFINED_SYMBOLS=1)
-else()
+if(NOT EMSCRIPTEN)
     find_package(SDL2 REQUIRED)
     include(FindFreetype)
     find_package(Freetype REQUIRED)
+    find_package(OpenGL)
+    set(GL ${OPENGL_LIBRARIES} GLEW)
 endif()
 
 
 # Graphics
-add_library(pix STATIC src/pix/pix.cpp src/pix/font.cpp src/pix/texture_font.cpp
-        src/pix/tile_renderer.cpp
-    src/pix/gl_console.cpp external/lodepng/lodepng.cpp)
-target_include_directories(
-  pix
+add_library(pix STATIC
+    src/pix/pix.cpp 
+    src/pix/font.cpp
+    src/pix/texture_font.cpp
+    src/pix/tile_renderer.cpp
+    src/pix/gl_console.cpp
+    external/lodepng/lodepng.cpp)
+
+if(EMSCRIPTEN)
+    target_compile_options(pix PUBLIC -sUSE_FREETYPE=1)
+    target_compile_options(pix PUBLIC -sUSE_SDL=2)
+endif()
+
+target_include_directories(pix
   PUBLIC ${SDL2_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} /usr/local/include/SDL2
   PRIVATE external/lodepng)
 target_include_directories(pix PUBLIC src)
-find_package(OpenGL)
-set(GL ${OPENGL_LIBRARIES} GLEW)
 
-target_link_libraries(
-    pix
-    PUBLIC SDL2 ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES} freetype)
-
-# set(RESAMPLE external/libresample)
-# add_library(resample
-#     ${RESAMPLE}/src/resample.c
-#     ${RESAMPLE}/src/resamplesubs.c
-#     ${RESAMPLE}/src/filterkit.c)
-# target_include_directories(resample PRIVATE ${RESAMPLE}/include)
+target_link_libraries( pix PUBLIC
+    ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES} freetype)
 
 ############## MAIN TARGET ###################################################
 
 if(EMSCRIPTEN)
     set(TARGET toy.html)
     set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/embuild/lib)
+    set(FLITE_LIB
+        ${PROJECT_SOURCE_DIR}/external/flite/build/x86_64-emscripten)
 else()
     set(TARGET toy)
+    set(FLITE_LIB
+        ${PROJECT_SOURCE_DIR}/external/flite/build/x86_64-linux-gnu)
 endif()
 
 add_executable(${TARGET}
@@ -137,9 +137,10 @@ add_executable(${TARGET}
     src/rfont.cpp
     src/raudio.cpp
     src/pix/gl_console.cpp)
-target_include_directories(${TARGET} PUBLIC ${MRB_INC} external external/flite/include)
+target_include_directories(${TARGET} PUBLIC
+    ${MRB_INC} external external/flite/include)
 target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)
-target_link_options(${TARGET} PRIVATE -L${PROJECT_SOURCE_DIR}/external/flite/build/x86_64-linux-gnu/lib)
+target_link_options(${TARGET} PRIVATE -L${FLITE_LIB}/lib)
 target_link_libraries(${TARGET} PRIVATE
     pix
     flite_cmu_us_kal
@@ -158,11 +159,14 @@ target_link_libraries(${TARGET} PRIVATE
 
 if(EMSCRIPTEN)
     target_link_options(toy.html PRIVATE "SHELL:-s MAX_WEBGL_VERSION=2")
-    target_link_options(toy.html PRIVATE "SHELL:--preload-file ../../data@data")
-    target_link_options(toy.html PRIVATE "SHELL:--preload-file ../../ruby@ruby")
-    target_link_options(toy.html PRIVATE "SHELL:--preload-file ../../games@games")
+    target_link_options(toy.html PRIVATE
+        "SHELL:--preload-file ../../data@data")
+    target_link_options(toy.html PRIVATE
+        "SHELL:--preload-file ../../ruby@ruby")
+    target_link_options(toy.html PRIVATE
+        "SHELL:--preload-file ../../games@games")
+    target_link_options(toy.html PRIVATE "-sUSE_SDL=2") 
     target_link_options(toy.html PRIVATE "-sFETCH=1")
-else()
-    #add_dependencies(toy mruby)
+    target_link_options(toy.html PRIVATE -sERROR_ON_UNDEFINED_SYMBOLS=1)
 endif()
 
