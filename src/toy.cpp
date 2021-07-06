@@ -9,6 +9,8 @@
 
 #include "error.hpp"
 #include "mrb_tools.hpp"
+#include "raudio.hpp"
+#include "rspeech.hpp"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
 #include "rdisplay.hpp"
@@ -17,7 +19,6 @@
 #include "rinput.hpp"
 #include "rsprites.hpp"
 #include "rtimer.hpp"
-#include "raudio.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -75,6 +76,8 @@ void Toy::init()
     RTimer::reg_class(ruby);
     puts("RAudio");
     RAudio::reg_class(ruby);
+    puts("RSpeech");
+    RSpeech::reg_class(ruby);
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",
@@ -99,6 +102,15 @@ void Toy::init()
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [text] = mrb::get_args<std::string>(mrb);
             Display::default_display->console->text(text);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_module_function(
+        ruby, ruby->kernel_module, "repl_eval",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            auto [code] = mrb::get_args<std::string>(mrb);
+            Toy::exec(mrb, code);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -169,6 +181,44 @@ void Toy::init()
             return mrb::to_value(files, mrb);
         },
         MRB_ARGS_REQ(1));
+}
+
+void Toy::exec(mrb_state* mrb, std::string const& code)
+{
+    auto* ctx = mrbc_context_new(mrb);
+    ctx->capture_errors = TRUE;
+    ctx->lineno = 1;
+
+    // auto ai = mrb_gc_arena_save(ruby);
+
+    auto* parser = mrb_parser_new(mrb);
+    if (parser == nullptr) { throw toy_exception("Can't create parser"); }
+
+    parser->s = code.c_str();
+    parser->send = code.c_str() + code.length();
+    parser->lineno = 1;
+    mrb_parser_parse(parser, ctx);
+
+    if (parser->nwarn > 0) {
+        char* msg = mrb_locale_from_utf8(parser->warn_buffer[0].message, -1);
+        printf("line %d: %s\n", parser->warn_buffer[0].lineno, msg);
+        mrb_locale_free(msg);
+        return;
+    }
+    if (parser->nerr > 0) {
+        char* msg = mrb_locale_from_utf8(parser->error_buffer[0].message, -1);
+        printf("line %d: %s\n", parser->error_buffer[0].lineno, msg);
+        mrb_locale_free(msg);
+        return;
+    }
+    struct RProc* proc = mrb_generate_code(mrb, parser);
+    mrb_parser_free(parser);
+    if (proc == nullptr) { throw toy_exception("Can't generate code"); }
+    //struct RClass* target = mrb->object_class;
+    //MRB_PROC_SET_TARGET_CLASS(proc, target);
+    auto result = mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
+    //stack_keep = proc->body.irep->nlocals;
+    // mrb_gc_arena_restore(ruby, ai);
 }
 
 void Toy::destroy()

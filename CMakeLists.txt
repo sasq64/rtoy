@@ -87,6 +87,10 @@ if(NOT EMSCRIPTEN)
     set(GL ${OPENGL_LIBRARIES} GLEW)
 endif()
 
+# set(MUS_LIB ${PROJECT_SOURCE_DIR}/../musicplayer)
+# add_library(music INTERFACE)
+# target_link_libraries(music INTERFACE ${MUS_LIB}/build/libmusix.a)
+# target_include_directories(music INTERFACE ${MUS_LIB})
 
 # Graphics
 add_library(pix STATIC
@@ -136,6 +140,7 @@ add_executable(${TARGET}
     src/rtimer.cpp
     src/rfont.cpp
     src/raudio.cpp
+    src/rspeech.cpp
     src/pix/gl_console.cpp)
 target_include_directories(${TARGET} PUBLIC
     ${MRB_INC} external external/flite/include)
@@ -143,6 +148,7 @@ target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)
 target_link_options(${TARGET} PRIVATE -L${FLITE_LIB}/lib)
 target_link_libraries(${TARGET} PRIVATE
     pix
+    #music
     flite_cmu_us_kal
     flite_usenglish
     flite_cmulex 

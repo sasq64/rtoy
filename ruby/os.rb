@@ -239,7 +239,7 @@ module OS
     def audio() Audio.default end
 
     def say(text)
-        sound = audio.speak(text)
+        sound = Speech.default.text_to_sound(text)
         audio.play(sound)
     end
 
