@@ -3,10 +3,46 @@ require 'tween.rb'
 
 module Ret
     @@return_types = {}
+    @@arg_types = {}
+    @@returns = nil
+    @@doc_string = nil
+    @@file_name = nil
+    @@takes_file = nil
 
-    def returns(type, meth)
-        p "RET Method #{meth}, type #{type}"
-        @@return_types[meth] = type
+    def method_added(name)
+        if @@doc_string
+            p "#{name}:\n#{@@doc_string}\n"
+            @@doc_string = nil
+        end
+        if @@returns
+            p "#{name} returns #{@@returns}"
+            @@return_types[name] = @@returns
+            @@returns = nil
+        end
+        if @@takes_file
+            @@arg_types[name] = :file
+            @@takes_file = nil
+        end
+    end
+
+    def doc(doc_string)
+        @@doc_string = doc_string
+    end
+
+    def returns(type, meth = nil)
+        if meth
+            @@return_types[meth] = type
+        else
+            @@returns = type
+        end
+    end
+
+    def takes_file
+        @@file_name = true
+    end
+
+    def takes_file?(method)
+        return @@arg_types[method] == :file
     end
 
     def get_return_type(method)
@@ -102,6 +138,11 @@ class Display
     returns Console, :console
 end
 
+class Audio
+    extend Ret
+    returns Sound, :load_wav
+end
+
 module OS
 
     extend Ret
@@ -154,6 +195,7 @@ module OS
 
     @@handlers = Handlers.new
 
+    doc "Handler that is called each time screen refreshes" 
     def on_draw(&block)
         @@handlers.add(:draw, block)
     end
@@ -226,24 +268,34 @@ module OS
         p "HANDLERS DONE"
     end
 
-    returns Display,
+    returns Display
     def display() @@display end
-    returns Console,
+
+    returns Console
     def console() @@display.console end
-    returns Canvas,
+
+    returns Canvas
     def canvas() @@display.canvas end
-    returns Sprites,
+
+    returns Sprites
     def sprites() @@display.sprites end
 
-    returns Audio,
+    returns Audio
     def audio() Audio.default end
+
+    returns Speech
+    def speech() Speech.default end
 
     def say(text)
         sound = Speech.default.text_to_sound(text)
         audio.play(sound)
     end
+    def play(sound, freq = nil)
+        audio.play(sound)
+    end
 
-    returns Image,
+    returns Image
+    takes_file 
     def load_image(*args) Image.from_file(*args) end
 
     def text(*args) @@display.console.text(*args) end
@@ -252,7 +304,8 @@ module OS
     def get_char(x, y) @@display.console.get_char(x, y) end
     def scale(x, y = x) @@display.console.scale = [x,y] end
     def offset(x, y) @@display.console.offset(x,y) end
-    returns Sprite,
+    
+    returns Sprite
     def add_sprite(img) @@display.sprites.add_sprite(img) end
     def remove_sprite(spr) @@display.sprites.remove_sprite(spr) end
     def clear()
@@ -269,7 +322,7 @@ module OS
         Fiber.yield
     end
 
-    module_function :display, :console, :canvas, :sprites,
+    module_function :display, :console, :canvas, :sprites, :audio,
         :text, :line, :scale, :offset, :add_sprite,
         :remove_sprite, :clear, :get_char, :circle
 

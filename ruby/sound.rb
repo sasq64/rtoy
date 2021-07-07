@@ -7,6 +7,7 @@ notes4 = (-9..3).map { |i| A[7] * (2**(i/12.0)) }
 puts notes4
 
 sound = Audio.load_wav("data/piano.wav")
+#sound = Speech.default.text_to_sound("Hello")
 
 channel = 0
 on_key { |key|

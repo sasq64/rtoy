@@ -6,12 +6,17 @@
 struct Sound
 {
     std::vector<float> data;
+    float const* channel(int n) const
+    {
+        size_t sz = data.size() / channels;
+        return &data[n * sz];
+    }
+    size_t frames() const { return data.size() / channels; }
     float freq = 0;
     unsigned channels = 1;
     static inline RClass* rclass;
     static mrb_data_type dt;
 };
-
 
 class RAudio
 {
@@ -55,7 +60,7 @@ public:
     static inline RClass* rclass;
     static inline mrb_data_type dt{"Audio", [](mrb_state*, void* data) {}};
 
-    void set_sound(int channel, Sound const& sound, bool loop = false);
+    void set_sound(int channel, Sound const& sound, float freq = 0, bool loop = false);
     void set_frequency(int channel, int hz);
 
     size_t available() const;

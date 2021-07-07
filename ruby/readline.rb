@@ -19,6 +19,7 @@ class LineReader
         @history = []
         @history_pos = 0
         @dirty = true
+        @last_len = 0
         @con = Display.default.console
     end
 
@@ -137,7 +138,11 @@ class LineReader
         @con.print(@line[0..@pos-1].pack('U*')) unless @pos == 0
         @con.print(@pos < @line.length ? @line[@pos].chr : ' ', -1, Color::ORANGE) 
         @con.print(@line[@pos+1..].pack('U*')) if @pos < @line.length-1
-        @con.print('   ')
+        if @last_len >= @line.length
+            @con.print(' ' * (@last_len - @line.length + 1))
+        end
+        @last_len = @line.length
+        #@con.print('   ')
     end
 
     def start()

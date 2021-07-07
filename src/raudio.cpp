@@ -23,8 +23,8 @@ RAudio::RAudio(mrb_state* _ruby) : ruby{_ruby}
         static_cast<RAudio*>(userdata)->fill_audio(stream, len);
     };
 
-    dev = SDL_OpenAudioDevice(
-        nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+    dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have,
+        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
 
     fmt::print("Audio format {} {} vs {}\n", have.format, have.freq, dev);
     SDL_PauseAudioDevice(dev, 0);
@@ -58,13 +58,19 @@ void RAudio::fill_audio(uint8_t* data, int bytes_len)
     // if (count < len) { memset(data + len - count, 0, len - count); }
 }
 
-void RAudio::set_sound(int channel, Sound const& sound, bool loop)
+void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)
 {
-    auto& chan = channels[channel];
-    chan.data = sound.data;
-    chan.loop = loop;
-    chan.pos = 0;
-    chan.step = sound.freq / 44100.F;
+    if (freq == 0) { freq = sound.freq; }
+    for (int i = 0; i < sound.channels; i++) {
+        auto& chan = channels[channel + i];
+        chan.data.resize(sound.frames());
+        const auto* ptr = sound.channel(i);
+        const auto* endp = ptr + sound.frames();
+        std::copy(ptr, endp, chan.data.begin());
+        chan.loop = loop;
+        chan.pos = 0;
+        chan.step = freq / 44100.F;
+    }
 }
 
 void RAudio::set_frequency(int channel, int hz)
@@ -97,6 +103,7 @@ void RAudio::reg_class(mrb_state* ruby)
             auto n = mrb_get_argc(mrb);
             if (n == 3) {
                 mrb_get_args(mrb, "idf", &chan, &sound, &Sound::dt, &freq);
+                freq = sound->freq + freq;
             } else if (n == 2) {
                 mrb_get_args(mrb, "id", &chan, &sound, &Sound::dt);
                 freq = sound->freq;
@@ -107,8 +114,7 @@ void RAudio::reg_class(mrb_state* ruby)
                 audio->next_channel = (audio->next_channel + 2) % 32;
             }
             fmt::print("chan {}, freq {}\n", chan, freq);
-            sound->freq = static_cast<float>(freq);
-            audio->set_sound(chan, *sound);
+            audio->set_sound(chan, *sound, static_cast<float>(freq));
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
@@ -158,14 +164,17 @@ void RAudio::reg_class(mrb_state* ruby)
                 // Error opening and reading WAV file.
                 return mrb_nil_value();
             }
-            fmt::print("Channels {}, freq {}\n", channels, freq);
+            fmt::print(
+                "Channels {}, freq {} frames {}\n", channels, freq, frames);
 
             auto* sound = new Sound();
             sound->freq = static_cast<float>(freq);
             sound->channels = channels;
-            sound->data.resize(frames);
+            sound->data.resize(frames * channels);
             for (size_t i = 0; i < frames; i++) {
-                sound->data[i] = sample_data[i * 2];
+                for (size_t j = 0; j < channels; j++) {
+                    sound->data[j * frames + i] = sample_data[i];
+                }
             }
             drwav_free(sample_data, nullptr);
             return mrb::new_data_obj(mrb, sound);
