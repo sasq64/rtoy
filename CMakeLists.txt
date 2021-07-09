@@ -18,7 +18,6 @@ if(WIN32)
 endif()
 
 if(APPLE)
-    add_compile_options(-fno-aligned-new)
     include_directories(/usr/local/include)
     link_directories(/usr/local/lib)
 endif()
@@ -94,7 +93,7 @@ endif()
 
 # Graphics
 add_library(pix STATIC
-    src/pix/pix.cpp 
+    src/pix/pix.cpp
     src/pix/font.cpp
     src/pix/texture_font.cpp
     src/pix/tile_renderer.cpp
@@ -151,7 +150,7 @@ target_link_libraries(${TARGET} PRIVATE
     #music
     flite_cmu_us_kal
     flite_usenglish
-    flite_cmulex 
+    flite_cmulex
     flite
     glm::glm
     Threads::Threads
@@ -171,7 +170,7 @@ if(EMSCRIPTEN)
         "SHELL:--preload-file ../../ruby@ruby")
     target_link_options(toy.html PRIVATE
         "SHELL:--preload-file ../../games@games")
-    target_link_options(toy.html PRIVATE "-sUSE_SDL=2") 
+    target_link_options(toy.html PRIVATE "-sUSE_SDL=2")
     target_link_options(toy.html PRIVATE "-sFETCH=1")
     target_link_options(toy.html PRIVATE -sERROR_ON_UNDEFINED_SYMBOLS=1)
 endif()
