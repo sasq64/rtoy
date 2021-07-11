@@ -1,130 +1,27 @@
 
+require 'meth_attrs.rb'
 require 'tween.rb'
-
-module Ret
-    @@return_types = {}
-    @@arg_types = {}
-    @@doc_strings = {}
-    @@returns = nil
-    @@doc_string = nil
-    @@file_name = nil
-    @@takes_file = nil
-    @@class_doc = nil
-
-    def method_added(name)
-        if @@doc_string
-            p "#{name}:\n#{@@doc_string}\n"
-            @@doc_strings[name] = @@doc_string
-            @@doc_string = nil
-        end
-        if @@returns
-            p "#{name} returns #{@@returns}"
-            @@return_types[name] = @@returns
-            @@returns = nil
-        end
-        if @@takes_file
-            @@arg_types[name] = :file
-            @@takes_file = nil
-        end
-    end
-
-    def doc!(doc_string, meth = nil)
-        if meth
-            @@doc_strings[meth] = doc_string
-        else
-            @@doc_string = doc_string
-        end
-    end
-
-    def class_doc!(doc_string)
-        @@class_doc = doc_string
-    end
-
-    def returns!(type, meth = nil)
-        if meth
-            @@return_types[meth] = type
-        else
-            @@returns = type
-        end
-    end
-
-    def takes_file!
-        @@file_name = true
-    end
-
-    def takes_file?(method)
-        return @@arg_types[method] == :file
-    end
-
-    def get_return_type(method)
-        type = @@return_types[method]
-        p ">> RET for #{method} is #{type}"
-        type
-    end
-
-    def get_doc(meth = nil)
-        meth.nil? ? @@class_doc : @@doc_strings[meth]
-    end
-end
-
-class Vec2
-    extend Ret
-    class_doc! "class used to represent 2D points and vectors"
-
-    def initialize(x, y = nil)
-        @data = [x,y]
-    end
-    def x=(x) @data[0] = x ; end
-    def y=(y) @data[1] = y ; end
-    def x() @data[0] end
-    def y() @data[1] end
-    def to_s() @data.to_s ; end
-    def to_a() @data end
-
-    def self.rand(x,y)
-        Vec2.new(Kernel::rand(x), Kernel::rand(y))
-    end
-    
-    def ==(v)
-        a = v.to_a
-        a[0] == @data[0] && a[1] == @data[1]
-    end
-
-    def +(v)
-        a = v.to_a
-        Vec2.new(@data[0] + a[0], @data[1] + a[1])
-    end
-    def -(v)
-        a = v.to_a
-        Vec2.new(@data[0] - a[0], @data[1] - a[1])
-    end
-    def *(s)
-        Vec2.new(@data[0] * s, @data[1] * s)
-    end
-    def /(s)
-        Vec2.new(@data[0] / s, @data[1] / s)
-    end
-end
+require 'vec2.rb'
 
 class Sprites
-    extend Ret
+    extend MethAttrs
     class_doc! "Sprite layer"
     doc! "Create and display new sprite from a given `Image`", :add_sprite
     returns! Sprite, :add_sprite
 end
 
 class Canvas
-    extend Ret
+    extend MethAttrs
     returns! Font, :font
 end
 
 class Font
-    extend Ret
+    extend MethAttrs
     returns! Image, :render
 end
 
 class Sprite
-    extend Ret
+    extend MethAttrs
 
     def pos=(v)
         a = v.to_a
@@ -148,7 +45,7 @@ class Layer
 end
 
 class Display
-    extend Ret
+    extend MethAttrs
     def size
         Vec2.new(width, height)
     end
@@ -159,13 +56,13 @@ class Display
 end
 
 class Audio
-    extend Ret
+    extend MethAttrs
     returns! Sound, :load_wav
 end
 
 module OS
 
-    extend Ret
+    extend MethAttrs
 
     @@display = Display.default
     @@boot_fiber = nil
@@ -275,7 +172,7 @@ module OS
             @@handlers.call_all(:draw, t.seconds)
         end
         Input.default.on_key do |key,mod|
-            @@get_key = key
+            @@read_key = key
             if @@handlers.empty?(:key) 
                 @@key_queue.append(key)
             else
@@ -317,6 +214,18 @@ module OS
     returns! Image
     takes_file! 
     def load_image(*args) Image.from_file(*args) end
+
+    def print(text)
+        x,y = @@display.console.get_xy
+        @@display.console.print(text)
+        x2,y2 = @@display.console.get_xy
+        Fiber.yield if !@@handlers.in_callbacks && (y != y2 || x2 < x)
+    end
+
+    def println(text)
+        @@display.console.print(text + "\n")
+        Fiber.yield if !@@handlers.in_callbacks
+    end
 
     def text(*args) @@display.console.text(*args) end
     def line(x, y, x2, y2) @@display.canvas.line(x, y, x2, y2) end
@@ -382,6 +291,10 @@ module OS
         while f.alive? do
             break if block_given? and yield
             f.resume
+            mods = Input.default.get_modifiers()
+            if Input.default.get_key('c'.ord)
+                break if mods & 0xc0 != 0
+            end
             Fiber.yield if f.alive?
         end
         OS.set_handlers(handlers)
@@ -407,10 +320,12 @@ module OS
         line
     end
 
-    def get_key()
-        @@get_key = nil
-        Fiber.yield until @@get_key
-        @@get_key
+    alias readln gets
+
+    def read_key()
+        @@read_key = nil
+        Fiber.yield until @@read_key
+        @@read_key
     end
 
     def show(fn)
@@ -461,8 +376,8 @@ HELP
         end
     end
 
-    module_function :gets, :help, :run, :show, :ls, :exec,
-        :sleep, :exec, :boot, :vsync, :flush, :get_key
+    module_function :gets, :readln, :help, :run, :show, :ls, :exec,
+        :sleep, :exec, :boot, :vsync, :flush, :read_key
 
 end
 

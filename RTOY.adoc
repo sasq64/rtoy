@@ -14,9 +14,10 @@ The _VHC_ lies at the core of the R-Toy project. It stands for _Virtual Home
 Computer_ (or think of it as _Virtual Hardware Context_ in case _Home Computer_
 is not something that has meaning to you).
 
-The VHC is an _imaginary_ computer, and like a most computers, it has a display,
-audio output, keyboard input, timers etc. But since we only intend to program
-it using a high level language (ruby) we don't actually need to emulate this machine on the hardware level.
+The VHC is an _imaginary_ computer, and like a most computers, it has a
+display, audio output, keyboard input, timers etc. But since we only intend to
+program it using a high level language (ruby) we don't actually need to emulate
+this machine on the hardware level.
 
 Instead, we directly expose this virtual hardware a set of _ruby_ objects.
 
@@ -39,7 +40,8 @@ Mainly it is the parent of all layers where the actual rendering takes place.
     display.on_draw { display.clear() }
 ----
 
-=== Image
+s-L;'\
+== Image
 
 Even though images would not normally be considered part of the hardware of a
 computer, for practical reasons they is considered "native" objects as far as
@@ -63,7 +65,9 @@ consume only a small amount of extra memory for the UV coordinates.
 ----
 
 NOTE: Ideally, the loading of images, and the storing of CPU side pixels should
-be placed in Ruby, while the native side of images should be restricted to textures and UV coordinates. But since many image loading libraries are implemented using C/C++ we put the entire _Image_ concept on the VHC side.
+be placed in Ruby, while the native side of images should be restricted to
+textures and UV coordinates. But since many image loading libraries are
+implemented using C/C++ we put the entire _Image_ concept on the VHC side.
 
 === Layer
 

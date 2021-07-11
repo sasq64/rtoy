@@ -14,7 +14,15 @@ class Repl
             line = rl.read_line()
             puts ""
             begin
-                _repl_b.eval(line)
+                f = Fiber.new { _repl_b.eval(line) }
+                while f.alive? do
+                    f.resume
+                    mods = Input.default.get_modifiers()
+                    if Input.default.get_key('c'.ord)
+                        break if mods & 0xc0 != 0
+                    end
+                    Fiber.yield if f.alive?
+                end
             rescue => e
                 puts "Error " + e.message
             end

@@ -4,6 +4,8 @@
 #include <mruby.h>
 #include <mruby/data.h>
 
+#include <unordered_map>
+
 class RInput
 {
     static uint32_t sdl2key(uint32_t code);
@@ -18,6 +20,8 @@ class RInput
     void poll_events();
 
     int resize = 0;
+
+    std::unordered_map<uint32_t, int> pressed;
 
 public:
     explicit RInput(mrb_state* _ruby) : ruby{_ruby} {}

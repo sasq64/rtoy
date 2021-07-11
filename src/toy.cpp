@@ -98,24 +98,6 @@ void Toy::init()
         MRB_ARGS_REQ(1));
 
     mrb_define_module_function(
-        ruby, ruby->kernel_module, "print",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [text] = mrb::get_args<std::string>(mrb);
-            Display::default_display->console->text(text);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    /* mrb_define_module_function( */
-    /*     ruby, ruby->kernel_module, "repl_eval", */
-    /*     [](mrb_state* mrb, mrb_value) -> mrb_value { */
-    /*         auto [code] = mrb::get_args<std::string>(mrb); */
-    /*         Toy::exec(mrb, code); */
-    /*         return mrb_nil_value(); */
-    /*     }, */
-    /*     MRB_ARGS_REQ(1)); */
-
-    mrb_define_module_function(
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [what] = mrb::get_args<bool>(mrb);

@@ -138,7 +138,7 @@ class LineReader
         loop {
             OS.vsync
             draw()
-            key = OS.get_key
+            key = OS.read_key
             if handle_key(key, 0)
                 return @line.pack('U*')
             end
