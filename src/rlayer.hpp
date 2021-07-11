@@ -14,9 +14,9 @@ enum BlendMode
 
 struct RStyle
 {
-    uint32_t fg;
-    uint32_t bg;
-    float line_width;
+    uint32_t fg = 0;
+    uint32_t bg = 0;
+    float line_width = 1;
     BlendMode blend_mode = BlendMode::Blend;
 };
 

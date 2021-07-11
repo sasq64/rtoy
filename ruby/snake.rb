@@ -113,7 +113,7 @@ text WIDTH-1,TOP,'┑'
 text 0,HEIGHT-1,'┕'
 text WIDTH-1,HEIGHT-1,'┙'
 
-1.times { create_apple }
+20.times { create_apple }
 
 
 Fiber.yield while $game_over < 10

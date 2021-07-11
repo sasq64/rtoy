@@ -84,7 +84,7 @@ void RLayer::reg_class(mrb_state* ruby)
         ruby, RLayer::rclass, "blend_mode=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rlayer = mrb::self_to<RLayer>(self);
-            mrb_sym sym;
+            mrb_sym sym{};
             mrb_get_args(mrb, "n", &sym);
             std::string s{mrb_sym_name(mrb, sym)};
             fmt::print("{}\n", s);

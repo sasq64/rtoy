@@ -4,14 +4,17 @@ require 'tween.rb'
 module Ret
     @@return_types = {}
     @@arg_types = {}
+    @@doc_strings = {}
     @@returns = nil
     @@doc_string = nil
     @@file_name = nil
     @@takes_file = nil
+    @@class_doc = nil
 
     def method_added(name)
         if @@doc_string
             p "#{name}:\n#{@@doc_string}\n"
+            @@doc_strings[name] = @@doc_string
             @@doc_string = nil
         end
         if @@returns
@@ -25,11 +28,19 @@ module Ret
         end
     end
 
-    def doc(doc_string)
-        @@doc_string = doc_string
+    def doc!(doc_string, meth = nil)
+        if meth
+            @@doc_strings[meth] = doc_string
+        else
+            @@doc_string = doc_string
+        end
     end
 
-    def returns(type, meth = nil)
+    def class_doc!(doc_string)
+        @@class_doc = doc_string
+    end
+
+    def returns!(type, meth = nil)
         if meth
             @@return_types[meth] = type
         else
@@ -37,7 +48,7 @@ module Ret
         end
     end
 
-    def takes_file
+    def takes_file!
         @@file_name = true
     end
 
@@ -50,9 +61,16 @@ module Ret
         p ">> RET for #{method} is #{type}"
         type
     end
+
+    def get_doc(meth = nil)
+        meth.nil? ? @@class_doc : @@doc_strings[meth]
+    end
 end
 
 class Vec2
+    extend Ret
+    class_doc! "class used to represent 2D points and vectors"
+
     def initialize(x, y = nil)
         @data = [x,y]
     end
@@ -90,17 +108,19 @@ end
 
 class Sprites
     extend Ret
-    returns Sprite, :add_sprite
+    class_doc! "Sprite layer"
+    doc! "Create and display new sprite from a given `Image`", :add_sprite
+    returns! Sprite, :add_sprite
 end
 
 class Canvas
     extend Ret
-    returns Font, :font
+    returns! Font, :font
 end
 
 class Font
     extend Ret
-    returns Image, :render
+    returns! Image, :render
 end
 
 class Sprite
@@ -114,7 +134,7 @@ class Sprite
         Vec2.new(x, y)
     end
 
-    returns Image,:img
+    returns! Image,:img
 end
 
 class Layer
@@ -133,14 +153,14 @@ class Display
         Vec2.new(width, height)
     end
 
-    returns Canvas, :canvas
-    returns Sprites, :sprites
-    returns Console, :console
+    returns! Canvas, :canvas
+    returns! Sprites, :sprites
+    returns! Console, :console
 end
 
 class Audio
     extend Ret
-    returns Sound, :load_wav
+    returns! Sound, :load_wav
 end
 
 module OS
@@ -195,7 +215,7 @@ module OS
 
     @@handlers = Handlers.new
 
-    doc "Handler that is called each time screen refreshes" 
+    doc! "Handler that is called each time screen refreshes" 
     def on_draw(&block)
         @@handlers.add(:draw, block)
     end
@@ -268,22 +288,22 @@ module OS
         p "HANDLERS DONE"
     end
 
-    returns Display
+    returns! Display
     def display() @@display end
 
-    returns Console
+    returns! Console
     def console() @@display.console end
 
-    returns Canvas
+    returns! Canvas
     def canvas() @@display.canvas end
 
-    returns Sprites
+    returns! Sprites
     def sprites() @@display.sprites end
 
-    returns Audio
+    returns! Audio
     def audio() Audio.default end
 
-    returns Speech
+    returns! Speech
     def speech() Speech.default end
 
     def say(text)
@@ -294,8 +314,8 @@ module OS
         audio.play(sound)
     end
 
-    returns Image
-    takes_file 
+    returns! Image
+    takes_file! 
     def load_image(*args) Image.from_file(*args) end
 
     def text(*args) @@display.console.text(*args) end
@@ -305,7 +325,7 @@ module OS
     def scale(x, y = x) @@display.console.scale = [x,y] end
     def offset(x, y) @@display.console.offset(x,y) end
     
-    returns Sprite
+    returns! Sprite
     def add_sprite(img) @@display.sprites.add_sprite(img) end
     def remove_sprite(spr) @@display.sprites.remove_sprite(spr) end
     def clear()
@@ -381,7 +401,8 @@ module OS
 
     def gets
         raise "Can't gets() in callback handlers" if @@handlers.in_callbacks
-        line = IOX.read_line
+        #line = IOX.read_line
+        line = LineReader.read_line
         puts
         line
     end

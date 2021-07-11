@@ -3,10 +3,6 @@ module OS
     @@current_file = "scratch.rb"
     def edit(f = nil)
         f = @@current_file if not f
-        #unless File.file?(f)
-        #    puts "Can not edit #{f}"
-        #    return
-        #end
         @@current_file = f
         ed = Editor.new
         ed.load(f)

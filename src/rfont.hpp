@@ -12,7 +12,6 @@ struct mrb_state;
 
 class RFont
 {
-
 public:
     FTFont font;
     static mrb_data_type dt;
@@ -20,6 +19,6 @@ public:
     static void reg_class(mrb_state* ruby);
 
     RImage* render(std::string const& txt, int n);
-    RFont(std::string const& name);
+    explicit RFont(std::string const& name);
 };
 
