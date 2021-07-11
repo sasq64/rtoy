@@ -60,7 +60,11 @@ void RAudio::fill_audio(uint8_t* data, int bytes_len)
 
 void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)
 {
-    if (freq == 0) { freq = sound.freq; }
+    // Assume sample is C4 = 261.63 Hz
+
+    if (freq == 0) { freq = 261.63F; }
+    freq = sound.freq * (261.63F / freq);
+    fmt::print("{} => {}",sound.freq, freq);
     for (int i = 0; i < sound.channels; i++) {
         auto& chan = channels[channel + i];
         chan.data.resize(sound.frames());
@@ -103,13 +107,10 @@ void RAudio::reg_class(mrb_state* ruby)
             auto n = mrb_get_argc(mrb);
             if (n == 3) {
                 mrb_get_args(mrb, "idf", &chan, &sound, &Sound::dt, &freq);
-                freq = sound->freq + freq;
             } else if (n == 2) {
                 mrb_get_args(mrb, "id", &chan, &sound, &Sound::dt);
-                freq = sound->freq;
             } else if (n == 1) {
                 mrb_get_args(mrb, "d", &sound, &Sound::dt);
-                freq = sound->freq;
                 chan = audio->next_channel;
                 audio->next_channel = (audio->next_channel + 2) % 32;
             }
@@ -173,7 +174,7 @@ void RAudio::reg_class(mrb_state* ruby)
             sound->data.resize(frames * channels);
             for (size_t i = 0; i < frames; i++) {
                 for (size_t j = 0; j < channels; j++) {
-                    sound->data[j * frames + i] = sample_data[i];
+                    sound->data[j * frames + i] = sample_data[i*2+j];
                 }
             }
             drwav_free(sample_data, nullptr);

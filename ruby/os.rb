@@ -58,6 +58,22 @@ end
 class Audio
     extend MethAttrs
     returns! Sound, :load_wav
+
+    A4 = 440;
+    A = (-4..4).map { |i| A4 * (2**i) }
+    puts A
+
+    keys = [ :c, :cs, :d, :ds, :e, :f, :fs, :g, :gs, :a, :as, :b ]
+
+    ALL_KEYS = {}
+
+    (0..8).each do |oct|
+        notes = (-9..3).map { |i| A[oct] * (2**(i/12.0)) }
+        (0..11).each do |note|
+            ALL_KEYS[(keys[note].to_s + oct.to_s).to_sym] = notes[note]
+        end
+    end
+
 end
 
 module OS
@@ -73,7 +89,7 @@ module OS
 
     class Handlers
         def initialize()
-            @callbacks = { key:[], draw:[], drag:[], click: [], timer: [] }
+            @callbacks = { key:[], draw:[], drag:[], click:[], timer:[] }
         end
 
         def empty?(what)

@@ -6,7 +6,7 @@
 require 'complete.rb'
 
 class LineReader
-    extend Ret
+    extend MethAttrs
 
     include OS
     include Complete
