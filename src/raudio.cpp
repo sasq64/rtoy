@@ -24,7 +24,7 @@ RAudio::RAudio(mrb_state* _ruby) : ruby{_ruby}
     };
 
     dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have,
-        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+        SDL_AUDIO_ALLOW_ANY_CHANGE & (~SDL_AUDIO_ALLOW_FORMAT_CHANGE));
 
     fmt::print("Audio format {} {} vs {}\n", have.format, have.freq, dev);
     SDL_PauseAudioDevice(dev, 0);
