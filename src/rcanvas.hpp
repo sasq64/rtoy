@@ -25,7 +25,7 @@ class RCanvas : public RLayer
     pix::Image read_image(int x, int y, int w, int h);
     void draw_line(float x0, float y0, float x1, float y1);
     void draw_circle(float x, float y, float r);
-    void draw_image(float x, float y, RImage* image);
+    void draw_image(float x, float y, RImage* image, float scale = 1.0F);
 public:
     void init(mrb_state* mrb);
     static inline RClass* rclass;

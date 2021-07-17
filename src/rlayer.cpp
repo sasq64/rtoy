@@ -144,8 +144,17 @@ void RLayer::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
+
     mrb_define_method(
-        ruby, RLayer::rclass, "offset",
+        ruby, RLayer::rclass, "get_offset",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            return mrb::to_value(rlayer->trans, mrb);
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, RLayer::rclass, "set_offset",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x, y] = mrb::get_args<float, float>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);

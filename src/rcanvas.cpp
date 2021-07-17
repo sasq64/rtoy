@@ -59,12 +59,12 @@ void RCanvas::clear()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void RCanvas::draw_image(float x, float y, RImage* image)
+void RCanvas::draw_image(float x, float y, RImage* image, float scale)
 {
     canvas.set_target();
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
-    image->draw(x, y);
+    image->draw(x, y, scale);
 }
 
 void RCanvas::render()
@@ -165,11 +165,18 @@ void RCanvas::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             mrb_float x{};
             mrb_float y{};
+            mrb_float scale = 1.0F;
             RImage* image{};
-            mrb_get_args(mrb, "ffd", &x, &y, &image, &RImage::dt);
+            auto n = mrb_get_argc(mrb);
+
+            if (n == 3) {
+                mrb_get_args(mrb, "ffd", &x, &y, &image, &RImage::dt);
+            } else {
+                mrb_get_args(mrb, "ffdf", &x, &y, &image, &RImage::dt, &scale);
+            }
             auto* rcanvas = mrb::self_to<RCanvas>(self);
             rcanvas->draw_image(
-                static_cast<float>(x), static_cast<float>(y), image);
+                static_cast<float>(x), static_cast<float>(y), image, scale);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));

@@ -19,5 +19,4 @@ int main(int argc, char const** argv)
 
     Toy toy{full_screen};
     toy.run(main_script);
-
 }

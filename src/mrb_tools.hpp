@@ -288,6 +288,21 @@ inline std::optional<std::string> check_exception(mrb_state* ruby)
     return std::nullopt;
 }
 
+inline std::vector<std::string> get_backtrace(mrb_state* ruby)
+{
+    auto bt = mrb_funcall(ruby, mrb_obj_value(ruby->exc), "backtrace", 0);
+
+    std::vector<std::string> backtrace;
+    for (int i = 0; i < ARY_LEN(mrb_ary_ptr(bt)); i++) {
+        auto v = mrb_ary_entry(bt, i);
+        auto s = mrb_funcall(ruby, v, "to_s", 0);
+        std::string line(RSTRING_PTR(s), RSTRING_LEN(s));
+        fmt::print("LINE:{}\n", line);
+        backtrace.emplace_back(line);
+    }
+    return backtrace;
+}
+
 // Hold an mrb_value referencing an object on the native side.
 // As long as we have a reference (via the shared_ptr) it will
 // not be garbage collected.

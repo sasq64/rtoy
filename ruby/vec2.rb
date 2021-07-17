@@ -1,4 +1,6 @@
 
+require "meth_attrs.rb"
+
 class Vec2
     extend MethAttrs
     class_doc! "class used to represent 2D points and vectors"
@@ -20,6 +22,15 @@ class Vec2
     def ==(v)
         a = v.to_a
         a[0] == @data[0] && a[1] == @data[1]
+    end
+
+    # Inside the rect defined by p0 -> p1
+    # p0 must be lower than p1 on both axis
+    def between?(p0, p1)
+        a0 = p0.to_a
+        a1 = p1.to_a
+        @data[0] >= a0[0] && @data[1] >= a0[1] &&
+            @data[0] < a1[0] && @data[1] < a1[1]
     end
 
     def +(v)

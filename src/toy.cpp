@@ -10,13 +10,13 @@
 #include "error.hpp"
 #include "mrb_tools.hpp"
 #include "raudio.hpp"
-#include "rspeech.hpp"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
 #include "rdisplay.hpp"
 #include "rfont.hpp"
 #include "rimage.hpp"
 #include "rinput.hpp"
+#include "rspeech.hpp"
 #include "rsprites.hpp"
 #include "rtimer.hpp"
 
@@ -196,10 +196,10 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     struct RProc* proc = mrb_generate_code(mrb, parser);
     mrb_parser_free(parser);
     if (proc == nullptr) { throw toy_exception("Can't generate code"); }
-    //struct RClass* target = mrb->object_class;
-    //MRB_PROC_SET_TARGET_CLASS(proc, target);
+    // struct RClass* target = mrb->object_class;
+    // MRB_PROC_SET_TARGET_CLASS(proc, target);
     auto result = mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
-    //stack_keep = proc->body.irep->nlocals;
+    // stack_keep = proc->body.irep->nlocals;
     // mrb_gc_arena_restore(ruby, ai);
 }
 
@@ -282,6 +282,9 @@ int Toy::run(std::string const& script)
     mrb_load_string(ruby, source.c_str());
     if (auto err = mrb::check_exception(ruby)) {
         fmt::print("START Error: {}\n", *err);
+        for (auto&& line : mrb::get_backtrace(ruby)) {
+            fmt::print("  {}", line);
+        }
         exit(1);
     }
     puts("Loaded");

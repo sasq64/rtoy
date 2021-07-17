@@ -25,11 +25,11 @@ struct RImage
                (texture.uvs[5] - texture.uvs[1]);
     }
 
-    float x() const { return static_cast<float>(image.width) * texture.uvs[4]; }
+    float x() const { return static_cast<float>(image.width) * texture.uvs[0]; }
 
     float y() const
     {
-        return static_cast<float>(image.height) * texture.uvs[5];
+        return static_cast<float>(image.height) * texture.uvs[1];
     }
 
     explicit RImage(pix::Image const& img) : image{img} {}
@@ -37,7 +37,7 @@ struct RImage
 
     gl::TexRef texture;
 
-    void draw(float x, float y);
+    void draw(float x, float y, float scale = 1.0F);
 
     static void reg_class(mrb_state* ruby);
 };

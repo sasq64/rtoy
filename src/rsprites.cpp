@@ -197,6 +197,26 @@ void RSprites::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
+        ruby, RSprite::rclass, "scalex=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [x] = mrb::get_args<float>(mrb);
+            auto* rspr = mrb::self_to<RSprite>(self);
+            rspr->scale[0] = x;
+            rspr->update_tx();
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+    mrb_define_method(
+        ruby, RSprite::rclass, "scaley=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [y] = mrb::get_args<float>(mrb);
+            auto* rspr = mrb::self_to<RSprite>(self);
+            rspr->scale[1] = y;
+            rspr->update_tx();
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+    mrb_define_method(
         ruby, RSprite::rclass, "scale=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x] = mrb::get_args<float>(mrb);
