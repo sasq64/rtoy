@@ -115,10 +115,10 @@ class TweenTarget
             elsif @from.kind_of? Array
                 @value = by_elem(@from, by_elem(@to, @from, :-).
                                  map{|x| x * d}, :+)
-                @obj.send @method,*@value
+                @obj.send @method, @value
             else
                 @value = @from + (@to - @from) * d
-                @obj.send @method,@value
+                @obj.send @method, @value
             end
         end
         done = delta >= 1.0

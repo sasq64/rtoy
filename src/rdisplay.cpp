@@ -188,9 +188,9 @@ void Display::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, Display::rclass, "bg=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [bg] = mrb::get_args<uint32_t>(mrb);
+            auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* display = mrb::self_to<Display>(self);
-            display->bg = bg;
+            display->bg = mrb::to_array<float, 4>(av);;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));

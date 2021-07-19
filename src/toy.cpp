@@ -34,8 +34,12 @@ void Toy::init()
     ruby = mrb_open();
 
     auto define_const = [&](RClass* mod, std::string const& sym, uint32_t v) {
-        auto sv = static_cast<int32_t>(v);
-        mrb_define_const(ruby, mod, sym.c_str(), mrb_int_value(ruby, sv));
+        // auto sv = static_cast<int32_t>(v);
+        gl::Color col(v);
+        auto sv = mrb::to_value(
+            std::array<float, 4>{col.red, col.green, col.blue, col.alpha},
+            ruby);
+        mrb_define_const(ruby, mod, sym.c_str(), sv);
     };
 
     auto* colors = mrb_define_class(ruby, "Color", ruby->object_class);

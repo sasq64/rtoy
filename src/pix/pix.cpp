@@ -18,12 +18,12 @@ void set_transform(std::array<float, 16> const& mat)
     plain.setUniform("in_transform", mat);
 }
 
-void set_colors(uint32_t fg, uint32_t bg)
+void set_colors(gl::Color fg, gl::Color bg)
 {
     auto& textured = gl::ProgramCache::get_instance().textured;
-    textured.setUniform("in_color", gl::Color(fg));
+    textured.setUniform("in_color", fg);
     auto& plain = gl::ProgramCache::get_instance().non_textured;
-    plain.setUniform("in_color", gl::Color(fg));
+    plain.setUniform("in_color", fg);
 }
 
 void draw_quad_invy()

@@ -1,5 +1,6 @@
-display.bg = 0
-canvas.fg = 0x00005010
+display.bg = Color::BLACK
+canvas.fg = [0,0,0.2,0.05]
+#0x00005010
 canvas.blend_mode = :add
 console.clear()
 

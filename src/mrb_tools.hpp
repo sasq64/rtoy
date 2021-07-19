@@ -175,7 +175,6 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
         return RET::can_not_convert;
     }
 }
-
 template <typename ELEM>
 mrb_value to_value(std::vector<ELEM> const& r, mrb_state* mrb)
 {
@@ -213,9 +212,33 @@ TARGET to(mrb_value obj)
     }
 }
 
-template <typename TARGET>
-TARGET to_vector(mrb_value obj)
-{}
+template <typename T, size_t N>
+std::array<T, N> to_array(mrb_value ary)
+{
+    std::array<T, N> result{};
+    if (mrb_array_p(ary)) {
+        auto sz = ARY_LEN(mrb_ary_ptr(ary));
+        for (int i = 0; i < sz; i++) {
+            auto v = mrb_ary_entry(ary, i);
+            result[i] = to<T>(v);
+        }
+    } else {
+        // TODO: Exception
+    }
+    return result;
+}
+
+template <typename T>
+std::vector<T> to_vector(mrb_value ary)
+{
+    auto sz = ARY_LEN(mrb_ary_ptr(ary));
+    std::vector<T> result;
+    for (int i = 0; i < sz; i++) {
+        auto v = mrb_ary_entry(ary, i);
+        result.push_back(to<T>(v));
+    }
+    return result;
+}
 
 template <class CLASS, class RET, class... ARGS, size_t... A>
 RET method(RET (CLASS::*f)(ARGS...), mrb_state* mrb, mrb_value self,

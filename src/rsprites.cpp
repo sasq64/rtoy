@@ -57,9 +57,11 @@ void RSprites::render()
     for (auto const& sprite : sprites) {
         sprite->texture.bind();
         if (last_alpha != sprite->alpha) {
-            pix::set_colors((style.fg & 0xffffff00) |
-                                static_cast<uint32_t>(sprite->alpha * 255),
-                style.bg);
+
+            gl::Color fg = style.fg;
+            fg.alpha = sprite->alpha;
+
+            pix::set_colors(fg, style.bg);
             last_alpha = sprite->alpha;
         }
         pix::set_transform(sprite->transform);

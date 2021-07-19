@@ -8,6 +8,10 @@
 #include <string_view>
 #include <tuple>
 
+namespace gl_wrap {
+    struct Color;
+}
+
 namespace pix {
 
 using Float2 = std::pair<float, float>;
@@ -72,7 +76,7 @@ inline void draw_circle(Point p, float r)
 }
 
 void set_transform(std::array<float, 16> const& mat);
-void set_colors(uint32_t fg, uint32_t bg);
+void set_colors(gl_wrap::Color fg, gl_wrap::Color bg);
 
 struct Image
 {

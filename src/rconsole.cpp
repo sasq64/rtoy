@@ -51,7 +51,8 @@ void RConsole::update_pos(Cursor const& cursor)
 
 void RConsole::text(std::string const& t)
 {
-    console->default_style = {style.fg, style.bg};
+    console->default_style = {
+        gl::Color(style.fg).to_uint(), gl::Color(style.bg).to_uint()};
     auto cursor = console->text(xpos, ypos, t);
     update_pos(cursor);
 }
@@ -64,7 +65,8 @@ void RConsole::text(std::string const& t, uint32_t fg, uint32_t bg)
 
 void RConsole::text(int x, int y, std::string const& t)
 {
-    console->default_style = {style.fg, style.bg};
+    console->default_style = {
+        gl::Color(style.fg).to_uint(), gl::Color(style.bg).to_uint()};
     console->text(x, y, t);
 }
 
@@ -169,8 +171,10 @@ void RConsole::reg_class(mrb_state* ruby)
                 ptr->text(text);
             } else if (n == 3) {
                 auto [text, fg, bg] =
-                    mrb::get_args<std::string, uint32_t, uint32_t>(mrb);
-                ptr->text(text, fg, bg);
+                    mrb::get_args<std::string, mrb_value, mrb_value>(mrb);
+                auto fcol = gl::Color(mrb::to_array<float, 4>(fg));
+                auto bcol = gl::Color(mrb::to_array<float, 4>(bg));
+                ptr->text(text, fcol.to_uint(), bcol.to_uint());
             }
             return mrb_nil_value();
         },
@@ -187,9 +191,11 @@ void RConsole::reg_class(mrb_state* ruby)
                 ptr->text(x, y, text);
             } else if (n == 5) {
                 auto [x, y, text, fg, bg] =
-                    mrb::get_args<int, int, std::string, uint32_t, uint32_t>(
+                    mrb::get_args<int, int, std::string, mrb_value, mrb_value>(
                         mrb);
-                ptr->text(x, y, text, fg, bg);
+                auto fcol = gl::Color(mrb::to_array<float, 4>(fg));
+                auto bcol = gl::Color(mrb::to_array<float, 4>(bg));
+                ptr->text(x, y, text, fcol.to_uint(), bcol.to_uint());
             }
             return mrb_nil_value();
         },
@@ -297,8 +303,8 @@ void RConsole::reg_class(mrb_state* ruby)
 
 void RConsole::update()
 {
-    console->default_style.bg = style.bg;
-    console->default_style.fg = style.fg;
+    console->default_style = {
+        gl::Color(style.fg).to_uint(), gl::Color(style.bg).to_uint()};
 }
 
 void RConsole::reset()

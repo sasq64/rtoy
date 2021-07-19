@@ -46,9 +46,9 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RLayer::rclass, "bg=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [bg] = mrb::get_args<uint32_t>(mrb);
+            auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->style.bg = bg;
+            rlayer->style.bg = mrb::to_array<float, 4>(av);
             rlayer->update();
             return mrb_nil_value();
         },
@@ -65,9 +65,9 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RLayer::rclass, "fg=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [fg] = mrb::get_args<uint32_t>(mrb);
+            auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->style.fg = fg;
+            rlayer->style.fg = mrb::to_array<float, 4>(av);
             rlayer->update();
             return mrb_nil_value();
         },
@@ -127,7 +127,7 @@ void RLayer::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, RLayer::rclass, "get_scale",
+        ruby, RLayer::rclass, "scale",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rlayer = mrb::self_to<RLayer>(self);
             return mrb::to_value(rlayer->scale, mrb);
@@ -135,17 +135,16 @@ void RLayer::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, RLayer::rclass, "set_scale",
+        ruby, RLayer::rclass, "scale=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             fmt::print("SET_SCALE\n");
-            auto [x, y] = mrb::get_args<float, float>(mrb);
+            auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            fmt::print("SCALE {} {}\n", x, y);
-            rlayer->scale = {static_cast<float>(x), static_cast<float>(y)};
+            rlayer->scale = mrb::to_array<float, 2>(av);
             rlayer->update_tx();
             return mrb_nil_value();
         },
-        MRB_ARGS_REQ(2));
+        MRB_ARGS_REQ(1));
 
     mrb_define_method(
         ruby, RLayer::rclass, "get_offset",

@@ -71,16 +71,16 @@ class Sprite
     returns! Image,:img
 end
 
-class Layer
-    def scale=(v)
-        a = v.to_a
-        p a
-        set_scale(a[0], a[1])
-    end
-    def scale()
-        Vec2.new(*get_scale())
-    end
-end
+# class Layer
+#     def scale=(v)
+#         a = v.to_a
+#         p a
+#         set_scale(a[0], a[1])
+#     end
+#     def scale()
+#         Vec2.new(*get_scale())
+#     end
+# end
 
 class Display
     extend MethAttrs
@@ -91,12 +91,12 @@ class Display
     alias set_bg bg=
     alias get_bg bg
 
-    def bg=(col)
-        set_bg(col.to_i)
-    end
-    def bg
-        Color.new(get_bg())
-    end
+    # def bg=(col)
+    #     set_bg(col.to_i)
+    # end
+    # def bg
+    #     Color.new(get_bg())
+    # end
 
     returns! Canvas, :canvas
     returns! Sprites, :sprites
@@ -378,7 +378,6 @@ module OS
 
     def gets
         raise "Can't gets() in callback handlers" if @@handlers.in_callbacks
-        #line = IOX.read_line
         line = LineReader.read_line
         puts
         line

@@ -122,7 +122,7 @@ class LineReader
     def draw()
         @con.goto_xy(@xpos, @ypos)
         @con.print(@line[0..@pos-1].pack('U*')) unless @pos == 0
-        @con.print(@pos < @line.length ? @line[@pos].chr : ' ', -1, Color::ORANGE) 
+        @con.print(@pos < @line.length ? @line[@pos].chr : ' ', Color::WHITE, Color::ORANGE) 
         @con.print(@line[@pos+1..].pack('U*')) if @pos < @line.length-1
         if @last_len >= @line.length
             @con.print(' ' * (@last_len - @line.length + 1))
