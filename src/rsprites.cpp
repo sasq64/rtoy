@@ -24,7 +24,8 @@ void RSprite::update_tx()
     m = glm::translate(m, glm::vec3(-screen_width / 2.0 + trans[0],
                               screen_height / 2.0 - trans[1], 0));
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
-    m = glm::translate(m, glm::vec3(width/2 * scale[0], -height/2 *scale[1], 0));
+    m = glm::translate(
+        m, glm::vec3(width / 2 * scale[0], -height / 2 * scale[1], 0));
     m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
                           static_cast<float>(height) * scale[1] / -2, 1.0));
     memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
@@ -55,7 +56,7 @@ void RSprites::render()
     float last_alpha = -1;
     for (auto const& sprite : sprites) {
         sprite->texture.bind();
-        if(last_alpha != sprite->alpha) {
+        if (last_alpha != sprite->alpha) {
             pix::set_colors((style.fg & 0xffffff00) |
                                 static_cast<uint32_t>(sprite->alpha * 255),
                 style.bg);
@@ -233,6 +234,18 @@ void RSprites::reg_class(mrb_state* ruby)
             return mrb::to_value(rspr->scale[0], mrb);
         },
         MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, RSprite::rclass, "set_scale",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [x, y] = mrb::get_args<float, float>(mrb);
+            auto* rspr = mrb::self_to<RSprite>(self);
+            rspr->scale[0] = x;
+            rspr->scale[1] = y;
+            rspr->update_tx();
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(2));
 
     mrb_define_method(
         ruby, RSprite::rclass, "rotation=",

@@ -3,6 +3,43 @@ require 'meth_attrs.rb'
 require 'tween.rb'
 require 'vec2.rb'
 
+class Color
+    def data() @data ; end
+    def initialize(r,g=nil,b=nil,a=nil)
+        if g.nil?
+            @data = [((r>>24) & 0xff)/255.0, ((r>>16) & 0xff)/255.0, 
+                     ((r>>8) & 0xff)/255.0, (r & 0xff)/255.0]
+        else
+            a = 0xff if a.nil?
+            @data = [r,g,b,a]
+        end
+    end
+    def to_i
+        ((@data[0].clamp(0,1) * 255).to_i << 24) |
+            ((@data[1].clamp(0,1) * 255).to_i << 16) |
+            ((@data[2].clamp(0,1) * 255).to_i << 8) |
+            (@data[3].clamp(0,1) * 255).to_i
+    end
+
+    def+(col)
+        d = col.data
+        Color.new(@data[0] + d[0], @data[1] + d[1], @data[2] + d[2], @data[3] + d[3])
+    end
+
+    def-(col)
+        d = col.data
+        Color.new(@data[0] + d[0], @data[1] + d[1], @data[2] + d[2], @data[3] + d[3])
+    end
+
+    def/(n)
+        Color.new(@data[0] / n, @data[1] / n, @data[2] / n, @data[3] / n)
+    end
+
+    def*(n)
+        Color.new(@data[0] * n, @data[1] * n, @data[2] * n, @data[3] * n)
+    end
+end
+
 class Sprites
     extend MethAttrs
     class_doc! "Sprite layer"
@@ -37,6 +74,7 @@ end
 class Layer
     def scale=(v)
         a = v.to_a
+        p a
         set_scale(a[0], a[1])
     end
     def scale()
@@ -48,6 +86,16 @@ class Display
     extend MethAttrs
     def size
         Vec2.new(width, height)
+    end
+
+    alias set_bg bg=
+    alias get_bg bg
+
+    def bg=(col)
+        set_bg(col.to_i)
+    end
+    def bg
+        Color.new(get_bg())
     end
 
     returns! Canvas, :canvas
@@ -318,7 +366,7 @@ module OS
 
     def reset_display
         scale(2,2)
-        @con.offset(0,0)
+        @con.set_offset(0,0)
         display.console.fg = Color::WHITE
         display.bg = Color::BLUE
     end

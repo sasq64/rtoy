@@ -85,8 +85,8 @@ void RAudio::set_frequency(int channel, int hz)
 
 void RAudio::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Audio", nullptr);
-    Sound::rclass = mrb_define_class(ruby, "Sound", nullptr);
+    rclass = mrb_define_class(ruby, "Audio", ruby->object_class);
+    Sound::rclass = mrb_define_class(ruby, "Sound", ruby->object_class);
     MRB_SET_INSTANCE_TT(RAudio::rclass, MRB_TT_DATA);
     MRB_SET_INSTANCE_TT(Sound::rclass, MRB_TT_DATA);
 

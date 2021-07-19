@@ -35,6 +35,14 @@ pix::Image RCanvas::read_image(int x, int y, int w, int h)
     glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
     return image;
 }
+
+void RCanvas::draw_quad(float x, float y, float w, float h)
+{
+    canvas.set_target();
+    pix::set_colors(style.fg, style.bg);
+    pix::draw_quad_filled(x, y, x + w, y + h);
+}
+
 void RCanvas::draw_line(float x0, float y0, float x1, float y1)
 {
     canvas.set_target();
@@ -112,6 +120,16 @@ void RCanvas::reg_class(mrb_state* ruby)
             return mrb::new_data_obj(mrb, image);
         },
         MRB_ARGS_REQ(4));
+    mrb_define_method(
+        ruby, RCanvas::rclass, "rect",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto n = mrb_get_argc(mrb);
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            auto [x, y, w, h] = mrb::get_args<float, float, float, float>(mrb);
+            rcanvas->draw_quad(x, y, w, h);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(2));
     mrb_define_method(
         ruby, RCanvas::rclass, "line",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {

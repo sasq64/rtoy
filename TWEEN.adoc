@@ -1,0 +1,40 @@
+
+
+tween(args)
+
+target(args)
+
+A tween is a list of target. Mostly you can use the same arguments
+for the parent tween as for the targets, in which they will
+become default for all targets
+
+Only keyword arguments are accepted, but there are some shortcuts.
+
+`seconds`
+
+`object`
+
+`method`
+
+`from`
+
+`to`
+
+`from_<attr>`
+
+If the key starts with 'from_', we assume that
+<attr> is a set/get method pair, in which case we
+will tween from the given value to the current value
+of the attribute.
+
+`to_<attr>`
+
+`ease`
+
+Set the easing method to use
+
+`<method>`
+
+If the value is an object, it is assumed that
+the key is a valid method in object.
+

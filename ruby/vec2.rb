@@ -6,7 +6,11 @@ class Vec2
     class_doc! "class used to represent 2D points and vectors"
 
     def initialize(x, y = nil)
-        @data = [x,y]
+        if y
+            @data = [x,y]
+        else
+            @data = x
+        end
     end
     def x=(x) @data[0] = x ; end
     def y=(y) @data[1] = y ; end

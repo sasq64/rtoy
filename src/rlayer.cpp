@@ -137,8 +137,10 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RLayer::rclass, "set_scale",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            fmt::print("SET_SCALE\n");
             auto [x, y] = mrb::get_args<float, float>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
+            fmt::print("SCALE {} {}\n", x, y);
             rlayer->scale = {static_cast<float>(x), static_cast<float>(y)};
             rlayer->update_tx();
             return mrb_nil_value();

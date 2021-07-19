@@ -13,7 +13,7 @@ RSpeech::RSpeech(mrb_state* mrb) : ruby{mrb}
 
 void RSpeech::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Speech", nullptr);
+    rclass = mrb_define_class(ruby, "Speech", ruby->object_class);
     MRB_SET_INSTANCE_TT(RSpeech::rclass, MRB_TT_DATA);
 
     mrb_define_class_method(

@@ -38,7 +38,7 @@ void Toy::init()
         mrb_define_const(ruby, mod, sym.c_str(), mrb_int_value(ruby, sv));
     };
 
-    auto* colors = mrb_define_module(ruby, "Color");
+    auto* colors = mrb_define_class(ruby, "Color", ruby->object_class);
     define_const(colors, "BLACK", 0x000000ff);
     define_const(colors, "WHITE", 0xffffffff);
     define_const(colors, "RED", 0x880000ff);

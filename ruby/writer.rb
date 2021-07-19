@@ -1,12 +1,12 @@
 display.bg = 0
 clear
 font = Font.from_file('data/Ubuntu-B.ttf')
-text = %w(
+text = "
   This is the text that should be written to the screen.
   It should also wrap when we run out of horizontal space.
   When the sprites reach their final destination they
   are removed, and we draw the text into the canvas instead.
-)
+"
 
 margin = 20
 pos = vec2(20,0)
@@ -14,7 +14,7 @@ edge = display.width - margin
 size = 100
 space = size/3
 
-text.each do |word|
+text.each_char do |word|
     img = font.render(word, size)
     if pos.x + img.width > edge
         pos = vec2(margin, pos.y + size)

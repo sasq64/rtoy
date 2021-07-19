@@ -35,6 +35,8 @@ inline void draw_quad(Point pos, Size size)
 }
 
 void draw_line_impl(float x0, float y0, float x1, float y1);
+void draw_quad_filled(float x, float y, float sx, float sy);
+
 
 inline void draw_line(Float2 p0, Float2 p1)
 {

@@ -110,7 +110,7 @@ class Sokoban
     def initialize()
 
         scale(1)
-        display.console.tile_size(64,64)
+        display.console.set_tile_size(64,64)
         setup_tiles()
         load_levels("data/Original.txt")
         @current_level = 0

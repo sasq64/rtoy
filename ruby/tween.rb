@@ -134,7 +134,7 @@ class Tween
     REQUIRED = [ :obj, :method, :seconds, :from, :to ]
 
     def initialize(o = nil, m = nil, obj:nil, method:nil, on_done: nil,
-                   seconds:nil, &block)
+                   seconds: 1.0, &block)
         @block = block
         @targets = []
         seconds = o if o.kind_of? Numeric
@@ -144,6 +144,56 @@ class Tween
         @total_time = seconds
         @start_time = Timer.default.seconds
 
+    end
+
+    def add_target(r)
+        REQUIRED.each { |x|
+            raise TweenError.new "Missing attribute :#{x} for tween" unless r[x] 
+        }
+
+        raise TweenError.new "Unknown easing :#{r[:func]}" unless 
+            Symbol === r[:func] && TweenFunc.respond_to?(r[:func])
+
+        @targets.append TweenTarget.new(
+            r[:obj], r[:method], r[:from], r[:to],
+            r[:seconds], r[:steps], r[:func])
+        self
+    end
+
+    # attr: val
+    def to(**kwargs)
+        r = {
+            obj: @obj,
+            func: :linear,
+            seconds: @total_time,
+            steps: 0
+        }
+
+        kwargs.each do |key,val|
+            r[:from] = r[:obj].send(key)
+            r[:to] = val
+            r[:to] = r[:from] - r[:from] + val
+            r[:method] = [key, '='].join.to_sym
+        end
+        add_target(r)
+        self
+    end
+
+    def from(**kwargs)
+        r = {
+            obj: @obj,
+            func: :linear,
+            seconds: @total_time,
+            steps: 0
+        }
+
+        kwargs.each do |key,val|
+            r[:to] = r[:obj].send(key)
+            r[:from] = r[:to] - r[:to] + val
+            r[:method] = [key, '='].join.to_sym
+        end
+        add_target(r)
+        self
     end
 
     def target(**kwargs)
@@ -202,18 +252,7 @@ class Tween
                 end
             end
         end
-
-        REQUIRED.each { |x|
-            raise TweenError.new "Missing attribute :#{x} for tween" unless r[x] 
-        }
-
-        raise TweenError.new "Unknown easing :#{r[:func]}" unless 
-            Symbol === r[:func] && TweenFunc.respond_to?(r[:func])
-
-        @targets.append TweenTarget.new(
-            r[:obj], r[:method], r[:from], r[:to],
-            r[:seconds], r[:steps], r[:func])
-        self
+        add_target(r)
     end
 
     def when_done(&block)

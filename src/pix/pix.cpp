@@ -82,7 +82,7 @@ void draw_quad()
     uv.disable();
 }
 
-void draw_quad_uvs(std::array<float,8> const& uvs)
+void draw_quad_uvs(std::array<float, 8> const& uvs)
 {
     float x0 = -1;
     float y0 = -1;
@@ -111,7 +111,8 @@ void draw_quad_uvs(std::array<float,8> const& uvs)
     uv.disable();
 }
 
-void draw_quad_uvs(float x, float y, float sx, float sy, std::array<float,8> const& uvs)
+void draw_quad_uvs(
+    float x, float y, float sx, float sy, std::array<float, 8> const& uvs)
 {
     auto [w, h] = gl::getViewport();
 
@@ -146,7 +147,6 @@ void draw_quad_uvs(float x, float y, float sx, float sy, std::array<float,8> con
     pos.disable();
     uv.disable();
 }
-
 
 void draw_quad_impl(float x, float y, float sx, float sy)
 {
@@ -177,9 +177,38 @@ void draw_quad_impl(float x, float y, float sx, float sy)
 
     gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
     gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
+
     gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
     pos.disable();
     uv.disable();
+}
+
+void draw_quad_filled(float x, float y, float sx, float sy)
+{
+    auto [w, h] = gl::getViewport();
+
+    auto x0 = x * 2.0F / w - 1.0F;
+    auto y0 = y * -2.0F / h + 1.0F;
+
+    x += sx;
+    y += sy;
+
+    auto x1 = x * 2.0F / w - 1.0F;
+    auto y1 = y * -2.0F / h + 1.0F;
+
+    std::array vertexData{x0, y0, x1, y0, x1, y1, x0, y1};
+    gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
+
+    vbo.bind();
+
+    auto& program = gl::ProgramCache::get_instance().non_textured;
+    program.use();
+    auto pos = program.getAttribute("in_pos");
+    pos.enable();
+
+    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
+    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
+    pos.disable();
 }
 
 Image load_png(std::string_view name)
