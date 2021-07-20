@@ -33,54 +33,16 @@ void Toy::init()
 {
     ruby = mrb_open();
 
-    auto define_const = [&](RClass* mod, std::string const& sym, uint32_t v) {
-        // auto sv = static_cast<int32_t>(v);
-        gl::Color col(v);
-        auto sv = mrb::to_value(
-            std::array<float, 4>{col.red, col.green, col.blue, col.alpha},
-            ruby);
-        mrb_define_const(ruby, mod, sym.c_str(), sv);
-    };
-
-    auto* colors = mrb_define_class(ruby, "Color", ruby->object_class);
-    define_const(colors, "BLACK", 0x000000ff);
-    define_const(colors, "WHITE", 0xffffffff);
-    define_const(colors, "RED", 0x880000ff);
-    define_const(colors, "CYAN", 0xAAFFEEff);
-    define_const(colors, "PURPLE", 0xcc44ccff);
-    define_const(colors, "GREEN", 0x00cc55ff);
-    define_const(colors, "BLUE", 0x0000aaff);
-    define_const(colors, "YELLOW", 0xeeee77ff);
-    define_const(colors, "ORANGE", 0xdd8855ff);
-    define_const(colors, "BROWN", 0x664400ff);
-    define_const(colors, "LIGHT_RED", 0xff7777ff);
-    define_const(colors, "DARK_GREY", 0x333333ff);
-    define_const(colors, "GREY", 0x777777ff);
-    define_const(colors, "LIGHT_GREEN", 0xaaff66ff);
-    define_const(colors, "LIGHT_BLUE", 0x0088ffff);
-    define_const(colors, "LIGHT_GREY", 0xbbbbbbff);
-
-    puts("RLayer");
     RLayer::reg_class(ruby);
-    puts("RConsole");
     RConsole::reg_class(ruby);
-    puts("RCanvas");
     RCanvas::reg_class(ruby);
-    puts("RFont");
     RFont::reg_class(ruby);
-    puts("RImage");
     RImage::reg_class(ruby);
-    puts("RDisplay");
     Display::reg_class(ruby);
-    puts("RInput");
     RInput::reg_class(ruby);
-    puts("RSprites");
     RSprites::reg_class(ruby);
-    puts("RTimer");
     RTimer::reg_class(ruby);
-    puts("RAudio");
     RAudio::reg_class(ruby);
-    puts("RSpeech");
     RSpeech::reg_class(ruby);
 
     mrb_define_module_function(
