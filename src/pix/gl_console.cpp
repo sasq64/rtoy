@@ -110,6 +110,10 @@ void GLConsole::fill(uint32_t fg, uint32_t bg)
     for (auto& t : grid) {
         t = {' ', fg, bg};
     }
+    frame_buffer.set_target();
+    gl_wrap::clearColor({default_style.bg});
+    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)

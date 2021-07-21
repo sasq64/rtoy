@@ -1,4 +1,5 @@
 
+require 'os.rb'
 
 require 'ui.rb'
 require 'vec2.rb'
@@ -154,9 +155,9 @@ class TileScreen
         when 's'.ord
             @tile_view.tile += (@tile_view.width)
         when '+'.ord
-            @con.scale *= 2
+            @con.scale = [s[0] * 2, s[1] * 2 ]
         when '-'.ord
-            @con.set_scale(s[0] * 0.5, s[1] * 0.5)
+            @con.scale = [s[0] * 0.5, s[1] * 0.5]
         end
         @con.set_offset(*o)
     end

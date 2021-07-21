@@ -48,7 +48,7 @@ void RLayer::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->style.bg = mrb::to_array<float, 4>(av);
+            rlayer->style.bg = mrb::to_array<float, 4>(av, mrb);
             rlayer->update();
             return mrb_nil_value();
         },
@@ -67,7 +67,7 @@ void RLayer::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->style.fg = mrb::to_array<float, 4>(av);
+            rlayer->style.fg = mrb::to_array<float, 4>(av, mrb);
             rlayer->update();
             return mrb_nil_value();
         },
@@ -140,7 +140,7 @@ void RLayer::reg_class(mrb_state* ruby)
             fmt::print("SET_SCALE\n");
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->scale = mrb::to_array<float, 2>(av);
+            rlayer->scale = mrb::to_array<float, 2>(av, mrb);
             rlayer->update_tx();
             return mrb_nil_value();
         },
@@ -189,5 +189,6 @@ void RLayer::reset()
     transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     trans = {0.0F, 0.0F};
     scale = {1.0F, 1.0F};
+    rot = 0;
     update_tx();
 }

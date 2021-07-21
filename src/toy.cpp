@@ -20,14 +20,25 @@
 #include "rsprites.hpp"
 #include "rtimer.hpp"
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <thread>
-namespace fs = std::filesystem;
 
+namespace fs = std::filesystem;
+using clk = std::chrono::steady_clock;
 using namespace std::string_literals;
 static std::string to_run;
+
+template <typename TP>
+std::time_t to_time_t(TP tp)
+{
+    using namespace std::chrono; // NOLINT
+    auto sctp = time_point_cast<system_clock::duration>(
+        tp - TP::clock::now() + system_clock::now());
+    return system_clock::to_time_t(sctp);
+}
 
 void Toy::init()
 {
@@ -81,11 +92,15 @@ void Toy::init()
             if (p.extension() == "") { p.replace_extension(".rb"); }
             if (fs::exists(p)) {
                 auto cp = fs::canonical(p);
-                if (already_loaded.count(cp) > 0) {
+                auto t = fs::last_write_time(cp);
+
+                auto it = already_loaded.find(cp.string());
+
+                if (it != already_loaded.end() && it->second == t) {
                     fmt::print("{} already loaded\n", cp.string());
                     return mrb_nil_value();
                 }
-                already_loaded.insert(cp);
+                already_loaded[cp.string()] = t;
 
                 FILE* fp = fopen(("ruby/"s + name).c_str(), "rbe");
                 if (fp != nullptr) {
@@ -245,7 +260,7 @@ int Toy::run(std::string const& script)
     std::ifstream ruby_file;
     ruby_file.open(script);
     auto source = read_all(ruby_file);
-    mrb_load_string(ruby, source.c_str());
+    exec(ruby, source);
     if (auto err = mrb::check_exception(ruby)) {
         fmt::print("START Error: {}\n", *err);
         for (auto&& line : mrb::get_backtrace(ruby)) {

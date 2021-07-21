@@ -13,6 +13,9 @@
 RConsole::RConsole(int w, int h, Style style)
     : RLayer{w, h}, console(std::make_shared<GLConsole>(w, h, style))
 {
+    default_fg = this->style.fg = gl::Color(style.fg).to_array();
+    default_bg = this->style.bg = gl::Color(style.bg).to_array();
+    update();
     trans = {0.0F, 0.0F};
     scale = {2.0F, 2.0F};
 
@@ -172,8 +175,8 @@ void RConsole::reg_class(mrb_state* ruby)
             } else if (n == 3) {
                 auto [text, fg, bg] =
                     mrb::get_args<std::string, mrb_value, mrb_value>(mrb);
-                auto fcol = gl::Color(mrb::to_array<float, 4>(fg));
-                auto bcol = gl::Color(mrb::to_array<float, 4>(bg));
+                auto fcol = gl::Color(mrb::to_array<float, 4>(fg, mrb));
+                auto bcol = gl::Color(mrb::to_array<float, 4>(bg, mrb));
                 ptr->text(text, fcol.to_uint(), bcol.to_uint());
             }
             return mrb_nil_value();
@@ -193,8 +196,9 @@ void RConsole::reg_class(mrb_state* ruby)
                 auto [x, y, text, fg, bg] =
                     mrb::get_args<int, int, std::string, mrb_value, mrb_value>(
                         mrb);
-                auto fcol = gl::Color(mrb::to_array<float, 4>(fg));
-                auto bcol = gl::Color(mrb::to_array<float, 4>(bg));
+                mrb::get_args<int, int, std::string, mrb_value, mrb_value>(mrb);
+                auto fcol = gl::Color(mrb::to_array<float, 4>(fg, mrb));
+                auto bcol = gl::Color(mrb::to_array<float, 4>(bg, mrb));
                 ptr->text(x, y, text, fcol.to_uint(), bcol.to_uint());
             }
             return mrb_nil_value();
@@ -309,10 +313,15 @@ void RConsole::update()
 
 void RConsole::reset()
 {
-    transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-    trans = {0.0F, 0.0F};
+    RLayer::reset();
     scale = {2.0F, 2.0F};
     update_tx();
+
+    style.fg = default_fg;
+    style.bg = default_bg;
+    update();
+
     console->set_tile_size(8, 16);
     console->font->clear();
+    clear();
 }

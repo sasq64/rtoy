@@ -37,6 +37,7 @@ public:
     void clear();
     RCanvas(int w, int h);
     void render() override;
+    void reset() override;
 
     static void reg_class(mrb_state* ruby);
 };

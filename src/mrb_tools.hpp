@@ -213,17 +213,24 @@ TARGET to(mrb_value obj)
 }
 
 template <typename T, size_t N>
-std::array<T, N> to_array(mrb_value ary)
+std::array<T, N> to_array(mrb_value ary, mrb_state* mrb)
 {
     std::array<T, N> result{};
+    if (!mrb_array_p(ary)) { 
+        ary = mrb_funcall(mrb, ary, "to_a", 0);
+    }
     if (mrb_array_p(ary)) {
         auto sz = ARY_LEN(mrb_ary_ptr(ary));
+        if (sz != N) {
+            mrb_raise(mrb, E_TYPE_ERROR, "not an array");
+            return result;
+        }
         for (int i = 0; i < sz; i++) {
             auto v = mrb_ary_entry(ary, i);
             result[i] = to<T>(v);
         }
     } else {
-        // TODO: Exception
+        mrb_raise(mrb, E_TYPE_ERROR, "not an array");
     }
     return result;
 }

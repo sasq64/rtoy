@@ -1,26 +1,7 @@
-
 require 'meth_attrs.rb'
-require 'tween.rb'
-require 'vec2.rb'
 
 class Color
 
-    BLACK = [0.0, 0.0, 0.0, 1.0]
-    WHITE = [1.0, 1.0, 1.0, 1.0]
-    RED = [0.533, 0.0, 0.0, 1.0]
-    CYAN = [0.667, 1.0, 0.933, 1.0]
-    PURPLE = [0.8, 0.267, 0.8, 1.0]
-    GREEN = [0.0, 0.8, 0.333, 1.0]
-    BLUE = [0.0, 0.0, 0.667, 1.0]
-    YELLOW = [0.933, 0.933, 0.467, 1.0]
-    ORANGE = [0.867, 0.533, 0.333, 1.0]
-    BROWN = [0.4, 0.267, 0.0, 1.0]
-    LIGHT_RED = [1.0, 0.467, 0.467, 1.0]
-    DARK_GREY = [0.2, 0.2, 0.2, 1.0]
-    GREY = [0.467, 0.467, 0.467, 1.0]
-    LIGHT_GREEN = [0.667, 1.0, 0.4, 1.0]
-    LIGHT_BLUE = [0.0, 0.533, 1.0, 1.0]
-    LIGHT_GREY = [0.733, 0.733, 0.733, 1.0]
 
     def data() @data ; end
     def initialize(r,g=nil,b=nil,a=nil)
@@ -38,6 +19,7 @@ class Color
             ((@data[2].clamp(0,1) * 255).to_i << 8) |
             (@data[3].clamp(0,1) * 255).to_i
     end
+    def to_a() @data end
 
     def+(col)
         d = col.data
@@ -56,6 +38,24 @@ class Color
     def*(n)
         Color.new(@data[0] * n, @data[1] * n, @data[2] * n, @data[3] * n)
     end
+
+    BLACK = Color.new(0.0, 0.0, 0.0, 1.0)
+    WHITE = Color.new(1.0, 1.0, 1.0, 1.0)
+    RED = Color.new(0.533, 0.0, 0.0, 1.0)
+    CYAN = Color.new(0.667, 1.0, 0.933, 1.0)
+    PURPLE = Color.new(0.8, 0.267, 0.8, 1.0)
+    GREEN = Color.new(0.0, 0.8, 0.333, 1.0)
+    BLUE = Color.new(0.0, 0.0, 0.667, 1.0)
+    YELLOW = Color.new(0.933, 0.933, 0.467, 1.0)
+    ORANGE = Color.new(0.867, 0.533, 0.333, 1.0)
+    BROWN = Color.new(0.4, 0.267, 0.0, 1.0)
+    LIGHT_RED = Color.new(1.0, 0.467, 0.467, 1.0)
+    DARK_GREY = Color.new(0.2, 0.2, 0.2, 1.0)
+    GREY = Color.new(0.467, 0.467, 0.467, 1.0)
+    LIGHT_GREEN = Color.new(0.667, 1.0, 0.4, 1.0)
+    LIGHT_BLUE = Color.new(0.0, 0.533, 1.0, 1.0)
+    LIGHT_GREY = Color.new(0.733, 0.733, 0.733, 1.0)
+    TRANSP = Color.new(0.0, 0.0, 0.0, 0.0)
 end
 
 class Sprites
@@ -427,7 +427,8 @@ module OS
 
     def sleep(n)
         raise "Can't sleep() in callback handlers" if @@handlers.in_callbacks
-        n.times { Fiber.yield }
+        t = Timer.default.seconds + n
+        while Timer.default.seconds < t ; Fiber.yield ; end
     end
 
     def help(what = nil)

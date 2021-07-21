@@ -27,6 +27,8 @@ struct Color
                static_cast<uint32_t>(alpha * 255);
     }
 
+    std::array<float, 4> to_array() const { return {red, green, blue, alpha}; }
+
     Color(uint32_t rgba) // NOLINT
     {
         red = (rgba >> 24) / 255.0F;

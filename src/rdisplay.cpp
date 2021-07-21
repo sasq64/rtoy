@@ -58,7 +58,7 @@ void Display::setup()
     RLayer::height = h;
 
     console = std::make_shared<RConsole>(
-        w, h, Style{0x8888ffff, 0x00008000});
+        w, h, Style{0xffffffff, 0x00008000});
     puts("Console");
     gl::setViewport({w, h});
     fmt::print("{} {}\n", w, h);
@@ -93,8 +93,9 @@ void Display::end_draw()
 
 void Display::reset()
 {
-    console->clear();
-    canvas->clear();
+    bg = {0, 0, 0.8, 1.0};
+    console->reset();
+    canvas->reset();
     console->reset();
     canvas->reset();
     sprites->reset();
@@ -190,7 +191,7 @@ void Display::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* display = mrb::self_to<Display>(self);
-            display->bg = mrb::to_array<float, 4>(av);;
+            display->bg = mrb::to_array<float, 4>(av, mrb);;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));

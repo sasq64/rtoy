@@ -1,5 +1,6 @@
+
 display.bg = Color::BLACK
-OS.clear
+clear()
 font = Font.from_file('data/Ubuntu-B.ttf')
 text = %w(
   This is the text that should be written to the screen.
@@ -22,13 +23,13 @@ text.each do |word|
     s = add_sprite(img).move(*pos)
     s.alpha = 0
     pos += [img.width + space, 0]
-    tween(obj: s, seconds: 2.0).
-      target(from_pos: vec2(display.width,800), func: :in_bounce).
-      target(to_alpha: 1, func: :smooth_step).
-      target(to_rot: 2 * Math::PI, func: :in_sine).
-      when_done {
+    tween(s).seconds(2.0).
+        fn(:in_bounce).from(pos: vec2(display.width,800)).
+        fn(:smooth_step).to(alpha: 1).
+        to(rotation: 2 * Math::PI).
+        when_done {
           display.canvas.draw(s.x, s.y, s.img) 
           remove_sprite(s) 
-      }
-      sleep(10)
+        }
+    sleep(0.1)
 end

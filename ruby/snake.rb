@@ -1,22 +1,34 @@
-
-
 ### SNAKE
-
-#extend OS
 
 APPLE = '⬤'
 WIDTH = 40
 HEIGHT = 30
 TOP = 2
 
-$x,$y = 5,(HEIGHT/2)
-$mx,$my = 1,0
-$speed = 150
-$length = 14
-$score = 0
-$keys = []
-$snake = []
-$game_over = 0
+x,y = 5,(HEIGHT/2)
+mx,my = 1,0
+speed = 150
+length = 14
+score = 0
+keys = []
+snake = []
+game_over = 0
+
+def draw_box(x,y,w,h)
+    w.times { |i|
+        text(x+i,y,'━')
+        text(x+i,y+h-1,'━')
+    }
+
+    h.times { |i|
+        text(x,y+i,'│')
+        text(x+w-1,y+i,'│')
+    }
+    text x,y,'┍'
+    text x+w-1,y,'┑'
+    text x,y+h-1,'┕'
+    text x+w-1,y+h-1,'┙'
+end
 
 def create_apple
     c = ''
@@ -24,48 +36,56 @@ def create_apple
         x,y = rand(WIDTH-2) + 1, rand(HEIGHT-TOP-1) + TOP + 1
         c = get_char(x, y)
     end
-    #text(x, y, APPLE, Color::LIGHT_RED, Color::BLACK)
+    text(x, y, APPLE, Color::LIGHT_RED, Color::BLACK)
 end
  
-on_key { |key| $keys.append(key) }
 
 def step_worm
 
-    $x += $mx
-    $y += $my
-    c = get_char($x,$y)
+    x += mx
+    y += my
+    c = get_char(x,y)
 
+    text(x,y,'▓')
+    snake.append(x,y)
 
-    text($x,$y,'▓')
-    $snake.append($x,$y)
-
-    if $snake.length > $length
+    if snake.length > length
         # Erase tail
-        rx,ry = $snake.shift(2)
+        rx,ry = snake.shift(2)
         text(rx, ry, ' ')
     end
     c
 end
 
-on_timer($speed) {
+scale(4.0, 2.0)
+display.bg = Color::BLACK
+display.console.fg = Color::GREEN
 
-    if $game_over > 0
-        $game_over += 1
-        p $game_over
+# Draw playfield
+clear()
+draw_box(0,TOP,WIDTH,HEIGHT)
+1.times { create_apple }
+on_key { |key| keys.append(key) }
+
+loop do
+
+    if game_over > 0
+        game_over += 1
+        p game_over
         next
     end
 
     boost = false
-    unless $keys.empty?
-        case $keys.shift
+    unless keys.empty?
+        case keys.shift
         when Key::LEFT
-            $mx,$my = -1,0 if $mx == 0
+            mx,my = -1,0 if mx == 0
         when Key::RIGHT
-            $mx,$my = 1,0 if $mx == 0
+            mx,my = 1,0 if mx == 0
         when Key::UP
-            $mx,$my = 0,-1 if $my == 0
+            mx,my = 0,-1 if my == 0
         when Key::DOWN
-            $mx,$my = 0,1 if $my == 0
+            mx,my = 0,1 if my == 0
         when ' '.ord
             boost = true
         end
@@ -77,43 +97,17 @@ on_timer($speed) {
     end 
 
     if c == APPLE
-        $score += 1
-        $length += 15
+        score += 1
+        length += 15
         create_apple
     elsif c != ' '
-        $game_over = 1
+        game_over = 1
         text(0, 1, "GAME OVER")
     end
 
-    text(WIDTH - 10, 1,"SCORE: #{$score}")
+    text(WIDTH - 10, 1,"SCORE: #{score}")
 
-    $speed -= 0.02 if $speed > 20
-    on_timer($speed)
-}
+    speed -= 0.02 if speed > 20
+    sleep(speed)
+end
 
-
-scale(4.0, 2.0)
-display.bg = Color::BLACK
-display.console.fg = Color::GREEN
-
-# Draw playfield
-clear()
-
-WIDTH.times { |x|
-    text(x,TOP,'━')
-    text(x,HEIGHT-1,'━')
-}
-
-(HEIGHT-TOP).times { |y|
-    text(0,y+TOP,'│')
-    text(WIDTH-1,y+TOP,'│')
-}
-text 0,TOP,'┍'
-text WIDTH-1,TOP,'┑'
-text 0,HEIGHT-1,'┕'
-text WIDTH-1,HEIGHT-1,'┙'
-
-20.times { create_apple }
-
-
-Fiber.yield while $game_over < 10

@@ -67,6 +67,12 @@ void RCanvas::clear()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void RCanvas::reset()
+{
+    RLayer::reset();
+    clear();
+}
+
 void RCanvas::draw_image(float x, float y, RImage* image, float scale)
 {
     canvas.set_target();

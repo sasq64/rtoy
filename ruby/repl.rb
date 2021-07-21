@@ -4,7 +4,7 @@ class Repl
 
     include OS
 
-    def run()
+    def repl_run()
         clear()
         puts "R-Toy READY. Type 'help' if you need it."
         _repl_b = binding

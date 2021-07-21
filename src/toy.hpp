@@ -1,4 +1,5 @@
 
+#include <ctime>
 #include <memory>
 #include <mruby.h>
 #include <mruby/data.h>
@@ -6,7 +7,7 @@
 #include <string>
 
 #include <filesystem>
-#include <set>
+#include <unordered_map>
 
 struct toy_exception : public std::exception
 {
@@ -34,9 +35,11 @@ class Toy
     static inline int stack_keep = 0;
 
     static inline std::filesystem::path ruby_path = "ruby";
-    static inline std::set<std::filesystem::path> already_loaded{};
-public:
+    static inline std::unordered_map<std::string,
+        std::filesystem::file_time_type>
+        already_loaded;
 
+public:
     explicit Toy(bool fs);
 
     static void exec(mrb_state* mrb, std::string const& code);

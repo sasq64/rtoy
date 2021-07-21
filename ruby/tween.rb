@@ -133,14 +133,12 @@ class Tween
     LEGALS = [ :obj, :method, :func, :seconds, :steps, :from, :to ]
     REQUIRED = [ :obj, :method, :seconds, :from, :to ]
 
-    def initialize(o = nil, m = nil, obj:nil, method:nil, on_done: nil,
-                   seconds: 1.0, &block)
+    def initialize(o = nil, seconds: 1.0, &block)
         @block = block
+        @func = :linear
         @targets = []
         seconds = o if o.kind_of? Numeric
         @obj = o || obj
-        @method = m || method
-        @on_done = on_done
         @total_time = seconds
         @start_time = Timer.default.seconds
 
@@ -160,11 +158,21 @@ class Tween
         self
     end
 
+    def seconds(s)
+        @total_time = s
+        self
+    end
+
+    def fn(f)
+        @func = f
+        self
+    end
+
     # attr: val
     def to(**kwargs)
         r = {
             obj: @obj,
-            func: :linear,
+            func: @func,
             seconds: @total_time,
             steps: 0
         }
@@ -182,7 +190,7 @@ class Tween
     def from(**kwargs)
         r = {
             obj: @obj,
-            func: :linear,
+            func: @func,
             seconds: @total_time,
             steps: 0
         }
@@ -194,65 +202,6 @@ class Tween
         end
         add_target(r)
         self
-    end
-
-    def target(**kwargs)
-
-        r = {
-            obj: @obj,
-            method: @method,
-            func: :linear,
-            seconds: @total_time,
-            steps: 0
-        }
-
-        kwargs.each do |key,val|
-            case key
-            when :to_rot
-                r[:from] = r[:obj].rotation
-                r[:to] = val
-                r[:method] = :rotation=
-            when :from_rot
-                r[:to] = r[:obj].rotation
-                r[:from] = val
-                r[:method] = :rotation=
-                r[:obj].rotation = val
-            when :to_pos
-                r[:from] = r[:obj].pos
-                r[:to] = val
-                r[:method] = :pos=
-            when :to_scale
-                r[:from] = r[:obj].scale
-                r[:to] = val
-                r[:method] = :scale=
-            when :from_scale
-                r[:to] = r[:obj].scale
-                r[:from] = val
-                r[:method] = :scale=
-                r[:obj].scale = val
-            when :from_pos
-                r[:to] = r[:obj].pos
-                r[:from] = val
-                r[:method] = :pos=
-                r[:obj].pos = val
-            when :to_alpha
-                r[:from] = r[:obj].alpha
-                r[:to] = val
-                r[:method] = :alpha=
-            when :from_alpha
-                r[:to] = r[:obj].alpha
-                r[:from] = val
-                r[:method] = :alpha=
-                r[:obj].alpha = val
-            else
-                if LEGALS.include?(key)
-                    r[key] = val
-                else
-                    raise TweenError.new "Unknown key #{key}"
-                end
-            end
-        end
-        add_target(r)
     end
 
     def when_done(&block)
