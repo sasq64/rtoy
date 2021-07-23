@@ -25,10 +25,10 @@ pix::Image RCanvas::read_image(int x, int y, int w, int h)
 {
     pix::Image image{
         static_cast<unsigned int>(w), static_cast<unsigned int>(h)};
-    image.ptr = (std::byte*)malloc(w * h * 4);
+    image.ptr = static_cast<std::byte*>(malloc(w * h * 4));
     image.sptr = std::shared_ptr<std::byte>(image.ptr, &free);
     image.format = GL_RGBA;
-    void* ptr = (void*)image.ptr;
+    auto* ptr = static_cast<void*>(image.ptr);
     memset(ptr, w * h * 4, 0xff);
     canvas.set_target();
     // glReadBuffer(GL_COLOR_ATTACHMENT0);

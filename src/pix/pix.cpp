@@ -114,7 +114,7 @@ void draw_quad_uvs(std::array<float, 8> const& uvs)
 void draw_quad_uvs(
     float x, float y, float sx, float sy, std::array<float, 8> const& uvs)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
 
     auto x0 = x * 2.0F / w - 1.0F;
     auto y0 = y * -2.0F / h + 1.0F;
@@ -150,7 +150,7 @@ void draw_quad_uvs(
 
 void draw_quad_impl(float x, float y, float sx, float sy)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
 
     auto x0 = x * 2.0F / w - 1.0F;
     auto y0 = y * -2.0F / h + 1.0F;
@@ -185,7 +185,7 @@ void draw_quad_impl(float x, float y, float sx, float sy)
 
 void draw_quad_filled(float x, float y, float sx, float sy)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
 
     auto x0 = x * 2.0F / w - 1.0F;
     auto y0 = y * -2.0F / h + 1.0F;
@@ -226,7 +226,7 @@ Image load_png(std::string_view name)
 
 void draw_line_impl(float x0, float y0, float x1, float y1)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
 
     x0 = x0 * 2.0F / w - 1.0F;
     x1 = x1 * 2.0F / w - 1.0F;
@@ -248,8 +248,6 @@ void draw_line_impl(float x0, float y0, float x1, float y1)
         std::array{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F,
             1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F});
 
-    auto vp = gl_wrap::getViewport();
-
     gl::vertexAttrib(0, gl::Size<2>{}, gl::Type::Float, 0 * sizeof(GLfloat), 0);
     gl::drawArrays(gl::Primitive::Lines, 0, 2);
     pos.disable();
@@ -257,7 +255,7 @@ void draw_line_impl(float x0, float y0, float x1, float y1)
 
 void draw_circle_impl(float x, float y, float radius)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
     int steps = static_cast<int>(M_PI / asinf(sqrtf(1 / radius)));
 
     steps = 64;
@@ -295,8 +293,8 @@ void save_png(Image const& image, std::string_view name)
 {
 
     lodepng_encode_file(std::string(name).c_str(),
-        (unsigned char const*)image.ptr, image.width, image.height, LCT_RGBA,
-        8);
+        reinterpret_cast<unsigned char const*>(image.ptr), image.width,
+        image.height, LCT_RGBA, 8);
 
     return;
 
