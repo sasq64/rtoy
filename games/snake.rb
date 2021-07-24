@@ -1,6 +1,3 @@
-
-
-
 ### SNAKE
 
 #include OS

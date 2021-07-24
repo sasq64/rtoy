@@ -89,16 +89,17 @@ class Sprite
     returns! Image,:img
 end
 
-# class Layer
-#     def scale=(v)
-#         a = v.to_a
-#         p a
-#         set_scale(a[0], a[1])
-#     end
-#     def scale()
-#         Vec2.new(*get_scale())
-#     end
-# end
+class Layer
+    alias set_scale scale=
+    alias get_scale scale
+
+    def scale=(v)
+        set_scale(v.to_a)
+    end
+    def scale()
+        Vec2.new(*get_scale())
+    end
+end
 
 class Display
     extend MethAttrs
@@ -330,7 +331,11 @@ module OS
 
     def vsync()
         raise "Can't vsync() in callback handlers" if @@handlers.in_callbacks
-        Fiber.yield
+        if block_given?
+            loop { yield ; Fiber.yield }
+        else
+            Fiber.yield
+        end
     end
 
     module_function :display, :console, :canvas, :sprites, :audio,

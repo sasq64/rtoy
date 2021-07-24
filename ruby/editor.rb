@@ -44,9 +44,8 @@ class Editor
         begin
             p "EDITOR EVAL"
             @dirty = false
-            run(@file_name)
-            #, clear: false) { @quit_app }
-            #Fiber.yield while !@quit_app
+            OS.run(@file_name, clear: false) { @quit_app }
+            Fiber.yield while !@quit_app
             p "EVAL DONE"
             @quit_app = false
             reset_display()

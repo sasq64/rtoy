@@ -11,21 +11,24 @@
 ## which is what you will see if you press F5 on an
 ## unchanged help file.
 
-## 'puts' is the same as 'print' except it adds a newline.
+## 'print` and `println` are used to output text.
 ## Note that parentheses in ruby are optional.
 
-#puts "Hello world!"
+println "Hello world!"
 
+## We can also use text to speech
+say "Hello world!"
 
-## 'gets' is used to read a line of text
+## 'readln' is used to read a line of text
 
 # print "What is your name ? "
-# name = gets()
-# puts "Hello #{name}"
+# name = readln()
+# println "Hello #{name}"
 
 
-## The classical maze effect. If we don't add a sleep
-## the loop will never yield and nothing will be shown.
+## The classical maze effect. If we don't add a sleep,
+## we will only yield at newlines and the output will
+## be very fast.
 
 # loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 1 }
 
@@ -37,14 +40,13 @@
 
 ## To instead draw lines, you need a bit more
 
- px,py = 0,0
- on_click { |x,y| px,py = x,y }
- on_drag { |x,y|
-     line(px,py,x,y)
-     px,py = x,y
- }
-
-loop { vsync } 
+# px,py = 0,0
+# on_click { |x,y| px,py = x,y }
+# on_drag { |x,y|
+#     line(px,py,x,y)
+#     px,py = x,y
+# }
+#
 
 ## This code will add a bouncing ball that disappears after
 ## 10 seconds.
