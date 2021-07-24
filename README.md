@@ -1,7 +1,24 @@
 # R-Toy
 (or: _The Virtual Ruby Home Computer!_)
 ![](http://apone.org/toy/shot.gif)
-A ruby play & development environment inspired by the home computers of the 80s.
+
+R-Toy is what I like to call a Virtual Home Computer. It is
+a text based interface to an underlying imaginary computer,
+programmed in Ruby.
+
+It is capable of text, bitmap graphics, sprites and sound.
+
+Its ultimate goal is to replicate the magical experience of
+playing with, and learning programming on a home computer
+of the 80s, but in a way that is approachable to current
+generations of humans.
+
+It can be used to play/experiment with basic programming.
+
+It can be used to prototype small games.
+
+Mostly it can be used for fun!
+
 
 
 ## Prerequisites
