@@ -15,7 +15,7 @@ test : debug
 
 builds/em/cmake_install.cmake :
 	rm -rf builds/em
-	cmake -Bbuilds/em -H. ${CMAKE_FLAGS} -DCMAKE_CXX_COMPILER=em++ -DCMAKE_RANLIB=`which emranlib` -DCMAKE_AR=`which emar` -DCMAKE_BUILD_TYPE=Release
+	cmake -Bbuilds/em -H. -DCMAKE_CXX_COMPILER=em++ -DCMAKE_RANLIB=`which emranlib` -DCMAKE_AR=`which emar` -DCMAKE_BUILD_TYPE=Release
 
 builds/debug/cmake_install.cmake :
 	rm -rf builds/debug

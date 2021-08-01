@@ -8,7 +8,7 @@ extern "C"
 #include <mruby/compile.h>
 #include <mruby/data.h>
 #include <mruby/proc.h>
-#include <mruby/string.h>
+#include <mruby/string.h> // NOLINT
 #include <mruby/value.h>
 #include <mruby/variable.h>
 }

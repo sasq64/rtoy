@@ -126,6 +126,9 @@ else()
         ${PROJECT_SOURCE_DIR}/external/flite/build/x86_64-linux-gnu)
 endif()
 
+set(DATA_FILES data/design.txt data/help.rb Makefile)
+file(GLOB RUBY_FILES ruby/*.rb)
+
 add_executable(${TARGET}
     src/main.cpp
     src/toy.cpp
@@ -140,7 +143,10 @@ add_executable(${TARGET}
     src/rfont.cpp
     src/raudio.cpp
     src/rspeech.cpp
-    src/pix/gl_console.cpp)
+    src/pix/gl_console.cpp
+    ${RUBY_FILES}
+    ${DATA_FILES})
+
 target_include_directories(${TARGET} PUBLIC
     ${MRB_INC} external external/flite/include)
 target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)

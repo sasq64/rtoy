@@ -189,23 +189,24 @@ never the less tried (and understood) the "basic right of passage";
 20 GOTO 10
 ----
 
-Imagine a pre-teen kid playing with a computer today that just happens to teach herself
-how to program along the way. This was not uncommon with these computers, but I have
-a hard time imagining it is very common now.
+Imagine a pre-teen kid playing with a computer today that just happens to teach
+herself how to program along the way. This was not uncommon with these
+computers, but I have a hard time imagining it is very common now.
 
-The R-Toy design is inspired by those 8-bit computers that tought basic programming
-to a whole generation of kids.
-Instead of Basic, it uses Ruby. And it tries to remove many of the rough edges that
-made things hard for the 8-bit users. But it tries to follow some general guidelines
+The R-Toy design is inspired by those 8-bit computers that tought basic
+programming to a whole generation of kids.  Instead of Basic, it uses Ruby. And
+it tries to remove many of the rough edges that made things hard for the 8-bit
+users. But it tries to follow some general guidelines
 
-Being able to explore and understand is more important that teaching a "correct" or "modern" programming paradigm.
+Being able to explore and understand is more important that teaching a
+"correct" or "modern" programming paradigm.
 
 R-Toy should work on any feasable hardware.
 
-R-Toy should work "stand alone". The environment should contain everything needed
-to play, code and experiment. In fact, we see it as a feature to be able to run
-it on dedicated hardware, since then there is no tempting web browser waiting
-just an ALT+TAB key press away.
+R-Toy should work "stand alone". The environment should contain everything
+needed to play, code and experiment. In fact, we see it as a feature to be able
+to run it on dedicated hardware, since then there is no tempting web browser
+waiting just an ALT+TAB key press away.
 
 THE METAPHOR
 

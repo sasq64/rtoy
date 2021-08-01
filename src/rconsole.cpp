@@ -16,7 +16,7 @@ RConsole::RConsole(int w, int h, Style style)
     default_fg = this->style.fg = gl::Color(style.fg).to_array();
     default_bg = this->style.bg = gl::Color(style.bg).to_array();
     update();
-    trans = {0.0F, 2048-1080};
+    trans = {0.0F, 0.0F};
     scale = {2.0F, 2.0F};
 
     rot = 0.0F;
