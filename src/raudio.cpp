@@ -63,10 +63,10 @@ void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)
     // Assume sample is C4 = 261.63 Hz
 
     if (freq == 0) { freq = 261.63F; }
-    freq = sound.freq * (261.63F / freq);
+    freq = sound.freq * (freq / 261.63F);
     fmt::print("{} => {}",sound.freq, freq);
     for (int i = 0; i < sound.channels; i++) {
-        auto& chan = channels[channel + i];
+        auto& chan = channels[(channel + i) % 32];
         chan.data.resize(sound.frames());
         const auto* ptr = sound.channel(i);
         const auto* endp = ptr + sound.frames();
@@ -89,6 +89,13 @@ void RAudio::reg_class(mrb_state* ruby)
     Sound::rclass = mrb_define_class(ruby, "Sound", ruby->object_class);
     MRB_SET_INSTANCE_TT(RAudio::rclass, MRB_TT_DATA);
     MRB_SET_INSTANCE_TT(Sound::rclass, MRB_TT_DATA);
+
+    mrb_define_method(
+        ruby, Sound::rclass, "channels",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            return mrb::to_value(mrb::self_to<Sound>(self)->channels, mrb);
+        },
+        MRB_ARGS_NONE());
 
     mrb_define_method(
         ruby, Sound::rclass, "freq",

@@ -62,6 +62,7 @@ struct GLConsole : public Console
     void blit(
         int x, int y, int stride, std::vector<Char> const& source) override;
 
+    // Creates a render target of w*h pixels for tile rendering
     GLConsole(int w, int h, Style _default_style);
 
     void flush() override;

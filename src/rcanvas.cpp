@@ -40,7 +40,7 @@ void RCanvas::draw_quad(float x, float y, float w, float h)
 {
     canvas.set_target();
     pix::set_colors(style.fg, style.bg);
-    pix::draw_quad_filled(x, y, x + w, y + h);
+    pix::draw_quad_filled(x, y, w, h);
 }
 
 void RCanvas::draw_line(float x0, float y0, float x1, float y1)

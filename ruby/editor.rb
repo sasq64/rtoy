@@ -6,7 +6,7 @@ module OS
         @@current_file = f
         ed = Editor.new
         ed.load(f)
-        ed.activate
+        ed.run_editor()
     end
     module_function :edit
 end
@@ -52,14 +52,9 @@ class Editor
             clear()
             OS.set_handlers(@saved_handlers)
         rescue Exception => e
-            p "EXCEPTION"
             OS.clear_handlers()
             clear()
-            p "ERROR IN RUN"
             reset_display()
-            p e
-            p e.inspect
-            p e.backtrace
             display.console.goto_xy(0,0)
             puts "#{e.to_s}"
             e.backtrace.each { |bt| 
@@ -251,7 +246,7 @@ class Editor
         end
     end
 
-    def activate()
+    def run_editor()
 
         @os_handlers = OS.get_handlers()
         OS.clear_handlers()
