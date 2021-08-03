@@ -1,29 +1,67 @@
+require "os.rb"
 
-canvas.fg = Color::WHITE
-WIDTH = 40
+include OS
+
+clear()
+
+START_OCTAVE = 2
+END_OCTAVE = 6
+
+WIDTH = (display.width / (7*5*4)).to_i
 HEIGHT = WIDTH * 4
 
-def white_key(no)
-    [no*WIDTH, 20, WIDTH-6, HEIGHT]
+def use_octave?(note)
+    oct = note.to_s[-1].to_i
+    oct >= START_OCTAVE && oct <= END_OCTAVE
 end
 
-def black_key(no)
-    [no*WIDTH + WIDTH*2/3, 20, WIDTH/2, HEIGHT*2/3]
+$lookup = [:p] * 100
+
+# Setup white keys
+x = 0
+canvas.fg = Color::WHITE
+Music::NOTES.each_with_index do | note, key |
+    if use_octave?(note) && [0,2,4,5,7,9,11].include?(key % 12)
+        canvas.rect(x*WIDTH, 0, WIDTH*4-2, WIDTH*12)
+        (x...x+4).each { |i| $lookup[i] = note }
+        x += 4
+    end
 end
 
-30.times do |i|
-    canvas.rect(*white_key(i))
-end
-
+# Setup black keys
+x = 0
 canvas.fg = Color::BLACK
-30.times do |i|
-    n = i % 7
-    next if n == 2 || n == 6
-    canvas.rect(*black_key(i))
+Music::NOTES.each_with_index do | note, key |
+    n = key % 12
+    if use_octave?(note) && [1,3,6,8,10].include?(n)
+        canvas.rect((x+3)*WIDTH, 0, WIDTH*2, WIDTH*8)
+        (x+3...x+5).each { |i| $lookup[i] = note }
+        x += 4
+        x += 4 if n == 3 || n == 10
+    end
 end
 
-sound = Audio.load_wav("data/piano.wav")
-
-on_click do |x,y|
-    Audio.default.play(0,sound, x)
+def get_note(x,y)
+    x /= WIDTH
+    if y > WIDTH*8
+        x = (x & 0xffffc) + 1
+    end
+    $lookup[x]
 end
+
+music = Music.new
+
+OS.on_click do |x,y|
+    $note = get_note(x,y)
+    music.play($note)
+end
+
+OS.on_drag do |x,y|
+    note = get_note(x,y)
+    if note != $note
+        $note = note
+        music.play($note)
+    end
+end
+
+loop { vsync }

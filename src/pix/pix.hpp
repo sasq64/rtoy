@@ -84,7 +84,7 @@ struct Image
     Image(unsigned w, unsigned h)
         : width(w),
           height(h),
-          sptr{new std::byte[w * h * 4]},
+          sptr{new std::byte[static_cast<size_t>(w) * h * 4]},
           ptr{sptr.get()},
           format{GL_RGBA}
     {}

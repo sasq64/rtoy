@@ -8,11 +8,14 @@ class Music
 
     # Hash from note to freq
     ALL_KEYS = {}
+    NOTES = []
 
     (0..8).each do |oct|
         notes = (-9..3).map { |i| A[oct] * (2**(i/12.0)) }
         (0..11).each do |note|
-            ALL_KEYS[(keys[note].to_s + oct.to_s).to_sym] = notes[note]
+            note_sym = (keys[note].to_s + oct.to_s).to_sym
+            NOTES << note_sym
+            ALL_KEYS[note_sym] = notes[note]
         end
     end
 
@@ -50,7 +53,7 @@ class Music
                     @channel = 0 if @channel == 32
                 end
             end
-            OS.sleep @tempo
+            #OS.sleep @tempo
         end
     end
 
