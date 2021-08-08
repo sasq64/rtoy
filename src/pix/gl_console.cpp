@@ -106,10 +106,8 @@ void GLConsole::put_color(int x, int y, uint32_t fg, uint32_t bg)
 
 void GLConsole::fill(uint32_t fg, uint32_t bg)
 {
-    for(auto& d : dirty) { d = 1; }
-    for (auto& t : grid) {
-        t = {' ', fg, bg};
-    }
+    std::fill(dirty.begin(), dirty.end(), 1);
+    std::fill(grid.begin(), grid.end(), Char{' ', fg, bg});
     frame_buffer.set_target();
     gl_wrap::clearColor({default_style.bg});
     glClear(GL_COLOR_BUFFER_BIT);
@@ -145,7 +143,6 @@ GLConsole::GLConsole(int w, int h, Style _default_style)
     tile_height = font->char_height;
     dirty.resize(height);
 
-
     fflush(stdout);
     grid.resize(width * height);
     old_grid.resize(width * height);
@@ -168,7 +165,7 @@ void GLConsole::flush()
     bool changed = false;
     frame_buffer.set_target();
     for (int32_t y = 0; y < height; y++) {
-        if(dirty[y] == 0) { continue; }
+        if (dirty[y] == 0) { continue; }
         dirty[y] = 0;
         for (int32_t x = 0; x < width; x++) {
             auto& old = old_grid[x + y * width];
@@ -201,11 +198,6 @@ void GLConsole::flush()
             in_string = false;
         }
     }
-    // if (changed) {
-    // fmt::print("FLUSH!\n");
-    // font->render();
-
-    //}
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -216,7 +208,7 @@ void GLConsole::scroll(int dy, int dx)
 
     for (int32_t y = 0; y < height; y++) {
         auto ty = y + dy;
-        if(ty  >= 0 && ty < height) {
+        if (ty >= 0 && ty < height) {
             dirty[ty] = 1;
             for (int32_t x = 0; x < width; x++) {
                 auto tx = x + dx;

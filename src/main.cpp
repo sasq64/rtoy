@@ -17,6 +17,9 @@ int main(int argc, char const** argv)
     app.add_option("--main", main_script, "Main script");
     app.parse(argc, argv);
 
-    Toy toy{full_screen};
-    toy.run(main_script);
+    ToySettings settings;
+    settings.screen = full_screen ? ScreenType::Full : ScreenType::Window;
+    settings.boot_script = main_script;
+    Toy toy(settings);
+    toy.run();
 }

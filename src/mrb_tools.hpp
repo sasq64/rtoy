@@ -351,9 +351,12 @@ struct RubyPtr
 
     RubyPtr(mrb_state* mrb, mrb_value mv)
     {
+        // Check that mrb_value holds a pointer
         assert((mv.w & 7) == 0); // TODO: Use macro
+        // Store the mrb_value pointer as a shared_ptr
         ptr = std::shared_ptr<void>(mrb_ptr(mv),
             [mrb](void* t) { mrb_gc_unregister(mrb, mrb_obj_value(t)); });
+        // Stop value from being garbage collected
         mrb_gc_register(mrb, mv);
     }
 

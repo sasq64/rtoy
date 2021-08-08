@@ -34,7 +34,7 @@ void RConsole::update_pos(Cursor const& cursor)
 {
     xpos = cursor.x;
     ypos = cursor.y;
-    // Calcluate visibile size.
+    // Calculate visible size.
     // TODO: Include tile_size? wrap attributes ?
     int w = static_cast<int>(static_cast<float>(width) /
                              static_cast<float>(console->font->char_width) /

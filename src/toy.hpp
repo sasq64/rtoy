@@ -16,6 +16,21 @@ struct toy_exception : public std::exception
     char const* what() const noexcept override { return msg.c_str(); }
 };
 
+enum ScreenType
+{
+    Full,
+    Window,
+    None
+};
+
+struct ToySettings
+{
+    using path = std::filesystem::path;
+    ScreenType screen = ScreenType::Window;
+    path boot_script = "main.rb";
+    path console_font = "";
+};
+
 class Toy
 {
     template <typename Stream>
@@ -34,18 +49,22 @@ class Toy
     mrb_state* ruby = nullptr;
     static inline int stack_keep = 0;
 
-    static inline std::filesystem::path ruby_path = "ruby";
+    //namespace fs = std::filesystem;
+    using path = std::filesystem::path;
+
+    path main_script;
+    static inline path ruby_path = "ruby";
     static inline std::unordered_map<std::string,
         std::filesystem::file_time_type>
         already_loaded;
 
 public:
-    explicit Toy(bool fs);
+    explicit Toy(ToySettings const& settings);
 
     static void exec(mrb_state* mrb, std::string const& code);
     void init();
     void destroy();
 
     bool render_loop();
-    int run(std::string const& script);
+    int run();
 };

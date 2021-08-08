@@ -12,32 +12,37 @@
 
 void RLayer::update_tx()
 {
-    // Matrix operations are read bottom to top
     glm::mat4x4 m(1.0F);
+    // Matrix operations are read bottom to top
+
+    // 6. Apply rotation
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
 
-    // Change center back so we rotate around middle of layer
+    // 5. Change center back so we rotate around middle of layer
     m = glm::translate(m, glm::vec3(-1.0, 1.0, 0));
 
+    // 4. Scale back to clip space (-1 -> 1)
     m = glm::scale(m, glm::vec3(2.0 / width, 2.0 / height, 1.0));
+
+    // 3. Translate
     m = glm::translate(m, glm::vec3(trans[0], -trans[1], 0));
 
-    // Scale with orgin at topleft corner
+    // 2. Scale to screen space and apply scale (origin is now to top left corner).
     m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
                           static_cast<float>(height) * scale[1] / 2, 1.0));
 
-    //  Change center so 0,0 becomes the corner
+    // 1. Change center so 0,0 becomes the corner
     m = glm::translate(m, glm::vec3(1.0, -1.0, 0));
 
     //  1
-    //  ^
+    //  ^   Clip space
     //  |
     //  |    0
     //  |
     //  +-------->1 
     // -1
     //
-    memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
+    std::copy(glm::value_ptr(m), glm::value_ptr(m) + 16, transform.begin());
 }
 
 void RLayer::reg_class(mrb_state* ruby)

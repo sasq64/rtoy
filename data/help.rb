@@ -27,7 +27,7 @@ puts "Hello world!"
 ## The classical maze effect. If we don't add a sleep
 ## the loop will never yield and nothing will be shown.
 
-# loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 1 }
+loop { print rand(2) == 0 ? "╲" : "╱" ; sleep 0.01 }
 
 
 ## To paint some circles, uncomment this;

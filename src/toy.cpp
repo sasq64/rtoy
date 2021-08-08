@@ -248,17 +248,18 @@ bool Toy::render_loop()
 #    include <emscripten.h>
 #endif
 
-Toy::Toy(bool fs)
+Toy::Toy(ToySettings const& settings)
 {
-    Display::full_screen = fs;
+    Display::full_screen = settings.screen == ScreenType::Full;
+    main_script = settings.boot_script;
 }
 
-int Toy::run(std::string const& script)
+int Toy::run()
 {
     init();
     puts("Main");
     std::ifstream ruby_file;
-    ruby_file.open(script);
+    ruby_file.open(main_script);
     auto source = read_all(ruby_file);
     exec(ruby, source);
     if (auto err = mrb::check_exception(ruby)) {
