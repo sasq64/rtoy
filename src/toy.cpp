@@ -49,7 +49,7 @@ void Toy::init()
     RCanvas::reg_class(ruby);
     RFont::reg_class(ruby);
     RImage::reg_class(ruby);
-    Display::reg_class(ruby);
+    Display::reg_class(ruby, settings);
     RInput::reg_class(ruby);
     RSprites::reg_class(ruby);
     RTimer::reg_class(ruby);
@@ -248,10 +248,9 @@ bool Toy::render_loop()
 #    include <emscripten.h>
 #endif
 
-Toy::Toy(ToySettings const& settings)
+Toy::Toy(Settings const& _settings) : settings{_settings}
 {
     Display::full_screen = settings.screen == ScreenType::Full;
-    main_script = settings.boot_script;
 }
 
 int Toy::run()
@@ -259,7 +258,7 @@ int Toy::run()
     init();
     puts("Main");
     std::ifstream ruby_file;
-    ruby_file.open(main_script);
+    ruby_file.open(settings.boot_script);
     auto source = read_all(ruby_file);
     exec(ruby, source);
     if (auto err = mrb::check_exception(ruby)) {

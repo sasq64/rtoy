@@ -59,7 +59,13 @@ class TileRenderer
         void main() {
             vec4 col = texture2D(in_tex, out_uv);
             float a = col.a;
-            gl_FragColor = fg_color * col + bg_color * (1.0 - a);
+            //col = vec4(col.rgb, 1.0);
+            
+            vec4 c2 = fg_color; //mix(bg_color, fg_color, a);
+            gl_FragColor = c2;
+
+            //gl_FragColor = (fg_color * col * a) + (bg_color * (1.0 - a));
+            //gl_FragColor = mix(bg_color, mix(fg_color, col, 0.9), a);
              
         }
     )gl";

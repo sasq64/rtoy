@@ -16,10 +16,10 @@
 #include <mruby/compile.h>
 #include <pix/pix.hpp>
 #ifdef __APPLE__
-    #include "TargetConditionals.h"
-    #if TARGET_OS_OSX
-        #define OSX
-    #endif
+#    include "TargetConditionals.h"
+#    if TARGET_OS_OSX
+#        define OSX
+#    endif
 #endif
 
 mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
@@ -30,20 +30,24 @@ mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
                               }
                           }};
 
-Display::Display(mrb_state* state) : ruby(state), RLayer(0, 0)
+Display::Display(mrb_state* state, Settings const& _settings)
+    : ruby(state), settings{_settings}, RLayer(0, 0)
 {
     glm::mat4x4 m(1.0F);
     memcpy(Id.data(), glm::value_ptr(m), 16 * 4);
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-    window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+    window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
 #ifdef OSX
-        w/2, h/2,
+        w / 2, h / 2,
         SDL_WINDOW_ALLOW_HIGHDPI |
 #else
         w, h,
 #endif
-        SDL_WINDOW_OPENGL | (full_screen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+            SDL_WINDOW_OPENGL |
+            (settings.screen == ScreenType::Full ? SDL_WINDOW_FULLSCREEN_DESKTOP
+                                                 : 0));
     // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_CreateContext(window);
@@ -57,8 +61,11 @@ void Display::setup()
     RLayer::width = w;
     RLayer::height = h;
 
-    console = std::make_shared<RConsole>(
-        w, h, Style{0xffffffff, 0x00008000});
+    fmt::print("{}\n", settings.console_font.string());
+
+    console = std::make_shared<RConsole>(w, h,
+        Style{
+            0xffffffff, 0x00008000, settings.console_font.string(), settings.font_size});
     puts("Console");
     gl::setViewport({w, h});
     fmt::print("{} {}\n", w, h);
@@ -102,13 +109,13 @@ void Display::reset()
     SET_NIL_VALUE(draw_handler);
 }
 
-void Display::reg_class(mrb_state* ruby)
+void Display::reg_class(mrb_state* ruby, Settings const& settings)
 {
     Display::rclass = mrb_define_class(ruby, "Display", RLayer::rclass);
     MRB_SET_INSTANCE_TT(Display::rclass, MRB_TT_DATA);
 
     if (Display::default_display == nullptr) {
-        Display::default_display = new Display(ruby);
+        Display::default_display = new Display(ruby, settings);
     } else {
         Display::default_display->ruby = ruby;
     }
@@ -191,7 +198,8 @@ void Display::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* display = mrb::self_to<Display>(self);
-            display->bg = mrb::to_array<float, 4>(av, mrb);;
+            display->bg = mrb::to_array<float, 4>(av, mrb);
+            ;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));

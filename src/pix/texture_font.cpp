@@ -39,7 +39,7 @@ void TextureFont::add_char(char32_t c)
     auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
     int x = next_pos.first;
     int y = next_pos.second;
-    auto cw = font.render_char(c, ptr, texture_width);
+    auto cw = font.render_char(c, ptr, 0xffffff00, texture_width);
 
     // then check if this char is wide and flag it
     if (cw < char_width) { cw = char_width; }

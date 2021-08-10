@@ -13,6 +13,8 @@ struct Style
 {
     uint32_t fg;
     uint32_t bg;
+    std::string font;
+    int font_size;
 };
 
 struct Cursor

@@ -18,7 +18,7 @@ public:
     static inline RClass* rclass = nullptr;
     static void reg_class(mrb_state* ruby);
 
-    RImage* render(std::string const& txt, int n);
+    RImage* render(std::string const& txt, uint32_t color, int n);
     explicit RFont(std::string const& name);
 };
 

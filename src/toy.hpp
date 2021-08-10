@@ -1,12 +1,15 @@
+#pragma once
 
-#include <ctime>
-#include <memory>
+#include "settings.hpp"
+
 #include <mruby.h>
 #include <mruby/data.h>
 #include <mruby/value.h>
-#include <string>
 
+#include <ctime>
 #include <filesystem>
+#include <memory>
+#include <string>
 #include <unordered_map>
 
 struct toy_exception : public std::exception
@@ -14,21 +17,6 @@ struct toy_exception : public std::exception
     explicit toy_exception(std::string const& text) : msg(text) {}
     std::string msg;
     char const* what() const noexcept override { return msg.c_str(); }
-};
-
-enum ScreenType
-{
-    Full,
-    Window,
-    None
-};
-
-struct ToySettings
-{
-    using path = std::filesystem::path;
-    ScreenType screen = ScreenType::Window;
-    path boot_script = "main.rb";
-    path console_font = "";
 };
 
 class Toy
@@ -46,20 +34,21 @@ class Toy
         return contents;
     }
 
+    Settings const& settings;
+
     mrb_state* ruby = nullptr;
     static inline int stack_keep = 0;
 
-    //namespace fs = std::filesystem;
+    // namespace fs = std::filesystem;
     using path = std::filesystem::path;
 
-    path main_script;
     static inline path ruby_path = "ruby";
     static inline std::unordered_map<std::string,
         std::filesystem::file_time_type>
         already_loaded;
 
 public:
-    explicit Toy(ToySettings const& settings);
+    explicit Toy(Settings const& settings);
 
     static void exec(mrb_state* mrb, std::string const& code);
     void init();

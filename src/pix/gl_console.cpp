@@ -131,8 +131,9 @@ void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)
 }
 
 GLConsole::GLConsole(int w, int h, Style _default_style)
-    : default_style(_default_style),
-      font(std::make_shared<TextureFont>("data/unscii-16.ttf", 16)),
+    : default_style(std::move(_default_style)),
+      font(std::make_shared<TextureFont>(
+          default_style.font.c_str(), default_style.font_size)),
       frame_buffer(w, h)
 {
 

@@ -66,6 +66,14 @@ class Display
     returns! Console, :console
 end
 
+class Console
+    def visible_rows
+        ts = self.get_tile_size()
+        s = self.scale.to_a
+        (self.height / (ts[1] * s[1])).to_i
+    end
+end
+
 class Audio
     extend MethAttrs
     returns! Sound, :load_wav

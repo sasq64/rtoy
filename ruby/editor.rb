@@ -70,7 +70,7 @@ class Editor
 
     def editor_key(key, mod)
 
-        h = @con.height/32-2
+        h = @con.visible_rows-2
         @dirty = true
         case key
         when 0x20..0xffffff
@@ -196,7 +196,7 @@ class Editor
         @dirty = false
 
         @con.clear
-        count = @con.height/32-1
+        count = @con.visible_rows-1
         count.times do |y|
             i = y + @scrollpos
             break if i >= @lines.length

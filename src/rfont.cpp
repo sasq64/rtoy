@@ -9,13 +9,13 @@ mrb_data_type RFont::dt{"Font", [](mrb_state*, void* data) {
                         }};
 RFont::RFont(std::string const& fname) : font(fname.c_str()) {}
 
-RImage* RFont::render(std::string const& txt, int n)
+RImage* RFont::render(std::string const& txt, uint32_t color, int n)
 {
     font.set_pixel_size(n);
     auto [w, h] = font.text_size(txt);
     pix::Image img(w, h);
     auto* image = new RImage(img);
-    font.render_text(txt, reinterpret_cast<uint32_t*>(img.ptr), img.width,
+    font.render_text(txt, reinterpret_cast<uint32_t*>(img.ptr), color, img.width,
         img.width, img.height);
     return image;
 }
@@ -38,9 +38,17 @@ void RFont::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RFont::rclass, "render",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [txt, n] = mrb::get_args<std::string, int>(mrb);
+            auto argc = mrb_get_argc(mrb);
+            if(argc == 2) {
+                auto [txt, n] = mrb::get_args<std::string, int>(mrb);
+                auto* font = mrb::self_to<RFont>(self);
+                return mrb::new_data_obj(mrb, font->render(txt, 0xffffff00, n));
+            }
+            auto [txt, col, n] = mrb::get_args<std::string, mrb_value, int>(mrb);
+            auto col_a = mrb::to_array<float, 4>(col, mrb);
+            auto col_u = gl::Color(col_a).to_uint();
             auto* font = mrb::self_to<RFont>(self);
-            return mrb::new_data_obj(mrb, font->render(txt, n));
+            return mrb::new_data_obj(mrb, font->render(txt, col_u, n));
         },
         MRB_ARGS_REQ(2));
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <coreutils/utf8.h>
 #include <fmt/format.h>
 
 #include <cstdint>
@@ -21,6 +22,7 @@ class FTFont
 public:
     FTFont(const char* name, int size = -1) // NOLINT
     {
+        fmt::print("Font: {}\n", name);
         auto error = FT_Init_FreeType(&library);
         error = FT_New_Face(library, name, 0, &face);
 
@@ -48,7 +50,7 @@ public:
     }
 
     template <typename T>
-    void copy_char(T* target, FT_Bitmap const& b, int xoffs, int yoffs,
+    void copy_char(T* target, uint32_t color, FT_Bitmap const& b, int xoffs, int yoffs,
         int stride, int width = -1, int height = -1)
     {
         auto* data = b.buffer;
@@ -68,15 +70,16 @@ public:
                 if constexpr (sizeof(T) == 1) {
                     target[offset] = alpha;
                 } else {
-                    target[offset] =
-                        alpha << 24 | alpha << 16 | alpha << 8 | alpha;
+                    //color = 0xffffff00;
+                    target[offset] = (color >> 8) | (alpha << 24);
+                        //alpha << 24 | alpha << 16 | alpha << 8 | alpha;
                 }
             }
         }
     }
 
     template <typename T>
-    std::pair<int, int> render_text(std::string_view txt, T* target, int stride,
+    std::pair<int, int> render_text(std::string_view txt, T* target, uint32_t color, int stride,
         int width = 0, int height = 0)
     {
         int pen_x = 0;
@@ -90,14 +93,16 @@ public:
         auto low = face->size->metrics.descender / 64;
         // fmt::print("{}->{}\n", delta, low);
         if (target != nullptr) { memset(target, 0, width * height * 4); }
-        for (auto c : txt) {
+
+        auto text32 = utils::utf8_decode(txt);
+        for (auto c : text32) {
             auto error = FT_Load_Char(face, c, FT_LOAD_RENDER);
             FT_GlyphSlot slot = face->glyph;
             if (error) { continue; } /* ignore errors */
             // fmt::print("{}x{} pixels to y={}\n", slot->bitmap.width,
             // slot->bitmap.rows, delta - face->glyph->bitmap_top);
             if (target) {
-                copy_char(target, slot->bitmap, pen_x + slot->bitmap_left,
+                copy_char(target, color, slot->bitmap, pen_x + slot->bitmap_left,
                     delta - face->glyph->bitmap_top, stride);
             }
             pen_x += slot->advance.x >> 6;
@@ -107,12 +112,12 @@ public:
 
     std::pair<int, int> text_size(std::string_view txt)
     {
-        return render_text(txt, (uint8_t*)nullptr, 0);
+        return render_text(txt, (uint8_t*)nullptr, 0, 0);
     }
 
     template <typename T>
     int render_char(
-        char32_t c, T* target, int stride, int width = 0, int height = 0)
+        char32_t c, T* target, uint32_t color, int stride, int width = 0, int height = 0)
     {
         using namespace std::string_literals;
         mono = false;
@@ -132,7 +137,7 @@ public:
         /*     b.width, b.rows, face->glyph->advance.x, */
         /*     face->glyph->metrics.width); */
 
-        copy_char(target, b, xoffs, yoffs, stride, width, height);
+        copy_char(target, color, b, xoffs, yoffs, stride, width, height);
 
         return xoffs + static_cast<int>(b.width);
     }

@@ -239,16 +239,25 @@ class Tween
         @@tweens = []
     end
 
-    def self.make(*args, &block)
-
+    def self.start(*args, &block)
         tween = Tween.new(*args, &block)
         @@tweens.append(tween)
         tween
     end
 
+    def start()
+        @start_time = Timer.default.seconds
+        @@tweens.append(self)
+        self
+    end
+
+    def self.mape(*args, &block)
+        Tween.new(*args, &block)
+    end
+
 end
 
 def tween(*args, &block)
-    Tween.make(*args, &block)
+    Tween.start(*args, &block)
 end
 

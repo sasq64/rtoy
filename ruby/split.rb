@@ -1,6 +1,6 @@
 # Sprite split and tween example
 img = Image.from_file("data/face.png")
-sprites = img.split(20, 10).map { |img| add_sprite(img) }
+sprites = img.split(20, 2).map { |img| add_sprite(img) }
 scale = 4
 sprites.each do | s |
     s.pos = s.pos * scale + [100,0]
