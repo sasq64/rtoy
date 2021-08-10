@@ -72,6 +72,7 @@ public:
                 } else {
                     //color = 0xffffff00;
                     target[offset] = (color >> 8) | (alpha << 24);
+                    //target[offset] = (color >> 8) | (alpha << 24);
                         //alpha << 24 | alpha << 16 | alpha << 8 | alpha;
                 }
             }

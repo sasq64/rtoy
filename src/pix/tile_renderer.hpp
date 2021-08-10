@@ -46,6 +46,23 @@ class TileRenderer
             gl_Position = vec4((in_pos * scale + xypos) * screen_scale, 0, 1);
         }
     )gl";
+        /*
+         *
+         *  FA  BA  TA -> A
+         *  1   1   -     1
+         *  1   0   -     TA
+         *
+         *  if fg.a and bg.a = 1
+         *  mix(fg, bg, ta)
+         *  
+         *  ta 0 ---------> 1
+         *     bg --------> fg
+         *     
+         * if bg.a is 0, a unmodified
+         * if bg.a is 1, a = 1
+         * ie
+         * a : a --- > 1
+         */
 
     static inline char const* pixel_shader =
         R"gl(
@@ -59,14 +76,9 @@ class TileRenderer
         void main() {
             vec4 col = texture2D(in_tex, out_uv);
             float a = col.a;
-            //col = vec4(col.rgb, 1.0);
-            
-            vec4 c2 = fg_color; //mix(bg_color, fg_color, a);
-            gl_FragColor = c2;
-
-            //gl_FragColor = (fg_color * col * a) + (bg_color * (1.0 - a));
-            //gl_FragColor = mix(bg_color, mix(fg_color, col, 0.9), a);
-             
+            col.a = mix(a, 1.0, bg_color.a);
+            col.rgb = mix(fg_color.rgb * col.rgb, bg_color.rgb, (1.0 - a) * bg_color.a);
+            gl_FragColor = col;
         }
     )gl";
 

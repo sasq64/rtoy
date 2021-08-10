@@ -19,11 +19,18 @@ struct Color
         alpha = a[3];
     }
 
-    uint32_t to_uint() const
+    uint32_t to_rgba() const
     {
         return (static_cast<uint32_t>(red * 255) << 24) |
                (static_cast<uint32_t>(green * 255) << 16) |
                (static_cast<uint32_t>(blue * 255) << 8) |
+               static_cast<uint32_t>(alpha * 255);
+    }
+    uint32_t to_bgra() const
+    {
+        return (static_cast<uint32_t>(blue * 255) << 24) |
+               (static_cast<uint32_t>(green * 255) << 16) |
+               (static_cast<uint32_t>(red * 255) << 8) |
                static_cast<uint32_t>(alpha * 255);
     }
 

@@ -55,7 +55,7 @@ void RConsole::update_pos(Cursor const& cursor)
 void RConsole::text(std::string const& t)
 {
     console->default_style = {
-        gl::Color(style.fg).to_uint(), gl::Color(style.bg).to_uint()};
+        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
     auto cursor = console->text(xpos, ypos, t);
     update_pos(cursor);
 }
@@ -69,7 +69,7 @@ void RConsole::text(std::string const& t, uint32_t fg, uint32_t bg)
 void RConsole::text(int x, int y, std::string const& t)
 {
     console->default_style = {
-        gl::Color(style.fg).to_uint(), gl::Color(style.bg).to_uint()};
+        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
     console->text(x, y, t);
 }
 
@@ -177,7 +177,7 @@ void RConsole::reg_class(mrb_state* ruby)
                     mrb::get_args<std::string, mrb_value, mrb_value>(mrb);
                 auto fcol = gl::Color(mrb::to_array<float, 4>(fg, mrb));
                 auto bcol = gl::Color(mrb::to_array<float, 4>(bg, mrb));
-                ptr->text(text, fcol.to_uint(), bcol.to_uint());
+                ptr->text(text, fcol.to_rgba(), bcol.to_rgba());
             }
             return mrb_nil_value();
         },
@@ -199,7 +199,7 @@ void RConsole::reg_class(mrb_state* ruby)
                 mrb::get_args<int, int, std::string, mrb_value, mrb_value>(mrb);
                 auto fcol = gl::Color(mrb::to_array<float, 4>(fg, mrb));
                 auto bcol = gl::Color(mrb::to_array<float, 4>(bg, mrb));
-                ptr->text(x, y, text, fcol.to_uint(), bcol.to_uint());
+                ptr->text(x, y, text, fcol.to_rgba(), bcol.to_rgba());
             }
             return mrb_nil_value();
         },
@@ -308,7 +308,7 @@ void RConsole::reg_class(mrb_state* ruby)
 void RConsole::update()
 {
     console->default_style = {
-        gl::Color(style.fg).to_uint(), gl::Color(style.bg).to_uint()};
+        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
 }
 
 void RConsole::reset()

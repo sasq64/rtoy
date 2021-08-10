@@ -46,7 +46,8 @@ void RFont::reg_class(mrb_state* ruby)
             }
             auto [txt, col, n] = mrb::get_args<std::string, mrb_value, int>(mrb);
             auto col_a = mrb::to_array<float, 4>(col, mrb);
-            auto col_u = gl::Color(col_a).to_uint();
+            auto col_u = gl::Color(col_a).to_bgra();
+            fmt::print("Text {} color {:x}\n", txt, col_u);
             auto* font = mrb::self_to<RFont>(self);
             return mrb::new_data_obj(mrb, font->render(txt, col_u, n));
         },

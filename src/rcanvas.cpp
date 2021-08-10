@@ -177,7 +177,7 @@ void RCanvas::reg_class(mrb_state* ruby)
                 mrb::get_args<float, float, std::string, int>(mrb);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
 
-            auto fg = gl::Color(rcanvas->style.fg).to_uint();
+            auto fg = gl::Color(rcanvas->style.fg).to_rgba();
             auto* rimage =
                 rcanvas->current_font.as<RFont>()->render(text, fg, size);
             rcanvas->draw_image(x, y, rimage);

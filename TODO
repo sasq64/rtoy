@@ -1,11 +1,12 @@
 
 [ ] Wait for key after error in editor
 [ ] Set default colors before showing error
-[ ] Fix font rendering bgcolor
+[x] Fix font rendering bgcolor
 [ ] Option to auto run script after boot
-[ ] Option to run screen less (for testing)
+[ ] Option to run screenless (for testing)
 [ ] Initial tests
-[ ] Option to set different console font
+[x] Option to set different console font
 [ ] Intelligent console sizing/scaling depending on system
 [ ] Fix Jetbrains font
 [ ] Reset changes tile size to 16
+[ ] Investigate RGB ordering strangeness
