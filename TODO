@@ -11,3 +11,11 @@
 [ ] Reset changes tile size to 16
 [ ] Investigate RGB ordering strangeness
 [ ] Change prompt
+
+
+# SLIDES
+
+Add font.get_size method
+Render whole paragraph to one image
+Do word wrap
+Background rect on code block

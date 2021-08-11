@@ -24,6 +24,7 @@ class Repl
                     Fiber.yield if f.alive?
                 end
             rescue => e
+                p e.backtrace
                 puts "Error " + e.message
             end
             x,y = Display.default.console.get_xy()

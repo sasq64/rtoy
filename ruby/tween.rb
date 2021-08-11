@@ -223,6 +223,9 @@ class Tween
 
     def finish
         @start_time -= @total_time
+        @targets.each { |tg| tg.update(1.0) } 
+        @on_done.call if @on_done
+        @@tweens.delete self
     end
 
     def stop

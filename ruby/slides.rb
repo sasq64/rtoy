@@ -32,6 +32,7 @@ class Slide
         @ypos = 10
         @tweens = []
         @blocks = []
+        @block_no = 0
         @header_sizes = [120, 80, 64, 48]
         @anim = :none
         @justify = :left
@@ -46,43 +47,52 @@ class Slide
         @anim = a
     end
 
-    def play()
-        while tween = @tweens.shift
-            tween.start()
-        end
-    end
-
     def done?
-        @tweens.empty?
+        @block_no >= @blocks.size
     end
 
     def pause()
         @blocks << [:pause, 0, '']
     end
 
-    def start()
-        p "START!"
-        @ypos = 0
-        @blocks.each do |block|
+    def finish()
+        # Finish all ongoing tweens
+        @tweens.each do |tween|
+            tween.finish()
+        end
+    end
+
+    def step()
+
+        # Finish all ongoing tweens
+        @tweens.each do |tween|
+            tween.finish()
+        end
+
+        @tweens = []
+
+        while @block_no < @blocks.size
+            block = @blocks[@block_no]
+            @block_no += 1
             type,arg,txt,anim = *block
             p "BLOCK #{type} #{arg} #{txt}"
             p @header_sizes[arg]            
             case type
             when :h
                 @ypos += add(@font.render(txt, Color::BLACK, @header_sizes[arg]),
-                             @ypos, @anim)
+                             @ypos, anim)
             when :p
                 txt.split("\n").each do |line|
-                    @ypos += add(@font.render(line, Color::BLACK, 48), @ypos, @anim)
+                    @ypos += add(@font.render(line, Color::BLACK, 48), @ypos, anim)
                 end
             when :code
                 txt.split("\n").each do |line|
-                    @ypos += add(@fixed.render(line, Color::BLACK, 48), @ypos, @anim)
+                    @ypos += add(@fixed.render(line, Color::BLACK, 48), @ypos, anim)
                 end
             when :pause
-                @tweens << nil
+                break
             when :space
-                @ypos += args
+                @ypos += arg
             end
         end
     end
@@ -113,8 +123,6 @@ class Slide
 
     def add(img, y, what)
 
-        p "ADD"
-        #target = [20, y]
         if @justify == :center
             target = [(canvas.width - img.width) / 2, y]
         else
@@ -122,7 +130,6 @@ class Slide
         end
 
         if what == :none
-            p "DRAW"
             canvas.draw(target[0], target[1], img)
             return img.height
         end
@@ -137,7 +144,7 @@ class Slide
         if what == :fade
             s.alpha = 0
             s.move(*target)
-            @tweens << Tween.new(s).seconds(2.0).to(alpha: 1.0).
+            @tweens << tween(s).seconds(2.0).to(alpha: 1.0).
                 when_done {
                     canvas.draw(s.x, s.y, s.img) 
                     remove_sprite(s) 
@@ -145,16 +152,12 @@ class Slide
             return img.height
         end
 
-        @tweens << Tween.new(s).seconds(2.0).fn(:out_bounce).to(pos: target).
+        @tweens << tween(s).seconds(2.0).fn(:out_bounce).to(pos: target).
             when_done {
                 canvas.draw(s.x, s.y, s.img) 
                 remove_sprite(s) 
             }
         img.height
-    end
-
-    def check()
-        p "CHECK ME"
     end
 
 end
@@ -174,21 +177,20 @@ class SlideDeck
         s = Slide.new
         s.instance_exec(&block)
         @slides << s
-        s.check()
     end
 
     def play()
+        no = 1
+        tot = @slides.size
         @slides.each do |slide|
-            p "SLIDE"
             canvas.clear()
-            p "CLEARED"
-            slide.check()
-            slide.start()
-            p "STARTED"
+            canvas.text(canvas.width - 90, canvas.height - 60, "#{no}/#{tot}", 48)
             while !slide.done?
-                slide.play()
+                slide.step()
                 OS.read_key()
             end
+            no += 1
+            slide.finish()
         end
     end
 end
@@ -199,10 +201,15 @@ slide {
     anim :from_right
     justify :center
     h1 "R-Toy"
+    anim :from_left
     sub "The Virtual Ruby Home Computer"
-    pause()
+}
+
+slide {
+    anim :fade
     para "Trying to replicate the effect an 80s home computer had
 on a nerd like me."
+    space 30
     code '10 PRINT "HELLO"
 20 GOTO 10'
 }
