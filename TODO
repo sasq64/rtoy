@@ -6,7 +6,8 @@
 [ ] Option to run screenless (for testing)
 [ ] Initial tests
 [x] Option to set different console font
-[ ] Intelligent console sizing/scaling depending on system
+[x] Intelligent console sizing/scaling depending on system
 [ ] Fix Jetbrains font
 [ ] Reset changes tile size to 16
 [ ] Investigate RGB ordering strangeness
+[ ] Change prompt

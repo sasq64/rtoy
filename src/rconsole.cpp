@@ -16,11 +16,12 @@ RConsole::RConsole(int w, int h, Style style)
     default_fg = this->style.fg = gl::Color(style.fg).to_array();
     default_bg = this->style.bg = gl::Color(style.bg).to_array();
     update();
-    trans = {0.0F, 0.0F};
-    scale = {2.0F, 2.0F};
+    reset();
+    /* trans = {0.0F, 0.0F}; */
+    /* scale = {2.0F, 2.0F}; */
 
-    rot = 0.0F;
-    update_tx();
+    /* rot = 0.0F; */
+    /* update_tx(); */
 }
 
 void RConsole::clear()
@@ -314,14 +315,24 @@ void RConsole::update()
 void RConsole::reset()
 {
     RLayer::reset();
-    scale = {2.0F, 2.0F};
+
+
+    int lines = height / console->tile_height;
+    float s = 1.0;
+    int total = lines;
+    while(total > 50) {
+        s += 1.0;
+        total -= lines;
+    }
+
+    scale = {s, s};
     update_tx();
 
     style.fg = default_fg;
     style.bg = default_bg;
     update();
 
-    console->set_tile_size(8, 16);
+    console->reset();
     console->font->clear();
     clear();
 }

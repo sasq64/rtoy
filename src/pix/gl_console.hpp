@@ -69,6 +69,8 @@ struct GLConsole : public Console
 
     void flush() override;
 
+    void reset();
+
     int get_width() override;
     int get_height() override;
     Char get(int x, int y) const override;

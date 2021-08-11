@@ -129,6 +129,11 @@ void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)
         }
     }
 }
+void GLConsole::reset()
+{
+    tile_width = font->char_width;
+    tile_height = font->char_height;
+}
 
 GLConsole::GLConsole(int w, int h, Style _default_style)
     : default_style(std::move(_default_style)),
