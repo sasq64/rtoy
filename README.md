@@ -19,7 +19,8 @@ It can be used to prototype small games.
 
 Mostly it can be used for fun!
 
-
+I am looking for help. If you want to help out, send me a
+mail: sasq64@gmail.com
 
 ## Build for Linux/OSX
 
