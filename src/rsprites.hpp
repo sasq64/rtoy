@@ -20,6 +20,7 @@ struct RSprite
 
     float width{};
     float height{};
+    float alpha = 1.0F;
 
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};

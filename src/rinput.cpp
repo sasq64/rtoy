@@ -1,5 +1,6 @@
 #include "rinput.hpp"
 
+#include "SDL_keyboard.h"
 #include "SDL_video.h"
 #include "error.hpp"
 #include "keycodes.h"
@@ -60,11 +61,16 @@ void RInput::poll_events()
             }
             auto& ke = e.key;
             auto code = sdl2key(ke.keysym.sym);
+            pressed[code] = 1;
             auto mod = ke.keysym.mod;
             if (code < 0x20 || code > 0x1fffc || (mod & 0xc0) != 0) {
                 fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
                 call_proc(ruby, key_handler, code, mod);
             }
+        } else if (e.type == SDL_KEYUP) {
+            auto& ke = e.key;
+            auto code = sdl2key(ke.keysym.sym);
+            pressed[code] = 0;
         } else if (e.type == SDL_QUIT) {
             fmt::print("quit\n");
             do_quit = true;
@@ -141,6 +147,24 @@ void RInput::reg_class(mrb_state* ruby)
             return mrb::to_value(clip, mrb);
         },
         MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, rclass, "get_key",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* input = mrb::self_to<RInput>(self);
+            auto [code] = mrb::get_args<int>(mrb);
+            return mrb::to_value(input->pressed[code] == 1, mrb);
+        },
+        MRB_ARGS_BLOCK());
+
+    mrb_define_method(
+        ruby, rclass, "get_modifiers",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* input = mrb::self_to<RInput>(self);
+            uint32_t mods = SDL_GetModState();
+            return mrb::to_value(mods, mrb);
+        },
+        MRB_ARGS_BLOCK());
 
     mrb_define_method(
         ruby, rclass, "on_key",

@@ -9,79 +9,52 @@
 
 #include "error.hpp"
 #include "mrb_tools.hpp"
+#include "raudio.hpp"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
 #include "rdisplay.hpp"
 #include "rfont.hpp"
 #include "rimage.hpp"
 #include "rinput.hpp"
+#include "rspeech.hpp"
 #include "rsprites.hpp"
 #include "rtimer.hpp"
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <thread>
-namespace fs = std::filesystem;
 
+namespace fs = std::filesystem;
+using clk = std::chrono::steady_clock;
 using namespace std::string_literals;
 static std::string to_run;
+
+template <typename TP>
+std::time_t to_time_t(TP tp)
+{
+    using namespace std::chrono; // NOLINT
+    auto sctp = time_point_cast<system_clock::duration>(
+        tp - TP::clock::now() + system_clock::now());
+    return system_clock::to_time_t(sctp);
+}
 
 void Toy::init()
 {
     ruby = mrb_open();
 
-    auto define_const = [&](RClass* mod, std::string const& sym, uint32_t v) {
-        auto sv = static_cast<int32_t>(v);
-        mrb_define_const(ruby, mod, sym.c_str(), mrb_int_value(ruby, sv));
-    };
-
-    auto* colors = mrb_define_module(ruby, "Color");
-    define_const(colors, "BLACK", 0x000000ff);
-    define_const(colors, "WHITE", 0xffffffff);
-    define_const(colors, "RED", 0x880000ff);
-    define_const(colors, "CYAN", 0xAAFFEEff);
-    define_const(colors, "PURPLE", 0xcc44ccff);
-    define_const(colors, "GREEN", 0x00cc55ff);
-    define_const(colors, "BLUE", 0x0000aaff);
-    define_const(colors, "YELLOW", 0xeeee77ff);
-    define_const(colors, "ORANGE", 0xdd8855ff);
-    define_const(colors, "BROWN", 0x664400ff);
-    define_const(colors, "LIGHT_RED", 0xff7777ff);
-    define_const(colors, "DARK_GREY", 0x333333ff);
-    define_const(colors, "GREY", 0x777777ff);
-    define_const(colors, "LIGHT_GREEN", 0xaaff66ff);
-    define_const(colors, "LIGHT_BLUE", 0x0088ffff);
-    define_const(colors, "LIGHT_GREY", 0xbbbbbbff);
-
-    puts("RLayer");
     RLayer::reg_class(ruby);
-    puts("RConsole");
     RConsole::reg_class(ruby);
-    puts("RCanvas");
     RCanvas::reg_class(ruby);
-    puts("RFont");
     RFont::reg_class(ruby);
-    puts("RImage");
     RImage::reg_class(ruby);
-    puts("RDisplay");
-    Display::reg_class(ruby);
-    puts("RInput");
+    Display::reg_class(ruby, settings);
     RInput::reg_class(ruby);
-    puts("RSprites");
     RSprites::reg_class(ruby);
-    puts("RTimer");
     RTimer::reg_class(ruby);
-
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "exec",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [source] = mrb::get_args<std::string>(mrb);
-            fmt::print("Load string {}\n", source.length());
-            to_run = source;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    RAudio::reg_class(ruby);
+    RSpeech::reg_class(ruby);
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",
@@ -102,45 +75,10 @@ void Toy::init()
         MRB_ARGS_REQ(1));
 
     mrb_define_module_function(
-        ruby, ruby->kernel_module, "print",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [text] = mrb::get_args<std::string>(mrb);
-            Display::default_display->console->text(text);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_module_function(
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-          auto [what] = mrb::get_args<bool>(mrb);
-          assert(what);
-          return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "load",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [name] = mrb::get_args<std::string>(mrb);
-            fmt::print("Loading {}\n", name);
-            FILE* fp = fopen(name.c_str(), "rbe");
-            if (fp != nullptr) {
-                // mrb_load_file(mrb, fp);
-                fseek(fp, 0, SEEK_END);
-                auto sz = ftell(fp);
-                fseek(fp, 0, SEEK_SET);
-                std::string s;
-                s.resize(sz + 1);
-                fread(s.data(), sz, 1, fp);
-                s[sz] = 0;
-                fclose(fp);
-                exec(mrb, s);
-                if (auto err = mrb::check_exception(mrb)) {
-                    fmt::print("Error: {}\n", *err);
-                    exit(1);
-                }
-            }
+            auto [what] = mrb::get_args<bool>(mrb);
+            assert(what);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -154,18 +92,27 @@ void Toy::init()
             if (p.extension() == "") { p.replace_extension(".rb"); }
             if (fs::exists(p)) {
                 auto cp = fs::canonical(p);
-                if (already_loaded.count(cp) > 0) {
+                auto t = fs::last_write_time(cp);
+
+                auto it = already_loaded.find(cp.string());
+
+                if (it != already_loaded.end() && it->second == t) {
                     fmt::print("{} already loaded\n", cp.string());
                     return mrb_nil_value();
                 }
-                already_loaded.insert(cp);
+                already_loaded[cp.string()] = t;
 
                 FILE* fp = fopen(("ruby/"s + name).c_str(), "rbe");
                 if (fp != nullptr) {
-                    mrb_load_file(mrb, fp);
+                    auto* ctx = mrbc_context_new(mrb);
+                    ctx->capture_errors = true;
+                    mrbc_filename(mrb, ctx, name.c_str());
+                    ctx->lineno = 1;
+                    mrb_load_file_cxt(mrb, fp, ctx);
+                    mrbc_context_free(mrb, ctx);
                     fclose(fp);
                     if (auto err = mrb::check_exception(mrb)) {
-                        fmt::print("Error: {}\n", *err);
+                        fmt::print("REQUIRE Error: {}\n", *err);
                         exit(1);
                     }
                 }
@@ -186,11 +133,13 @@ void Toy::init()
             auto dir = fs::path(ds);
             auto parent = fs::canonical(root_path / dir);
             std::vector<std::string> files;
-            for (auto&& p : fs::directory_iterator(parent)) {
-                auto real_path = dir == "." ? p.path().filename()
-                                            : dir / p.path().filename();
-                fmt::print("{}/{}\n", p.path().string(), real_path.string());
-                files.emplace_back(real_path);
+            if (fs::is_directory(parent)) {
+                for (auto&& p : fs::directory_iterator(parent)) {
+                    auto real_path = dir == "." ? p.path().filename()
+                                                : dir / p.path().filename();
+                    fmt::print("{}\n", real_path.string());
+                    files.emplace_back(real_path);
+                }
             }
             return mrb::to_value(files, mrb);
         },
@@ -199,20 +148,20 @@ void Toy::init()
 
 void Toy::exec(mrb_state* mrb, std::string const& code)
 {
-    // auto* cxt = mrbc_context_new(mrb);
-    // cxt->capture_errors = TRUE;
-    // cxt->lineno = 1;
-    auto ai = mrb_gc_arena_save(mrb);
+    auto* ctx = mrbc_context_new(mrb);
+    ctx->capture_errors = TRUE;
+    ctx->lineno = 1;
+
+    // auto ai = mrb_gc_arena_save(ruby);
+
     auto* parser = mrb_parser_new(mrb);
-    if (parser == nullptr) {
-        fputs("create parser state error\n", stderr);
-        return;
-    }
+    if (parser == nullptr) { throw toy_exception("Can't create parser"); }
+
     parser->s = code.c_str();
     parser->send = code.c_str() + code.length();
     parser->lineno = 1;
-    mrbc_context* cxt = nullptr;
-    mrb_parser_parse(parser, cxt);
+    mrb_parser_parse(parser, ctx);
+
     if (parser->nwarn > 0) {
         char* msg = mrb_locale_from_utf8(parser->warn_buffer[0].message, -1);
         printf("line %d: %s\n", parser->warn_buffer[0].lineno, msg);
@@ -227,38 +176,12 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     }
     struct RProc* proc = mrb_generate_code(mrb, parser);
     mrb_parser_free(parser);
-    if (proc == nullptr) { return; }
-
-    if (mrb->c->cibase->u.env != nullptr) {
-        struct REnv* e = mrb_vm_ci_env(mrb->c->cibase);
-        if ((e != nullptr) && MRB_ENV_LEN(e) < proc->body.irep->nlocals) {
-            printf("MODIFY\n");
-            MRB_ENV_SET_LEN(e, proc->body.irep->nlocals);
-        }
-    }
-
-    struct RClass* target = mrb->object_class;
-    MRB_PROC_SET_TARGET_CLASS(proc, target);
-    if (mrb->c->ci != nullptr) { mrb_vm_ci_target_class_set(mrb->c->ci, target); }
-
-    unsigned stack_keep = 0;
-
-    auto result = mrb_top_run(mrb, proc, mrb_top_self(mrb), stack_keep);
-    /* auto* e = mrb_vm_top_start(mrb, proc, mrb_top_self(mrb), stack_keep); */
-    /* auto* val = mrb_vm_run_cycles(mrb, e, 10); */
-    /* if(val == nullptr) { */
-    /*     val = mrb_vm_run_cycles(mrb, e, 0x7fffffff); */
-    /* } */
-    /* mrb_vm_end(mrb, e); */
-    if (mrb->exc != nullptr) {
-        fmt::print("EXCEPTION!\n");
-    } else {
-        *(mrb->c->ci->stack + 1) = result;
-    }
-
-    mrb_gc_arena_restore(mrb, ai);
-    // mrb_parser_free(parser);
-    // mrbc_context_free(mrb, cxt);
+    if (proc == nullptr) { throw toy_exception("Can't generate code"); }
+    // struct RClass* target = mrb->object_class;
+    // MRB_PROC_SET_TARGET_CLASS(proc, target);
+    auto result = mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
+    // stack_keep = proc->body.irep->nlocals;
+    // mrb_gc_arena_restore(ruby, ai);
 }
 
 void Toy::destroy()
@@ -287,6 +210,10 @@ bool Toy::render_loop()
         }
         display->console->clear();
         display->console->console->text(0, 0, e.text);
+        int y = 2;
+        for (auto& bt : e.backtrace) {
+            display->console->console->text(2, y++, bt);
+        }
     }
 
     if ((input != nullptr) && input->should_reset()) {
@@ -308,8 +235,8 @@ bool Toy::render_loop()
         mrb_load_string(ruby, to_run.c_str());
         if (auto err = mrb::check_exception(ruby)) {
             ErrorState::stack.push_back(
-                {ErrorType::Exception, std::string(*err)});
-            fmt::print("Error: {}\n", *err);
+                {ErrorType::Exception, {}, std::string(*err)});
+            fmt::print("RUN Error: {}\n", *err);
         }
         to_run.clear();
     }
@@ -321,21 +248,24 @@ bool Toy::render_loop()
 #    include <emscripten.h>
 #endif
 
-Toy::Toy(bool fs)
+Toy::Toy(Settings const& _settings) : settings{_settings}
 {
-    Display::full_screen = fs;
+    Display::full_screen = settings.screen == ScreenType::Full;
 }
 
-int Toy::run(std::string const& script)
+int Toy::run()
 {
     init();
     puts("Main");
     std::ifstream ruby_file;
-    ruby_file.open(script);
+    ruby_file.open(settings.boot_script);
     auto source = read_all(ruby_file);
-    mrb_load_string(ruby, source.c_str());
+    exec(ruby, source);
     if (auto err = mrb::check_exception(ruby)) {
-        fmt::print("Error: {}\n", *err);
+        fmt::print("START Error: {}\n", *err);
+        for (auto&& line : mrb::get_backtrace(ruby)) {
+            fmt::print("  {}", line);
+        }
         exit(1);
     }
     puts("Loaded");

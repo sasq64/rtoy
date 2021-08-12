@@ -8,7 +8,7 @@ extern "C"
 #include <mruby/compile.h>
 #include <mruby/data.h>
 #include <mruby/proc.h>
-#include <mruby/string.h>
+#include <mruby/string.h> // NOLINT
 #include <mruby/value.h>
 #include <mruby/variable.h>
 }
@@ -124,7 +124,7 @@ auto get_args(
     mrb_int n = 0;
     mrb_value* rest{};
     mrb_get_args(mrb, spec.data(), &std::get<A>(input)..., &rest, &n);
-    std::tuple<ARGS...> converted { static_cast<ARGS>(std::get<A>(input))... };
+    std::tuple<ARGS...> converted{static_cast<ARGS>(std::get<A>(input))...};
     if (n > 0) {
         for (int i = 0; i < n; i++) {
             restv->push_back(rest[i]);
@@ -159,6 +159,8 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
 {
     if constexpr (std::is_same_v<RET, mrb_value>) {
         return r;
+    } else if constexpr (std::is_same_v<RET, bool>) {
+        return mrb_bool_value(r);
     } else if constexpr (std::is_floating_point_v<RET>) {
         return mrb_float_value(mrb, r);
     } else if constexpr (std::is_integral_v<RET>) {
@@ -173,7 +175,6 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
         return RET::can_not_convert;
     }
 }
-
 template <typename ELEM>
 mrb_value to_value(std::vector<ELEM> const& r, mrb_state* mrb)
 {
@@ -202,18 +203,49 @@ TARGET to(mrb_value obj)
         return std::string_view(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
     } else if constexpr (std::is_same_v<TARGET, std::string>) {
         return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
-    } else if constexpr (std::is_floating_point_v<TARGET>) {
-        return mrb_float(obj);
-    } else if constexpr (std::is_integral_v<TARGET>) {
-        return mrb_fixnum(obj);
+    } else if constexpr (std::is_arithmetic_v<TARGET>) {
+        if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
+        if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
+        throw std::exception();
     } else {
         throw std::exception();
     }
 }
 
-template <typename TARGET>
-TARGET to_vector(mrb_value obj)
-{}
+template <typename T, size_t N>
+std::array<T, N> to_array(mrb_value ary, mrb_state* mrb)
+{
+    std::array<T, N> result{};
+    if (!mrb_array_p(ary)) { 
+        ary = mrb_funcall(mrb, ary, "to_a", 0);
+    }
+    if (mrb_array_p(ary)) {
+        auto sz = ARY_LEN(mrb_ary_ptr(ary));
+        if (sz != N) {
+            mrb_raise(mrb, E_TYPE_ERROR, "not an array");
+            return result;
+        }
+        for (int i = 0; i < sz; i++) {
+            auto v = mrb_ary_entry(ary, i);
+            result[i] = to<T>(v);
+        }
+    } else {
+        mrb_raise(mrb, E_TYPE_ERROR, "not an array");
+    }
+    return result;
+}
+
+template <typename T>
+std::vector<T> to_vector(mrb_value ary)
+{
+    auto sz = ARY_LEN(mrb_ary_ptr(ary));
+    std::vector<T> result;
+    for (int i = 0; i < sz; i++) {
+        auto v = mrb_ary_entry(ary, i);
+        result.push_back(to<T>(v));
+    }
+    return result;
+}
 
 template <class CLASS, class RET, class... ARGS, size_t... A>
 RET method(RET (CLASS::*f)(ARGS...), mrb_state* mrb, mrb_value self,
@@ -266,6 +298,7 @@ mrb_data_type* get_data_type()
 {
     return &C::dt;
 }
+
 // Create a new instance of a data class `D`
 template <typename D>
 mrb_value new_data_obj(mrb_state* mrb, D* data)
@@ -283,6 +316,21 @@ inline std::optional<std::string> check_exception(mrb_state* ruby)
         return to<std::string>(obj);
     }
     return std::nullopt;
+}
+
+inline std::vector<std::string> get_backtrace(mrb_state* ruby)
+{
+    auto bt = mrb_funcall(ruby, mrb_obj_value(ruby->exc), "backtrace", 0);
+
+    std::vector<std::string> backtrace;
+    for (int i = 0; i < ARY_LEN(mrb_ary_ptr(bt)); i++) {
+        auto v = mrb_ary_entry(bt, i);
+        auto s = mrb_funcall(ruby, v, "to_s", 0);
+        std::string line(RSTRING_PTR(s), RSTRING_LEN(s));
+        fmt::print("LINE:{}\n", line);
+        backtrace.emplace_back(line);
+    }
+    return backtrace;
 }
 
 // Hold an mrb_value referencing an object on the native side.
@@ -303,9 +351,12 @@ struct RubyPtr
 
     RubyPtr(mrb_state* mrb, mrb_value mv)
     {
+        // Check that mrb_value holds a pointer
         assert((mv.w & 7) == 0); // TODO: Use macro
+        // Store the mrb_value pointer as a shared_ptr
         ptr = std::shared_ptr<void>(mrb_ptr(mv),
             [mrb](void* t) { mrb_gc_unregister(mrb, mrb_obj_value(t)); });
+        // Stop value from being garbage collected
         mrb_gc_register(mrb, mv);
     }
 

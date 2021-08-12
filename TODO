@@ -1,0 +1,23 @@
+
+[ ] Wait for key after error in editor
+[x] Set default colors before showing error
+[ ] Scale issue when returning to editor
+[x] Fix font rendering bgcolor
+[ ] Option to auto run script after boot
+[ ] Option to run screenless (for testing)
+[ ] Initial tests
+[x] Option to set different console font
+[x] Intelligent console sizing/scaling depending on system
+[ ] Fix Jetbrains font
+[x] Reset changes tile size to 16
+[ ] Investigate RGB ordering strangeness
+[ ] Change prompt
+[ ] Style keyword args to drawing methods
+[ ] Box charater snake bug. After "reset" character appears in different location in texture but cache kept ?
+
+# SLIDES
+
+Add font.get_size method
+Render whole paragraph to one image
+Do word wrap
+Background rect on code block

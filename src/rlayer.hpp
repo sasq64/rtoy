@@ -14,9 +14,9 @@ enum BlendMode
 
 struct RStyle
 {
-    uint32_t fg;
-    uint32_t bg;
-    float line_width;
+    std::array<float, 4> fg{};
+    std::array<float, 4> bg{};
+    float line_width = 1;
     BlendMode blend_mode = BlendMode::Blend;
 };
 
@@ -42,7 +42,7 @@ public:
 
     RLayer(int w, int h) : width(w), height(h) {}
 
-    RStyle style{0xffffffff, 0x00000000, 2.0F};
+    RStyle style{{1,1,1,1}, {0,0,0,0}, 2.0F};
     virtual void render() {}
     virtual void update() {}
 };

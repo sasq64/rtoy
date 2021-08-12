@@ -20,37 +20,33 @@ struct ProgramCache
         precision mediump float;
     #endif
         attribute vec2 in_pos;
-        uniform vec4 in_color;
         uniform mat4 in_transform;
-        uniform vec2 in_translate;
         #ifdef TEXTURED
           attribute vec2 in_uv;
           varying vec2 out_uv;
         #endif
-        varying vec4 out_color;
         void main() {
             vec4 v = in_transform * vec4(in_pos, 0, 1);
             gl_Position = vec4( v.x, v.y, 0, 1 );
             #ifdef TEXTURED
               out_uv = in_uv;
             #endif
-            out_color = in_color;
         })gl"};
 
     std::string fragment_shader{R"gl(
     #ifdef GL_ES
         precision mediump float;
     #endif
+        uniform vec4 in_color;
         #ifdef TEXTURED
           uniform sampler2D in_tex;
           varying vec2 out_uv;
         #endif
-        varying vec4 out_color;
         void main() {
             #ifdef TEXTURED
-              gl_FragColor = texture2D(in_tex, out_uv) * out_color;
+              gl_FragColor = texture2D(in_tex, out_uv) * in_color;
             #else
-              gl_FragColor = out_color;
+              gl_FragColor = in_color;
             #endif
         })gl"};
 

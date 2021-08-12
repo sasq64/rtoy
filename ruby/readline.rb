@@ -6,19 +6,24 @@
 require 'complete.rb'
 
 class LineReader
+    extend MethAttrs
 
     include OS
     include Complete
 
-    def initialize(history: nil)
+    class_doc! "Read lines of text from the user using the default console"
+
+    def initialize(history = nil)
         @history_file = history
-        @line = []
-        @pos = 0
-        @ypos = 0
-        @xpos = 0
-        @history = []
-        @history_pos = 0
-        @dirty = true
+        if @history_file and File.exists?(@history_file)
+            @history = File.open(@history_file).readlines.
+                map(&:chomp).map { |l| l.unpack("U*") }
+        else
+            @history = []
+        end
+        @history_pos = @history.size
+
+        @last_len = 0
         @con = Display.default.console
     end
 
@@ -42,37 +47,28 @@ class LineReader
         end
     end
 
-
     def paste()
         text = Input.get_clipboard()
-        p text
-        p "CLIP"
-        p @line
-        p @pos
         text.each_char do |t|
-            p t
             @line.insert(@pos, *(t.unpack('U')))
             @pos += 1
-            p @line
-            p @pos
         end
-        p @line
     end
 
-    def readline_key(key, mod)
+    doc! "Put a key into the line reader and handle it"
+    def handle_key(key, mod)
 
         self.accept() unless key == Key::TAB
-
-        @dirty = true
-        p "RL KEY #{key}\n"
 
         case key
         when 0x20..0xffffff
             @line.insert(@pos, key)
             @pos += 1
         when Key::F3
+            p "F3"
             paste()
         when Key::INSERT
+            p "INSERT"
             if mod & 1
                 paste()
             end
@@ -84,7 +80,7 @@ class LineReader
             history_up()
         when Key::TAB
             unless @line.empty?
-                l = complete(@line.pack('U*'))
+                l = complete(@line.pack('U*'), OS)
                 unless l.empty?
                     @line = l.unpack('U*')
                     @pos = @line.length
@@ -99,8 +95,8 @@ class LineReader
         when Key::ENTER
             @history_pos = @history.length
             @con.goto_xy(@xpos,@ypos)
-            @con.print(@line.pack('U*') + '   ')
-            return if @line.empty?
+            @con.print(@line.pack('U*') + ' ')
+            return false if @line.empty?
             if @history[-1] != @line then
                 @history.append @line
                 if @history_file
@@ -110,7 +106,7 @@ class LineReader
                 end
             end
             @history_pos = @history.length
-            readline_finish()
+            return true
         when Key::BACKSPACE
             if @pos > 0
                 @pos -= 1
@@ -120,61 +116,41 @@ class LineReader
 
         @pos = 0 if @pos < 0
         @pos = @line.length if @pos > @line.length
+        return false
 
     end
 
-    def readline_finish()
-        p @handler
-        @handler.call(@line.pack('U*')) if @handler
-        @handler = nil
-        @line = []
-    end
-
-    def readline_draw(t)
-        return if not @dirty
-        @dirty = false
+    doc! "Draw the line reader at it's given position"
+    def draw()
         @con.goto_xy(@xpos, @ypos)
         @con.print(@line[0..@pos-1].pack('U*')) unless @pos == 0
-        @con.print(@pos < @line.length ? @line[@pos].chr : ' ', -1, Color::ORANGE) 
+        @con.print(@pos < @line.length ? @line[@pos].chr : ' ', Color::WHITE, Color::ORANGE) 
         @con.print(@line[@pos+1..].pack('U*')) if @pos < @line.length-1
-        @con.print('   ')
-    end
-
-    def start()
-        @key_i = on_key { |key,mod| readline_key(key, mod) }
-        @draw_i = on_draw { |t| readline_draw(t) }
-        if @history_file and File.exists?(@history_file)
-            @history = File.open(@history_file).readlines.map(&:chomp).map { |l| l.unpack("U*") }
-        else
-            @history = []
+        if @last_len >= @line.length
+            @con.print(' ' * (@last_len - @line.length + 1))
         end
-        @history_pos = @history.size
+        @last_len = @line.length
     end
 
-    def stop()
-        remove_handler(:key, @key_i)
-        remove_handler(:draw, @draw_i)
-    end
-
-    def read_line(&block)
-        @dirty = true
-        @handler = block if block_given?
+    doc! "Read a line of text from the user"
+    def read_line()
         @xpos,@ypos = @con.get_xy()
+        @pos = 0
+        @line = []
+        loop {
+            OS.vsync
+            draw()
+            key = OS.read_key
+            if handle_key(key, 0)
+                return @line.pack('U*')
+            end
+        }
     end
 
-end
-
-module IOX
-    def self.read_line(history: nil)
-        name = nil
-        rl = LineReader.new(history: history)
-        rl.read_line { |l| p "RD" ; name = l }
-        rl.start
-        p "RL START"
-        Fiber.yield while name.nil?
-        p "RL STOP"
-        rl.stop
-        return name
+    def self.read_line(history = nil)
+        rl = LineReader.new(history)
+        return rl.read_line
     end
+
 end
 

@@ -20,10 +20,13 @@ class RCanvas : public RLayer
     std::array<float, 16> const Id = {
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
+    std::pair<float, float> last_point;
+
     pix::Image read_image(int x, int y, int w, int h);
     void draw_line(float x0, float y0, float x1, float y1);
     void draw_circle(float x, float y, float r);
-    void draw_image(float x, float y, RImage* image);
+    void draw_image(float x, float y, RImage* image, float scale = 1.0F);
+    void draw_quad(float x, float y, float w, float h);
 public:
     void init(mrb_state* mrb);
     static inline RClass* rclass;
@@ -34,6 +37,7 @@ public:
     void clear();
     RCanvas(int w, int h);
     void render() override;
+    void reset() override;
 
     static void reg_class(mrb_state* ruby);
 };

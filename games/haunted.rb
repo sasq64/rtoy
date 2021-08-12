@@ -1,3 +1,4 @@
+puts "Class"
 class HauntedHouse
   @@default_flags = Array.new(36).each_with_index.map { |x, i| [18, 17, 2, 26, 28, 23].include?(i) }
   attr_reader :objects, :descriptions, :message, :flags, :room
@@ -6,9 +7,10 @@ class HauntedHouse
     @@default_flags
   end
 
-  def initialize(start_room=57, flags=HauntedHouse.default_flags, carrying=[])
+  def initialize(start_room=57, flags=@@default_flags, carrying=[])
+    puts "Init"
     @room = start_room
-    @flags = flags.dup
+    @flags = flags
     @carrying = carrying.dup
     @verbs = [
       nil, "HELP", "CARRYING?", "GO", "N", "S", "W", "E", "U", "D", "GET", "TAKE", "OPEN", "EXAMINE", "READ", "SAY",
@@ -428,6 +430,7 @@ class HauntedHouse
   end
 
   def welcome
+    puts "Welcome"
     while true
       #clear
       puts "Haunted House"
@@ -437,7 +440,10 @@ class HauntedHouse
   end
 end
 
-a = gets
+#a = gets
 
-HauntedHouse.new.welcome
+puts "NEW" 
+puts HauntedHouse
+hh = HauntedHouse.new
+hh.welcome
 

@@ -1,5 +1,3 @@
-
-
 ### SNAKE
 
 #include OS
@@ -11,12 +9,28 @@ TOP = 2
 
 $x,$y = 5,(HEIGHT/2)
 $mx,$my = 1,0
-$speed = 150
+$speed = 0.150
 $length = 14
 $score = 0
 $keys = []
 $snake = []
 $game_over = 0
+
+def draw_box(x,y,w,h)
+    w.times { |i|
+        text(x+i,y,'━')
+        text(x+i,y+h-1,'━')
+    }
+
+    h.times { |i|
+        text(x,y+i,'│')
+        text(x+w-1,y+i,'│')
+    }
+    text x,y,'┍'
+    text x+w-1,y,'┑'
+    text x,y+h-1,'┕'
+    text x+w-1,y+h-1,'┙'
+end
 
 def create_apple
     c = ''
@@ -24,7 +38,7 @@ def create_apple
         x,y = rand(WIDTH-2) + 1, rand(HEIGHT-TOP-1) + TOP + 1
         c = get_char(x, y)
     end
-    text(x, y, APPLE, Color::LIGHT_RED, 0)
+    text(x, y, APPLE, Color::LIGHT_RED, Color::BLACK)
 end
  
 on_key { |key| $keys.append(key) }
@@ -47,12 +61,17 @@ def step_worm
     c
 end
 
-on_timer($speed) {
+scale(4.0, 2.0)
+display.bg = Color::BLACK
+display.console.fg = Color::GREEN
+clear()
+draw_box(0,TOP, WIDTH, HEIGHT-TOP)
 
+1.times { create_apple }
+
+loop do
     if $game_over > 0
-        $game_over += 1
-        p $game_over
-        next
+        sleep(1000)
     end
 
     boost = false
@@ -87,33 +106,6 @@ on_timer($speed) {
 
     text(WIDTH - 10, 1,"SCORE: #{$score}")
 
-    $speed -= 0.02 if $speed > 20
-    on_timer($speed)
-}
-
-
-scale(4.0, 2.0)
-display.bg = Color::BLACK
-display.console.fg = Color::GREEN
-
-# Draw playfield
-clear()
-
-WIDTH.times { |x|
-    text(x,TOP,'━')
-    text(x,HEIGHT-1,'━')
-}
-
-(HEIGHT-TOP).times { |y|
-    text(0,y+TOP,'│')
-    text(WIDTH-1,y+TOP,'│')
-}
-text 0,TOP,'┍'
-text WIDTH-1,TOP,'┑'
-text 0,HEIGHT-1,'┕'
-text WIDTH-1,HEIGHT-1,'┙'
-
-1.times { create_apple }
-
-
-Fiber.yield while $game_over < 10
+    $speed -= 0.00002 if $speed > 0.02
+    sleep($speed)
+end

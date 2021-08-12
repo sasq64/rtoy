@@ -13,6 +13,8 @@ struct Style
 {
     uint32_t fg;
     uint32_t bg;
+    std::string font;
+    int font_size;
 };
 
 struct Cursor
@@ -34,9 +36,9 @@ struct GLConsole : public Console
     int tile_width = 0;
     int tile_height = 0;
 
-    std::shared_ptr<TextureFont> font;
+    std::vector<int> dirty;
 
-    bool is_wide(char32_t) const override;
+    std::shared_ptr<TextureFont> font;
 
     gl_wrap::Texture frame_buffer;
 
@@ -60,9 +62,12 @@ struct GLConsole : public Console
     void blit(
         int x, int y, int stride, std::vector<Char> const& source) override;
 
+    // Creates a render target of w*h pixels for tile rendering
     GLConsole(int w, int h, Style _default_style);
 
     void flush() override;
+
+    void reset();
 
     int get_width() override;
     int get_height() override;

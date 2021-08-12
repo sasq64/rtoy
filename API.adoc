@@ -1,0 +1,226 @@
+
+
+
+module Display
+
+ add_layer(layer, blend_mode)
+ on_draw(block)
+
+
+class Console < Layer
+  text(x,y, text)
+
+
+class Canvas < Layer
+  line()
+  circle()
+
+
+class SpriteSheet < Layer
+
+
+
+console = Console.new("unscii.ttf", Display.width / 8, Display.height / 16)
+
+Display.add_layer(console, :NoBlend)
+
+
+== The Metaphor
+
+When designing a system its good to have a metaphor as a guide.
+
+We imagine _Toy_ as a modern, bastardized 8-bit computer.
+The hardware layer is the C++ code (GLES 2 for graphics)
+The machine has a kernel that talks to he hardware (ruby system layer)
+
+Program use both the "hardware" directly or go through the more friendly
+kernel ruby wrappers.
+
+The Graphics System
+
+A set of layers (framebuffers) that are combined by the compositor.
+
+The Console is a text layer and on by default.
+The Canvas is a "drawing" layer on top of the console
+
+Layers can be added or removed
+Layers can have a transformation (translation, rotation, scale)
+
+Image can be loaded and manipulated
+
+=== The Console
+
+Fixed font text console. Each char is unicode. Each _cell_ holds
+a char and forground + background color.
+
+put(x,y, [char, fg, bg])
+[char, fg, bg] = get(x,y)
+clear()
+scroll(dx, dy)
+
+Size handling ?
+Fixed size actual console ? 256x256 tiles ?
+Kernel keeps track of visible columns/lines
+  * Wrap on column limit
+  * Scroll on line limit
+
+
+=== The Canvas
+
+line(x0, y0, x1, y1, style)
+circle()
+rect()
+draw(x, y, image, transform)
+
+=== Sprite Layer
+
+add_sprite(image)
+move_sprite()
+on_collision()
+
+
+=== Audio
+
+on_empty()
+
+=== The Compositor
+
+Normal alpha blending
+
+
+
+System
+  layers[]
+  audio
+  timer_handler
+  draw_handler
+  key_handler
+Functions
+  load_image
+  load
+
+=== Loading
+
+
+=== Tab Completion
+
+First Press
+  if no alternatives
+    alternatives = all methods/vars that starts with last word
+    prefix = max common prefix among alterntaives
+    last = prerix
+    current = nil
+  else
+    last = alterntaties[n++]
+
+Second press
+ Replace part with n:th alternative, n++
+
+
+
+== Floats or Ints
+
+User should generally not have to worry about it
+Canvas should accept floats for sub pixel precision
+Sprite positions are always int
+
+
+
+=== C++ side kernal
+
+Speech synth : say
+Integrated vim editor
+web get
+
+== RESET / RELOAD
+
+What can be reloaded without restart
+What is a restart
+
+Hard reset keeps the window open, restarts everything else.
+
+Soft reset just reloads "main.rb", resets styles and transforms
+
+
+## Startup
+
+load `main.rb` or other default startup script
+
+Coordinates and transformation
+
+Coords start at top left and are in pixel space
+
+Coords are divided by viewport and becomes -1 -> 1 in shader
+This means we _stretch_ to fill screen
+
+_crop_ : divide by _largest_
+_fill_ : divide by _smallest_
+
+
+INSTEAD
+
+Send pixel coords to shader
+
+* Center in w,h
+* Translate
+* Rotate
+* Screen divide
+* Scale
+
+
+THE INSPIRATION
+
+Unlike computers today, _programming_ a computer and _using_ a computer was relatively
+intertwined. You had to use _Basic_ both to create small programs,
+as well as to load and run those programs.
+
+You had to know that
+
+`LOAD "GAME",8,1`
+
+would load a game from disk, since _8_ was the device id of the disk drive on
+Commodore computers.
+
+And countless of kids that never had any thoughts about becoming programmers
+never the less tried (and understood) the "basic right of passage";
+
+[source]
+----
+10 PRINT "HELLO"
+20 GOTO 10
+----
+
+Imagine a pre-teen kid playing with a computer today that just happens to teach
+herself how to program along the way. This was not uncommon with these
+computers, but I have a hard time imagining it is very common now.
+
+The R-Toy design is inspired by those 8-bit computers that tought basic
+programming to a whole generation of kids.  Instead of Basic, it uses Ruby. And
+it tries to remove many of the rough edges that made things hard for the 8-bit
+users. But it tries to follow some general guidelines
+
+Being able to explore and understand is more important that teaching a
+"correct" or "modern" programming paradigm.
+
+R-Toy should work on any feasable hardware.
+
+R-Toy should work "stand alone". The environment should contain everything
+needed to play, code and experiment. In fact, we see it as a feature to be able
+to run it on dedicated hardware, since then there is no tempting web browser
+waiting just an ALT+TAB key press away.
+
+THE METAPHOR
+
+
+THE "HARDWARE"
+
+R-Toy exposes graphics and audio features, much like a real machine. Of course
+it is all done in software, using Open GLES. But it is useful to make a clean
+separation between this virtual hardware (implemented in C++) and the softwaree
+(implemented mostly in Ruby).
+
+
+
+THE "OPERATING SYSTEM"
+
+

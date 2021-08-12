@@ -1,0 +1,191 @@
+= R-Toy
+
+_R-Toy_ is a _programming environment_ and _runtime_ focused on learning
+and playing. It is inspired by home computers of the 1980s.
+
+It can roughly be split into two parts;
+
+* The _native_ or _VHC_ (_virtual home computer_) part; written mostly in C/C++
+* The OS / Application layer; written mostly in _ruby_.
+
+== VHC
+
+The _VHC_ lies at the core of the R-Toy project. It stands for _Virtual Home
+Computer_ (or think of it as _Virtual Hardware Context_ in case _Home Computer_
+is not something that has meaning to you).
+
+The VHC is an _imaginary_ computer, and like a most computers, it has a
+display, audio output, keyboard input, timers etc. But since we only intend to
+program it using a high level language (ruby) we don't actually need to emulate
+this machine on the hardware level.
+
+Instead, we directly expose this virtual hardware a set of _ruby_ objects.
+
+=== Display
+
+A display represents the visible screen as a whole.  It is exposed as a
+`Display` object. Normally there is only one display, and that instance can be
+retrieved using `Display.default`.
+
+The display has a few basic attributes, such as `width`, `height` and `bg`.
+Mainly it is the parent of all layers where the actual rendering takes place.
+
+[source,ruby]
+----
+    display = Display.default
+    puts "#{display.width}x#{display.height}"
+    display.bg = Color::BLACK
+    # The draw handler is called every time the display is about to
+    # be refreshed, usually 60 times per second.
+    display.on_draw { display.clear() }
+----
+
+s-L;'\
+== Image
+
+Even though images would not normally be considered part of the hardware of a
+computer, for practical reasons they is considered "native" objects as far as
+the VHC is concerned.
+
+An image is a _view_ into a 2D array of pixels, normally backed by GL texture.
+The view is represented by the _UV_ coordinates into the texture.
+
+Loading an image from disk will create an image that references the entire
+image.
+
+Later the image can be duplicated, or split into many images. All these
+derivative images will still refer to the original pixel array, and will
+consume only a small amount of extra memory for the UV coordinates.
+
+[source,ruby]
+----
+    img = Image.from_file("tiles.png")
+    tiles = img.split(16,16)
+    Display.canvas.draw(0, 0, tiles[10])
+----
+
+NOTE: Ideally, the loading of images, and the storing of CPU side pixels should
+be placed in Ruby, while the native side of images should be restricted to
+textures and UV coordinates. But since many image loading libraries are
+implemented using C/C++ we put the entire _Image_ concept on the VHC side.
+
+=== Layer
+
+A _layer_ is a rectangular area of graphics used to build up the display.  Each
+layer is rendered in order every frame. By default, the display has four
+layers; Background, Console, Canvas and Sprites
+
+=== Console
+
+A console is a _tile_ layer, consisting of _W*H_ tiles, where _W_ and _H_
+defaults to 256. It also has a _tile_size_ which is the pixel size of each
+tile.
+
+A console is initially used to display _text_, and so it is backed by a _font_
+that is used to render all undefined tiles.
+
+By default the _Unscii_ font is used, with a tile size of _8x16_.
+
+Any tile can be redefined to refer to a different image, and this is a
+convenient way to create tile based graphics.
+
+The default console is exposed as `Display.default.console`.
+
+[source,ruby]
+----
+    console = Display.default.console
+    console.fg = Color::WHITE
+    console.clear()
+    console.text(10, 10, "Hello world")
+----
+
+=== Canvas
+
+A _canvas_ is a layer used for general drawing, like lines and circles.
+
+[source,ruby]
+----
+    canvas = Display.default.canvas
+    canvas.circle(100, 100, 30)
+----
+
+=== Sprites
+
+A _Sprites_ layer is not a single layer, but a collection of sprites.
+
+[source,ruby]
+----
+    sprites = Display.default.sprites
+    img = Image.from_file('ball.png')
+    sprite = sprites.add_sprite(img)
+    sprite.move(100, 100)
+----
+
+=== Audio
+
+The audio object is used to output sound. By default there are 32 channels,
+and each channel can be set to a different frequency. All even channels
+are then mixed into the left speaker, and the odd one to the right.
+
+[source,ruby]
+----
+    audio = Audio.default
+    beep = (0..5000).map { |i| Math.sin(i/50) }
+    sound = Sound.new(beep)
+    # Play a beep on channel 0 (left speaker)
+    audio.play(0, beep)
+----
+
+=== Input
+
+[source,ruby]
+----
+    input = Input.default
+    input.on_key { |key| puts "#{key} was pressed" }
+    input.on_click { |x,y| sprite.move(x,y) }
+    if input
+----
+
+=== Timer
+
+[source,ruby]
+----
+    timer = Timer.default
+    start = Timer.seconds()
+    timer.on_timer(100) { |t| sprite.x = t - start }
+----
+
+== OS
+
+The R-Toy "operating system" is a ruby layer on top of the native objects.
+It extends the core functionality exposed by the _VHC_, and also simplifies
+many things.
+
+It is possible to bypass the OS and just use the VHC objects directly.
+
+=== Boot Process
+
+At startup, _R-Toy_ loads `main.rb`
+
+`main.rb` begins by loading `os.rb` followed by other required ruby
+modules.
+
+Then the OS is "booted" by creating the main _Fiber_ that in turn normally
+starts the _REPL_. Using ruby Fibers allows us to perform cooperative multi
+tasking, even when not using real threads. This is what allows us to blocking
+IO (such as _read_line()_) even when running in a web browser.
+
+=== Applications
+
+==== The REPL
+
+The REPL continuously reads lines of text from the user and executes them.
+
+==== The Editor
+
+The editor is used to load,edit & run ruby code.
+
+=== Shortcuts
+
+* `display` refers to `Default.display`
+* `console` refers to `Default.display.console`

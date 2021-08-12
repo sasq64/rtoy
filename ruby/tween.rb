@@ -5,6 +5,9 @@
 # the method
 #
 
+class TweenError < StandardError
+end
+
 def by_elem(a, b, method)
     [a, b].transpose.map {|x| x.reduce(method)}
 end
@@ -50,7 +53,7 @@ class TweenFunc
        end
     end
 
-    def self.in_out_bounce
+    def self.in_out_bounce(t)
         t < 0.5 ? (1 - out_bounce(1 - 2 * t)) / 2
                 : (1 + out_bounce(2 * t - 1)) / 2
     end
@@ -108,14 +111,14 @@ class TweenTarget
         if delta >= 0
             d = TweenFunc.send @func, delta
             if @from.nil?
-                @obj.send @method
+                @obj.send @method,d
             elsif @from.kind_of? Array
                 @value = by_elem(@from, by_elem(@to, @from, :-).
                                  map{|x| x * d}, :+)
-                @obj.send @method,*@value
+                @obj.send @method, @value
             else
                 @value = @from + (@to - @from) * d
-                @obj.send @method,@value
+                @obj.send @method, @value
             end
         end
         done = delta >= 1.0
@@ -126,80 +129,94 @@ end
 
 class Tween
     @@tweens = []
+    @@seconds = Timer.default.seconds
 
-    def initialize(o = nil, m = nil, obj:nil, method:nil, on_done: nil,
-                   seconds:nil, &block)
+    LEGALS = [ :obj, :method, :func, :seconds, :steps, :from, :to ]
+    REQUIRED = [ :obj, :method, :seconds, :from, :to ]
+
+    def initialize(o = nil, seconds: 1.0, &block)
         @block = block
+        @func = :linear
         @targets = []
         seconds = o if o.kind_of? Numeric
         @obj = o || obj
-        @method = m || method
-        @on_done = on_done
         @total_time = seconds
-        @start_time = Timer.default.seconds
+        @start_time = @@seconds
 
     end
 
-    def target(*args, obj:nil, method:nil, seconds:1.0, steps:0, **kwargs)
-        p kwargs
-        p args
-        m = nil
-        o = nil
-        from = nil
-        to = nil
-        func = :linear
-        args.each do |arg|
-            if Symbol === arg && TweenFunc.respond_to?(arg)
-                func = arg
-            elsif o == nil
-                o = arg
-            elsif m = nil
-                m = arg
-            end
-        end
-        obj ||= o
-        method ||= m
+    def add_target(r)
+        REQUIRED.each { |x|
+            raise TweenError.new "Missing attribute :#{x} for tween" unless r[x] 
+        }
+
+        raise TweenError.new "Unknown easing :#{r[:func]}" unless 
+            Symbol === r[:func] && TweenFunc.respond_to?(r[:func])
+
+        @targets.append TweenTarget.new(
+            r[:obj], r[:method], r[:from], r[:to],
+            r[:seconds], r[:steps], r[:func])
+        self
+    end
+
+    def seconds(s, &block)
+        @block = block if block
+        @total_time = s
+        self
+    end
+
+    def fn(f)
+        @func = f
+        self
+    end
+
+    # attr: val
+    def to(**kwargs)
+        r = {
+            obj: @obj,
+            func: @func,
+            seconds: @total_time,
+            steps: 0
+        }
+
         kwargs.each do |key,val|
-            #p key
-            case key
-            when :from
-                from = val
-            when :to
-                to = val
-            when :to_rot
-                from = obj.rotation
-                to = val
-                method = :rotation=
-            when :from_rot
-                to = obj.rotation
-                from = val
-                method = :rotation=
-                obj.rotation = from
-            when :to_pos
-                from = obj.pos
-                to = val
-                method = :pos=
-            when :to_scale
-                from = obj.scale
-                to = val
-                method = :scale=
-            when :from_pos
-                to = obj.pos
-                from = val
-                method = :pos=
-                obj.pos = from
-            end
+            r[:from] = r[:obj].send(key)
+            val = val.to_a if val.respond_to?(:to_a)
+            r[:to] = val
+            r[:from] = r[:from].to_a if r[:from].respond_to?(:to_a)
+            r[:to] = r[:from] - r[:from] + val
+            r[:method] = [key, '='].join.to_sym
         end
-        @targets.append TweenTarget.new(obj, method, from, to, seconds, steps, func)
+        add_target(r)
+        self
+    end
+
+    def from(**kwargs)
+        r = {
+            obj: @obj,
+            func: @func,
+            seconds: @total_time,
+            steps: 0
+        }
+
+        kwargs.each do |key,val|
+            r[:to] = r[:obj].send(key)
+            r[:to] = r[:to].to_a if r[:to].respond_to?(:to_a)
+            val = val.to_a if val.respond_to?(:to_a)
+            r[:from] = r[:to] - r[:to] + val
+            r[:method] = [key, '='].join.to_sym
+        end
+        add_target(r)
         self
     end
 
     def when_done(&block)
         @targets.last.set_callback(block)
+        self
     end
 
     def update(t)
-        delta = @total_time ? (Timer.default.seconds - @start_time) / @total_time : 0
+        delta = @total_time ? (@@seconds - @start_time) / @total_time : 0
         res = true
         if @block
             @block.call(delta)
@@ -212,13 +229,18 @@ class Tween
 
     def finish
         @start_time -= @total_time
+        @targets.each { |tg| tg.update(1.0) } 
+        @on_done.call if @on_done
+        @@tweens.delete self
     end
 
     def stop
         @obj = nil
     end
 
+    # Called from handler
     def self.update_all(delta)
+        @@seconds = Timer.default.seconds
         @@tweens.delete_if do |tw|
             tw.update(delta)
         end
@@ -228,16 +250,25 @@ class Tween
         @@tweens = []
     end
 
-    def self.make(*args, &block)
-
+    def self.start(*args, &block)
         tween = Tween.new(*args, &block)
         @@tweens.append(tween)
         tween
     end
 
+    def start()
+        @start_time = @@seconds
+        @@tweens.append(self)
+        self
+    end
+
+    def self.mape(*args, &block)
+        Tween.new(*args, &block)
+    end
+
 end
 
 def tween(*args, &block)
-    Tween.make(*args, &block)
+    Tween.start(*args, &block)
 end
 

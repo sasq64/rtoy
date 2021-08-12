@@ -7,8 +7,11 @@
 # s.scale = 0.25
 #Display.default.on_draw { con.rotation += 0.04 }
 
+p "SELF :" + self.to_s
 
-def snake() run("ruby/snake.rb") end
+module User
+
+def self.snake() run("ruby/snake.rb") end
 def pong() run("ruby/pong.rb") end
 
 def tt()
@@ -66,7 +69,8 @@ def paint2
 end
 
 def rot()
-    tween(seconds:2.0).target(display.console, :rotation=, from:0, to: 2 * Math::PI)
+    tween(seconds:2.0, obj: display.console).
+        target(method: :rotation=, from:0, to: 2 * Math::PI)
 end
 
 def circle_tween()
@@ -77,3 +81,4 @@ def circle_tween()
                to: [500,500,250])
 end
 
+end

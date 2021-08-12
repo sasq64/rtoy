@@ -13,14 +13,36 @@
 void RLayer::update_tx()
 {
     glm::mat4x4 m(1.0F);
+    // Matrix operations are read bottom to top
+
+    // 6. Apply rotation
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
+
+    // 5. Change center back so we rotate around middle of layer
     m = glm::translate(m, glm::vec3(-1.0, 1.0, 0));
+
+    // 4. Scale back to clip space (-1 -> 1)
     m = glm::scale(m, glm::vec3(2.0 / width, 2.0 / height, 1.0));
+
+    // 3. Translate
     m = glm::translate(m, glm::vec3(trans[0], -trans[1], 0));
+
+    // 2. Scale to screen space and apply scale (origin is now to top left corner).
     m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
                           static_cast<float>(height) * scale[1] / 2, 1.0));
+
+    // 1. Change center so 0,0 becomes the corner
     m = glm::translate(m, glm::vec3(1.0, -1.0, 0));
-    memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
+
+    //  1
+    //  ^   Clip space
+    //  |
+    //  |    0
+    //  |
+    //  +-------->1 
+    // -1
+    //
+    std::copy(glm::value_ptr(m), glm::value_ptr(m) + 16, transform.begin());
 }
 
 void RLayer::reg_class(mrb_state* ruby)
@@ -46,9 +68,9 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RLayer::rclass, "bg=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [bg] = mrb::get_args<uint32_t>(mrb);
+            auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->style.bg = bg;
+            rlayer->style.bg = mrb::to_array<float, 4>(av, mrb);
             rlayer->update();
             return mrb_nil_value();
         },
@@ -65,9 +87,9 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RLayer::rclass, "fg=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [fg] = mrb::get_args<uint32_t>(mrb);
+            auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->style.fg = fg;
+            rlayer->style.fg = mrb::to_array<float, 4>(av, mrb);
             rlayer->update();
             return mrb_nil_value();
         },
@@ -84,7 +106,7 @@ void RLayer::reg_class(mrb_state* ruby)
         ruby, RLayer::rclass, "blend_mode=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rlayer = mrb::self_to<RLayer>(self);
-            mrb_sym sym;
+            mrb_sym sym{};
             mrb_get_args(mrb, "n", &sym);
             std::string s{mrb_sym_name(mrb, sym)};
             fmt::print("{}\n", s);
@@ -127,7 +149,7 @@ void RLayer::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, RLayer::rclass, "get_scale",
+        ruby, RLayer::rclass, "scale",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rlayer = mrb::self_to<RLayer>(self);
             return mrb::to_value(rlayer->scale, mrb);
@@ -135,21 +157,31 @@ void RLayer::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, RLayer::rclass, "set_scale",
+        ruby, RLayer::rclass, "scale=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x, y] = mrb::get_args<float, float>(mrb);
+            fmt::print("SET_SCALE\n");
+            auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->scale = {static_cast<float>(x), static_cast<float>(y)};
+            rlayer->scale = mrb::to_array<float, 2>(av, mrb);
             rlayer->update_tx();
             return mrb_nil_value();
         },
-        MRB_ARGS_REQ(2));
+        MRB_ARGS_REQ(1));
+
     mrb_define_method(
         ruby, RLayer::rclass, "offset",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x, y] = mrb::get_args<float, float>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->trans = {static_cast<float>(x), static_cast<float>(y)};
+            return mrb::to_value(rlayer->trans, mrb);
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, RLayer::rclass, "offset=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [av] = mrb::get_args<mrb_value>(mrb);
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            rlayer->trans = mrb::to_array<float, 2>(av, mrb);
             rlayer->update_tx();
             return mrb_nil_value();
         },
@@ -179,5 +211,6 @@ void RLayer::reset()
     transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     trans = {0.0F, 0.0F};
     scale = {1.0F, 1.0F};
+    rot = 0;
     update_tx();
 }

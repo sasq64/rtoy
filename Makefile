@@ -4,19 +4,18 @@ ifeq (, $(shell which cmake))
   $(error "`cmake` required; 'brew install cmake' or 'apt install cmake'")
 endif
 
-toy : mruby debug
+toy : mruby debug flite
 	cmake --build builds/debug -- -j8 toy
 
-emtoy : emruby embuild
+emtoy : emruby embuild emflite
 	cmake --build builds/em -- -j8
-
 
 test : debug
 	cmake --build builds/debug -- -j8 hex_test
 
 builds/em/cmake_install.cmake :
 	rm -rf builds/em
-	cmake -Bbuilds/em -H. ${CMAKE_FLAGS} -DCMAKE_CXX_COMPILER=em++ -DCMAKE_RANLIB=`which emranlib` -DCMAKE_AR=`which emar` -DCMAKE_BUILD_TYPE=Release
+	cmake -Bbuilds/em -H. -DCMAKE_CXX_COMPILER=em++ -DCMAKE_RANLIB=`which emranlib` -DCMAKE_AR=`which emar` -DCMAKE_BUILD_TYPE=Release
 
 builds/debug/cmake_install.cmake :
 	rm -rf builds/debug
@@ -36,3 +35,18 @@ mruby :
 emruby :
 	MRUBY_CONFIG=emruby.cfg rake -f external/mruby/Rakefile -j8 -v
 
+emflite : external/flite/build/x86_64-emscripten/lib/libflite.a
+
+external/flite/build/x86_64-emscripten/lib/libflite.a :
+	#cd external/flite ; CC=emcc AR=emar RANLIB=emranlib ./configure --with-audio=none --disable-sockets
+	cp flite.emconf external/flite/config/config
+	#make -C external/flite clean
+	make -C external/flite -j
+
+flite : external/flite/build/x86_64-linux-gnu/lib/libflite.a
+
+external/flite/build/x86_64-linux-gnu/lib/libflite.a :
+	#cd external/flite ; ./configure --with-audio=none --disable-sockets
+	cp flite.conf external/flite/config/config
+	#make -C external/flite clean
+	make -C external/flite -j

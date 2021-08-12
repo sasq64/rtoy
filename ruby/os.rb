@@ -1,43 +1,27 @@
+require 'meth_attrs.rb'
+require 'color.rb'
+require 'music.rb'
 
-require 'tween.rb'
+class Sprites
+    extend MethAttrs
+    class_doc! "Sprite layer"
+    doc! "Create and display new sprite from a given `Image`", :add_sprite
+    returns! Sprite, :add_sprite
+end
 
-class Vec2
-    def initialize(x, y = nil)
-        @data = [x,y]
-    end
-    def x() @data[0] end
-    def y() @data[1] end
-    def x=(x) @data[0] = x ; end
-    def y=(y) @data[1] = y ; end
-    def to_s() @data.to_s ; end
-    def to_a() @data end
+class Canvas
+    extend MethAttrs
+    returns! Font, :font
+end
 
-    def self.rand(x,y)
-        Vec2.new(Kernel::rand(x), Kernel::rand(y))
-    end
-    
-    def ==(v)
-        a = v.to_a
-        a[0] == @data[0] && a[1] == @data[1]
-    end
-
-    def +(v)
-        a = v.to_a
-        Vec2.new(@data[0] + a[0], @data[1] + a[1])
-    end
-    def -(v)
-        a = v.to_a
-        Vec2.new(@data[0] - a[0], @data[1] - a[1])
-    end
-    def *(s)
-        Vec2.new(@data[0] * s, @data[1] * s)
-    end
-    def /(s)
-        Vec2.new(@data[0] / s, @data[1] / s)
-    end
+class Font
+    extend MethAttrs
+    returns! Image, :render
 end
 
 class Sprite
+    extend MethAttrs
+
     def pos=(v)
         a = v.to_a
         move(a[0], a[1])
@@ -45,12 +29,16 @@ class Sprite
     def pos()
         Vec2.new(x, y)
     end
+
+    returns! Image,:img
 end
 
 class Layer
+    alias set_scale scale=
+    alias get_scale scale
+
     def scale=(v)
-        a = v.to_a
-        set_scale(a[0], a[1])
+        set_scale(v.to_a)
     end
     def scale()
         Vec2.new(*get_scale())
@@ -58,15 +46,117 @@ class Layer
 end
 
 class Display
+    extend MethAttrs
     def size
         Vec2.new(width, height)
     end
+
+    alias set_bg bg=
+    alias get_bg bg
+
+    # def bg=(col)
+    #     set_bg(col.to_i)
+    # end
+    # def bg
+    #     Color.new(get_bg())
+    # end
+
+    returns! Canvas, :canvas
+    returns! Sprites, :sprites
+    returns! Console, :console
+end
+
+class Console
+    def visible_rows
+        ts = self.get_tile_size()
+        s = self.scale.to_a
+        (self.height / (ts[1] * s[1])).to_i
+    end
+end
+
+class Audio
+    extend MethAttrs
+    returns! Sound, :load_wav
+
 end
 
 module OS
 
+    extend MethAttrs
+
     @@display = Display.default
     @@boot_fiber = nil
+
+    def doc(cls)
+
+        while cls.class != Class and cls.class != Module
+            cls = cls.class
+        end
+
+        console.fg = Color::YELLOW
+        puts "class #{cls}"
+        has_doc = cls.respond_to?(:get_doc) 
+        doc = has_doc ? cls.get_doc() : nil
+        if doc
+            console.fg = Color::GREY
+            puts doc
+        end
+        methods = cls.instance_methods(false)
+        if cls.respond_to?(:superclass) && cls.superclass == Layer
+            methods += cls.superclass.instance_methods(false)
+        end
+        setters = []
+        methods.each do |method|
+            m = method.to_s
+            if m[-1] == '='
+                setters << m[0...-1]
+            end
+        end
+        setters.each do |s| 
+            methods.delete((s + '=').to_sym)
+            if methods.include?(s.to_sym)
+                methods.delete(s.to_sym)
+            end
+        end
+        p setters
+
+        console.fg = Color::YELLOW
+        puts "METHODS"
+        methods.each do |m|
+            console.fg = Color::WHITE
+            params = cls.instance_method(m).parameters
+            txt = nil
+            params.each do |param|
+                if txt
+                    txt += ","
+                else
+                    txt = ""
+                end
+                txt += param[1].to_s
+            end
+            txt = "" if !txt
+            print "    " + m.to_s + "(" + txt + ")"
+            doc = has_doc ? cls.get_doc(m) : nil
+            if doc
+                console.fg = Color::LIGHT_GREY
+                puts " - " + doc
+            end
+            puts
+        end
+        console.fg = Color::YELLOW
+        puts "ATTRIBUTES"
+        setters.each do |m|
+            console.fg = Color::WHITE
+            puts "    " + m.to_s
+            doc = cls.get_doc(m)
+            if doc
+                console.fg = Color::LIGHT_GREY
+                puts doc
+            end
+        end
+        console.fg = Color::WHITE
+
+    end
 
     def vec2(x,y)
         Vec2.new(x,y)
@@ -74,7 +164,7 @@ module OS
 
     class Handlers
         def initialize()
-            @callbacks = { key:[], draw:[], drag:[], click: [], timer: [] }
+            @callbacks = { key:[], draw:[], drag:[], click:[], timer:[] }
         end
 
         def empty?(what)
@@ -113,10 +203,12 @@ module OS
 
     @@handlers = Handlers.new
 
+    doc! "Add a handler that is called each time screen refreshes" 
     def on_draw(&block)
         @@handlers.add(:draw, block)
     end
 
+    doc! "Add a handler that is called when a key is pressed"
     def on_key(&block)
         @@handlers.add(:key, block)
     end
@@ -150,7 +242,7 @@ module OS
         @@handlers = h
     end
 
-    module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer
+    module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer, :vec2
 
     @@key_queue = []
     def self.reset_handlers
@@ -172,8 +264,8 @@ module OS
             @@handlers.call_all(:draw, t.seconds)
         end
         Input.default.on_key do |key,mod|
-            @@get_key = key
-            if @@handlers.empty?(:key)
+            @@read_key = key
+            if @@handlers.empty?(:key) 
                 @@key_queue.append(key)
             else
                 @@handlers.call_all(:key, key, mod)
@@ -182,38 +274,99 @@ module OS
         end
         Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args) }
         Input.default.on_click { |*args| @@handlers.call_all(:click, *args) }
+        p "HANDLERS DONE"
     end
 
+    doc! "Returns the default display"
+    returns! Display
     def display() @@display end
+
+    doc! "Returns the default console layer"
+    returns! Console
+    def console() @@display.console end
+
+    doc! "Returns the default canvas layer"
+    returns! Canvas
+    def canvas() @@display.canvas end
+
+    doc! "Returns the default sprites layer"
+    returns! Sprites
+    def sprites() @@display.sprites end
+
+    doc! "Returns the default Audio instance"
+    returns! Audio
+    def audio() Audio.default end
+
+    doc! "Returns the default Speech instance"
+    returns! Speech
+    def speech() Speech.default end
+
+    doc! "Use text to speech to vocalize the given text"
+    def say(text)
+        sound = Speech.default.text_to_sound(text)
+        audio.play(sound)
+    end
+
+    doc! "Play a sound at default or given frequency"
+    def play(sound, freq = nil)
+        audio.play(sound)
+    end
+
+    doc! "Load an image (png)"
+    returns! Image
+    takes_file! 
     def load_image(*args) Image.from_file(*args) end
+
+    doc! "Print text to screen without linefeed"
+    def print(text)
+        x,y = @@display.console.get_xy
+        @@display.console.print(text)
+        x2,y2 = @@display.console.get_xy
+        Fiber.yield if !@@handlers.in_callbacks && (y != y2 || x2 < x)
+    end
+
+    doc! "Print text to screen with linefeed"
+    def println(text)
+        @@display.console.print(text + "\n")
+        Fiber.yield if !@@handlers.in_callbacks
+    end
+
+    doc! "Draw text at specific location with specific colors"
     def text(*args) @@display.console.text(*args) end
+    doc! "Draw a line in the canvas from x,y to x2,y2"
     def line(x, y, x2, y2) @@display.canvas.line(x, y, x2, y2) end
+    doc! "Draw a circle in the canvas at x,y with radius r"
     def circle(x, y, r) @@display.canvas.circle(x, y, r) end
+    doc! "Get the character at x,y in the console"
     def get_char(x, y) @@display.console.get_char(x, y) end
     def scale(x, y = x) @@display.console.scale = [x,y] end
     def offset(x, y) @@display.console.offset(x,y) end
+    
+    returns! Sprite
     def add_sprite(img) @@display.sprites.add_sprite(img) end
     def remove_sprite(spr) @@display.sprites.remove_sprite(spr) end
     def clear()
         @@display.clear
     end
-    
-    
-    def flush()
-        raise "Can't flush() in callback handlers" if @@handlers.in_callbacks
-        Fiber.yield
-    end
 
+
+    doc! "Wait for vsync, or provide a block that will be called every vsync"
     def vsync()
         raise "Can't vsync() in callback handlers" if @@handlers.in_callbacks
-        Fiber.yield
+        if block_given?
+            loop { yield ; Fiber.yield }
+        else
+            Fiber.yield
+        end
     end
 
-    module_function :display, :text, :line, :scale, :offset, :add_sprite,
+    module_function :display, :console, :canvas, :sprites, :audio,
+        :text, :line, :scale, :offset, :add_sprite,
         :remove_sprite, :clear, :get_char, :circle
 
     @@cwd = "."
 
+    doc! "\"Boot\" the given code by running it in the 'root_fiber'. Should be called by the boot script."
     def boot(src = nil, &block)
         #raise "Already booted" if @@boot_fiber
         if src
@@ -224,27 +377,25 @@ module OS
         @@boot_fiber.resume
     end
 
-    def exec(src = nil, &block)
-        raise "Can't exec() in callback handlers" if @@handlers.in_callbacks
-        block = Proc.new { eval(src) } if src
-        f = Fiber.new(&block)
-        while f.alive? do
-            f.resume
-            Fiber.yield if f.alive?
-        end
-    end
-
+    doc! "Run a ruby file. Optionally clear handlers before starting"
     def run(name, clear: true)
         raise "Can't run() in callback handlers" if @@handlers.in_callbacks
         handlers = OS.get_handlers
         OS.clear_handlers if clear
         f = Fiber.new do
             src = File.read(name)
-            OS.instance_eval(src)
+            p "LOAD #{name}"
+            m = Module.new
+            m.send(:extend, OS)
+            m.instance_eval(src, name, 1)
         end
         while f.alive? do
             break if block_given? and yield
             f.resume
+            mods = Input.default.get_modifiers()
+            if Input.default.get_key('c'.ord)
+                break if mods & 0xc0 != 0
+            end
             Fiber.yield if f.alive?
         end
         OS.set_handlers(handlers)
@@ -252,7 +403,7 @@ module OS
 
     def reset_display
         scale(2,2)
-        @con.offset(0,0)
+        @con.offset = [0,0]
         display.console.fg = Color::WHITE
         display.bg = Color::BLUE
     end
@@ -264,15 +415,17 @@ module OS
 
     def gets
         raise "Can't gets() in callback handlers" if @@handlers.in_callbacks
-        line = IOX.read_line
+        line = LineReader.read_line
         puts
         line
     end
 
-    def get_key()
-        @@get_key = nil
-        Fiber.yield until @@get_key
-        @@get_key
+    alias readln gets
+
+    def read_key()
+        @@read_key = nil
+        Fiber.yield until @@read_key
+        @@read_key
     end
 
     def show(fn)
@@ -293,14 +446,15 @@ module OS
 
     def sleep(n)
         raise "Can't sleep() in callback handlers" if @@handlers.in_callbacks
-        n.times { Fiber.yield }
+        t = Timer.default.seconds + n
+        while Timer.default.seconds < t ; Fiber.yield ; end
     end
 
     def help(what = nil)
         if what == 'tutorial'
             ed = Editor.new
             ed.load('ruby/help.rb')
-            ed.activate
+            ed.run_editor
         elsif what == 'intro'
             cat('data/intro.txt')
         elsif what == 'design'
@@ -308,15 +462,13 @@ module OS
         elsif what == 'games'
             puts "ls \"games\""
             ls('games')
-puts <<GAMES
-
+            puts <<GAMES
 You can run a game (or any ruby file for that matter) by
 typing `run "path-to-game" `. You can also open up the
 file in the editor first, using edit "path-to-game"  and
 then pressing `F5` to run it.
 GAMES
-        else
-            puts <<HELP
+        else puts <<HELP
 help 'intro'
 help 'tutorial'
 help 'games'
@@ -325,8 +477,8 @@ HELP
         end
     end
 
-    module_function :gets, :help, :run, :show, :ls, :exec,
-        :sleep, :exec, :boot, :vsync, :flush, :get_key
+    module_function :gets, :readln, :help, :run, :show, :ls,
+        :sleep, :boot, :vsync, :read_key
 
 end
 

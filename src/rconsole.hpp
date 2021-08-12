@@ -29,6 +29,8 @@ class RConsole : public RLayer
     void fill(uint32_t fg, uint32_t bg);
     void scroll(int dy, int dx);
     Console::Char get(int x, int y) const;
+    std::array<float, 4> default_fg;
+    std::array<float, 4> default_bg;
 public:
     void text(std::string const& t);
     void text(std::string const& t, uint32_t fg, uint32_t bg);

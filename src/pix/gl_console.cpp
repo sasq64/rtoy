@@ -7,8 +7,6 @@
 
 #include <coreutils/utf8.h>
 
-#define Wide2 1
-
 void GLConsole::set_tile_size(int tw, int th)
 {
     tile_width = tw;
@@ -32,11 +30,6 @@ Console::Char GLConsole::get(int x, int y) const
     return grid[x + width * y];
 }
 
-bool GLConsole::is_wide(char32_t c) const
-{
-    return font->is_wide.count(c) > 0;
-}
-
 Cursor GLConsole::text(int x, int y, std::string const& t)
 {
     uint32_t fg = default_style.fg;
@@ -47,63 +40,54 @@ Cursor GLConsole::text(int x, int y, std::string const& t)
 Cursor GLConsole::text(
     int x, int y, std::string const& t, uint32_t fg, uint32_t bg)
 {
-    // fmt::print("PRINT {},{}: '{}'\n", x, y, t);
+    //fmt::print("PRINT {},{}: '{}'\n", x, y, t);
     auto text32 = utils::utf8_decode(t);
-    if (x > 0 && grid[x + width * y].c == Wide2) {
-        grid[x - 1 + width * y] = {' ', fg, bg};
-    }
+    dirty[y] = 1;
     for (auto c : text32) {
         if (c == 10) {
             x = 0;
             y++;
+            dirty[y] = 1;
             continue;
         }
 
         auto& t = grid[x + width * y];
+        if(c > 0x1000) {
+            fmt::print("!{:x}\n", (uint32_t)c); 
+        }
         t = {c, fg, bg};
         x++;
-        if (font->is_wide.count(c) > 0) {
-            grid[x + width * y] = {Wide2, fg, bg};
-            x++;
-        }
         if (x >= width) {
             x -= width;
             y++;
+            dirty[y] = 1;
         }
-    }
-    if (x < (width - 1) && grid[x + 1 + width * y].c == Wide2) {
-        grid[x + 1 + width * y] = {' ', fg, bg};
     }
     return {x, y};
 }
 
 void GLConsole::put_char(int x, int y, char32_t c)
 {
+    dirty[y] = 1;
     auto& t = grid[x + width * y];
-    if (x > 0 && t.c == Wide2) {
-        grid[(x - 1) + width * y] = {' ', t.fg, t.bg};
-    }
-    if (x < (width - 1) && grid[x + 1 + width * y].c == Wide2) {
-        grid[x + 1 + width * y] = {' ', t.fg, t.bg};
-    }
     t = {c, t.fg, t.bg};
 }
 
 void GLConsole::put_color(int x, int y, uint32_t fg, uint32_t bg)
 {
+    dirty[y] = 1;
     auto& t = grid[x + width * y];
-    if (t.c == Wide2) { grid[(x - 1) + width * y] = {' ', fg, bg}; }
-    if (x < (width - 1) && grid[x + 1 + width * y].c == Wide2) {
-        grid[x + 1 + width * y] = {' ', fg, bg};
-    }
     t = {t.c, fg, bg};
 }
 
 void GLConsole::fill(uint32_t fg, uint32_t bg)
 {
-    for (auto& t : grid) {
-        t = {' ', fg, bg};
-    }
+    std::fill(dirty.begin(), dirty.end(), 1);
+    std::fill(grid.begin(), grid.end(), Char{' ', fg, bg});
+    frame_buffer.set_target();
+    gl_wrap::clearColor({default_style.bg});
+    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)
@@ -111,6 +95,7 @@ void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)
     int32_t i = 0;
     auto xx = x;
     for (auto const& c : source) {
+        dirty[y] = 1;
         if (xx < width && y < height) { this->grid[xx + width * y] = c; }
         xx++;
         if (++i == stride) {
@@ -120,10 +105,16 @@ void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)
         }
     }
 }
+void GLConsole::reset()
+{
+    fmt::print("RESET {} {}\n", font->char_width, font->char_height);
+    set_tile_size(font->char_width, font->char_height);
+}
 
 GLConsole::GLConsole(int w, int h, Style _default_style)
-    : default_style(_default_style),
-      font(std::make_shared<TextureFont>("data/unscii-16.ttf", 16)),
+    : default_style(std::move(_default_style)),
+      font(std::make_shared<TextureFont>(
+          default_style.font.c_str(), default_style.font_size)),
       frame_buffer(w, h)
 {
 
@@ -132,6 +123,7 @@ GLConsole::GLConsole(int w, int h, Style _default_style)
 
     tile_width = font->char_width;
     tile_height = font->char_height;
+    dirty.resize(height);
 
     fflush(stdout);
     grid.resize(width * height);
@@ -155,6 +147,8 @@ void GLConsole::flush()
     bool changed = false;
     frame_buffer.set_target();
     for (int32_t y = 0; y < height; y++) {
+        if (dirty[y] == 0) { continue; }
+        dirty[y] = 0;
         for (int32_t x = 0; x < width; x++) {
             auto& old = old_grid[x + y * width];
             auto const& tile = grid[x + y * width];
@@ -186,11 +180,6 @@ void GLConsole::flush()
             in_string = false;
         }
     }
-    // if (changed) {
-    // fmt::print("FLUSH!\n");
-    // font->render();
-
-    //}
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -200,11 +189,14 @@ void GLConsole::scroll(int dy, int dx)
     tiles.resize(width * height);
 
     for (int32_t y = 0; y < height; y++) {
-        for (int32_t x = 0; x < width; x++) {
-            auto tx = x + dx;
-            auto ty = y + dy;
-            if (tx >= 0 && ty >= 0 && tx < width && ty < height) {
-                tiles[tx + ty * width] = grid[x + y * width];
+        auto ty = y + dy;
+        if (ty >= 0 && ty < height) {
+            dirty[ty] = 1;
+            for (int32_t x = 0; x < width; x++) {
+                auto tx = x + dx;
+                if (tx < width && ty < height) {
+                    tiles[tx + ty * width] = grid[x + y * width];
+                }
             }
         }
     }

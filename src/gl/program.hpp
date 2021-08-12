@@ -100,6 +100,11 @@ struct Program
     void setUniform(const char* name, ARGS... args) const
     {
         auto location = glGetUniformLocation(program, name);
+        if(location == -1) {
+            fmt::print("WARN: '{}' does not exist\n", name);
+            return;
+        }
+
         gl_check("glGetUniformLocation");
         use();
         glUniform(location, args...);

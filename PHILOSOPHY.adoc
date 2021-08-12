@@ -1,0 +1,79 @@
+== The Concept
+
+Let's walk through our requirements and see where that leads us.
+
+A _programming environment_ and _runtime_ that is easy to understand and play
+with.
+
+To promote playing and experimentation, we want it to be;
+
+=== Self-contained
+
+Requiring the user to use and start different programs in an existing operating
+system such as windows has a few problems;
+
+It is hard to gain an understanding about how things work together.
+
+There is too much noise; features of different systems and programs that are
+not relevant to the programming process.
+
+It is easy to get distracted.
+
+We want a fullscreen experience that the user does not have to switch out of.
+
+A good target device is a Raspberry PI running in console mode (X11 not booted);
+here it is not even possible do start a web browser to do something else.
+
+=== Coherent
+
+We want the environment to have some underlying "metaphor" that promotes
+understanding of the system. This is where the _VHC_ comes in.
+
+Let's illustrate this with an example on how understanding can come from
+a coherent underlying "hardware";
+
+=== Example: Learning how text works
+
+[source,ruby]
+----
+print("What is your name? ")
+name = readln()
+println("Hello #{name}")
+----
+The user notices that letters are ouput from left to right, and from top to bottom.
+
+She starts to understand the concept of a "cursor position" that is increased
+as text is output.
+
+NOTE: A harder concept that the user probably does not understand at this point is _blocking IO_; what is really happening inside `readln()` ?
+
+[source,ruby]
+----
+text 0,0, "top of the screen"
+x = 0
+loop {
+   text x,2,"Moving text", Color::RED
+   x = x + 1
+   sleep 0.1
+}
+----
+The user learns that text output takes place on a grid, and that it is possible
+to place characters anywhere on that grid. She also learns that the each "cell"
+in this grid can have different colors.
+
+[source,ruby]
+----
+img = Image.from_file("ball.png")
+console.define_tile('o', img)
+# Display a ball image in the top left corner
+console.text(0,0, 'o')
+----
+
+The user learns that characters are just images, and using tiles as letters is
+just a special case -- and that the image representation of any tile can be
+changed.
+
+
+
+
+

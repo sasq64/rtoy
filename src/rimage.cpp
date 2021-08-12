@@ -68,18 +68,25 @@ void RImage::reg_class(mrb_state* ruby)
 
             float u = u0;
             float v = v0;
+            fmt::print("{} -> {}\n", u0, u1);
+            int x = 0;
+            int y = 0;
             while (true) {
-                if (u + du > u1) {
+                fmt::print("{} + {} =  {}\n", u, du, u + du);
+                if (x ==w) {
                     u = u0;
                     v += dv;
+                    x = 0;
+                    y++;
                 }
-                if (v + dv > v1) { break; }
+                if (y == h) { break; }
                 auto* rimage = new RImage(thiz->image);
                 rimage->texture.tex = thiz->texture.tex;
                 rimage->texture.uvs = {
                     u, v, u + du, v, u + du, v + dv, u, v + dv};
                 images.push_back(mrb::new_data_obj(mrb, rimage));
                 u += du;
+                x++;
             }
 
             return mrb::to_value(images, mrb);
@@ -95,10 +102,10 @@ void RImage::upload()
     }
 }
 
-void RImage::draw(float x, float y)
+void RImage::draw(float x, float y, float scale)
 {
     fmt::print("Draw {}x{} at {},{}\n", image.width, image.height, x, y);
     upload();
     texture.bind();
-    pix::draw_quad_uvs(x, y, width(), height(), texture.uvs);
+    pix::draw_quad_uvs(x, y, width() * scale, height() * scale, texture.uvs);
 }

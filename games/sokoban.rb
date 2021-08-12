@@ -47,11 +47,11 @@ class Sokoban
     end
 
     def to_spr(p)
-        p * 64 + [32,32]
+        p * 64
     end
 
     def from_spr(p)
-        (p - [32,32]) / 64
+        p / 64
     end
 
     def init_level(level)
@@ -79,8 +79,7 @@ class Sokoban
                 end
                 p.x += 1
             end
-            p.x = 0
-            p.y += 1
+            p = vec2(0, p.y+1)
         end
         check_boxes()
     end
@@ -94,29 +93,41 @@ class Sokoban
     end
 
     def check_boxes(b = nil)
-        counter = 0
+        @counter = 0
         @boxes.each do |box|
             p = from_spr(box.pos)
             t = display.console.get_tile(p.x, p.y) - 256
             if t == GOAL
                 box.img = @tiles[GOAL_BOX] unless b && b != box
-                counter += 1
+                @counter += 1
             else
                 box.img = @tiles[BOX] unless b && b != box
             end
         end
-        counter == @boxes.length
+        @counter == @boxes.length
+    end
+
+    def update_texts()
+        cv = display.canvas
+        cv.clear
+        cv.text(display.width - 250, 10, "Moves #{@moves}", 50)
+        cv.text(display.width - 250, display.height - 60,
+                "Done #{@counter}/#{@boxes.length}", 50)
+        cv.text(10, 10, "Level solved!", 50) if @game_won
+        cv.text(10, display.height - 60, "Level #{@current_level+1}", 50)
     end
 
     def initialize()
 
+        @counter = 0
         scale(1)
-        display.console.tile_size(64,64)
+        display.console.set_tile_size(64,64)
         setup_tiles()
         load_levels("data/Original.txt")
         @current_level = 0
         init_level(@levels[@current_level])
         @moves = 0
+        @tween = @box_tween = nil
 
         delta = { Key::LEFT => [-1,0],
                   Key::RIGHT => [1,0],
@@ -124,6 +135,9 @@ class Sokoban
                   Key::DOWN => [0,1] }
 
         on_key do |key|
+            @tween.finish if @tween
+            @box_tween.finish if @box_tween
+            @tween = @box_tween = nil
             init_level(@levels[@current_level]) if key == 'r'.ord
             @current_level += 1 if key == 'n'.ord
             @current_level -= 1 if key == 'p'.ord
@@ -138,23 +152,22 @@ class Sokoban
                 box_target = pos + d * 2
                 t2,box2 = tile_at(box_target)
                 if t2 != WALL and t2 != BOX
-                    box.pos = to_spr(box_target)
-                    gw = check_boxes(box)
-                    if !@game_won && gw
-                        @current_level += 1
-                    end
-                    @game_won = gw
+                    @box_tween = tween(box).seconds(0.1).to(pos: to_spr(box_target)).
+                        when_done {
+                            gw = check_boxes(box)
+                            if !@game_won && gw
+                                @current_level += 1
+                            end
+                            @game_won = gw
+                            update_texts()
+                        }
                 else
                     next
                 end
                 @moves += 1
             end
-            @player.pos = to_spr(target)
-            cv = display.canvas
-            cv.clear
-            cv.text(display.width - 250, 10, "Moves #{@moves}", 50)
-            cv.text(10, 10, "Level solved!", 50) if @game_won
-            cv.text(10, display.height - 60, "Level #{@current_level+1}", 50)
+            @tween = tween(@player).seconds(0.1).to(pos: to_spr(target))
+            update_texts()
         end
     end
 

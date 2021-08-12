@@ -18,12 +18,12 @@ void set_transform(std::array<float, 16> const& mat)
     plain.setUniform("in_transform", mat);
 }
 
-void set_colors(uint32_t fg, uint32_t bg)
+void set_colors(gl::Color fg, gl::Color bg)
 {
     auto& textured = gl::ProgramCache::get_instance().textured;
-    textured.setUniform("in_color", gl::Color(fg));
+    textured.setUniform("in_color", fg);
     auto& plain = gl::ProgramCache::get_instance().non_textured;
-    plain.setUniform("in_color", gl::Color(fg));
+    plain.setUniform("in_color", fg);
 }
 
 void draw_quad_invy()
@@ -82,7 +82,7 @@ void draw_quad()
     uv.disable();
 }
 
-void draw_quad_uvs(std::array<float,8> const& uvs)
+void draw_quad_uvs(std::array<float, 8> const& uvs)
 {
     float x0 = -1;
     float y0 = -1;
@@ -111,9 +111,10 @@ void draw_quad_uvs(std::array<float,8> const& uvs)
     uv.disable();
 }
 
-void draw_quad_uvs(float x, float y, float sx, float sy, std::array<float,8> const& uvs)
+void draw_quad_uvs(
+    float x, float y, float sx, float sy, std::array<float, 8> const& uvs)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
 
     auto x0 = x * 2.0F / w - 1.0F;
     auto y0 = y * -2.0F / h + 1.0F;
@@ -147,10 +148,9 @@ void draw_quad_uvs(float x, float y, float sx, float sy, std::array<float,8> con
     uv.disable();
 }
 
-
 void draw_quad_impl(float x, float y, float sx, float sy)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
 
     auto x0 = x * 2.0F / w - 1.0F;
     auto y0 = y * -2.0F / h + 1.0F;
@@ -177,9 +177,38 @@ void draw_quad_impl(float x, float y, float sx, float sy)
 
     gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
     gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
+
     gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
     pos.disable();
     uv.disable();
+}
+
+void draw_quad_filled(float x, float y, float sx, float sy)
+{
+    auto [w, h] = gl::getViewport<float>();
+
+    auto x0 = x * 2.0F / w - 1.0F;
+    auto y0 = y * -2.0F / h + 1.0F;
+
+    x += sx;
+    y += sy;
+
+    auto x1 = x * 2.0F / w - 1.0F;
+    auto y1 = y * -2.0F / h + 1.0F;
+
+    std::array vertexData{x0, y0, x1, y0, x1, y1, x0, y1};
+    gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
+
+    vbo.bind();
+
+    auto& program = gl::ProgramCache::get_instance().non_textured;
+    program.use();
+    auto pos = program.getAttribute("in_pos");
+    pos.enable();
+
+    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
+    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
+    pos.disable();
 }
 
 Image load_png(std::string_view name)
@@ -197,7 +226,7 @@ Image load_png(std::string_view name)
 
 void draw_line_impl(float x0, float y0, float x1, float y1)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
 
     x0 = x0 * 2.0F / w - 1.0F;
     x1 = x1 * 2.0F / w - 1.0F;
@@ -219,8 +248,6 @@ void draw_line_impl(float x0, float y0, float x1, float y1)
         std::array{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F,
             1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F});
 
-    auto vp = gl_wrap::getViewport();
-
     gl::vertexAttrib(0, gl::Size<2>{}, gl::Type::Float, 0 * sizeof(GLfloat), 0);
     gl::drawArrays(gl::Primitive::Lines, 0, 2);
     pos.disable();
@@ -228,7 +255,7 @@ void draw_line_impl(float x0, float y0, float x1, float y1)
 
 void draw_circle_impl(float x, float y, float radius)
 {
-    auto [w, h] = gl::getViewport();
+    auto [w, h] = gl::getViewport<float>();
     int steps = static_cast<int>(M_PI / asinf(sqrtf(1 / radius)));
 
     steps = 64;
@@ -266,8 +293,8 @@ void save_png(Image const& image, std::string_view name)
 {
 
     lodepng_encode_file(std::string(name).c_str(),
-        (unsigned char const*)image.ptr, image.width, image.height, LCT_RGBA,
-        8);
+        reinterpret_cast<unsigned char const*>(image.ptr), image.width,
+        image.height, LCT_RGBA, 8);
 
     return;
 

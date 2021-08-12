@@ -13,11 +13,15 @@
 RConsole::RConsole(int w, int h, Style style)
     : RLayer{w, h}, console(std::make_shared<GLConsole>(w, h, style))
 {
-    trans = {0.0F, 0.0F};
-    scale = {2.0F, 2.0F};
+    default_fg = this->style.fg = gl::Color(style.fg).to_array();
+    default_bg = this->style.bg = gl::Color(style.bg).to_array();
+    update();
+    reset();
+    /* trans = {0.0F, 0.0F}; */
+    /* scale = {2.0F, 2.0F}; */
 
-    rot = 0.0F;
-    update_tx();
+    /* rot = 0.0F; */
+    /* update_tx(); */
 }
 
 void RConsole::clear()
@@ -31,7 +35,7 @@ void RConsole::update_pos(Cursor const& cursor)
 {
     xpos = cursor.x;
     ypos = cursor.y;
-    // Calcluate visibilw size.
+    // Calculate visible size.
     // TODO: Include tile_size? wrap attributes ?
     int w = static_cast<int>(static_cast<float>(width) /
                              static_cast<float>(console->font->char_width) /
@@ -51,7 +55,8 @@ void RConsole::update_pos(Cursor const& cursor)
 
 void RConsole::text(std::string const& t)
 {
-    console->default_style = {style.fg, style.bg};
+    console->default_style = {
+        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
     auto cursor = console->text(xpos, ypos, t);
     update_pos(cursor);
 }
@@ -64,7 +69,8 @@ void RConsole::text(std::string const& t, uint32_t fg, uint32_t bg)
 
 void RConsole::text(int x, int y, std::string const& t)
 {
-    console->default_style = {style.fg, style.bg};
+    console->default_style = {
+        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
     console->text(x, y, t);
 }
 
@@ -169,8 +175,10 @@ void RConsole::reg_class(mrb_state* ruby)
                 ptr->text(text);
             } else if (n == 3) {
                 auto [text, fg, bg] =
-                    mrb::get_args<std::string, uint32_t, uint32_t>(mrb);
-                ptr->text(text, fg, bg);
+                    mrb::get_args<std::string, mrb_value, mrb_value>(mrb);
+                auto fcol = gl::Color(mrb::to_array<float, 4>(fg, mrb));
+                auto bcol = gl::Color(mrb::to_array<float, 4>(bg, mrb));
+                ptr->text(text, fcol.to_rgba(), bcol.to_rgba());
             }
             return mrb_nil_value();
         },
@@ -187,9 +195,12 @@ void RConsole::reg_class(mrb_state* ruby)
                 ptr->text(x, y, text);
             } else if (n == 5) {
                 auto [x, y, text, fg, bg] =
-                    mrb::get_args<int, int, std::string, uint32_t, uint32_t>(
+                    mrb::get_args<int, int, std::string, mrb_value, mrb_value>(
                         mrb);
-                ptr->text(x, y, text, fg, bg);
+                mrb::get_args<int, int, std::string, mrb_value, mrb_value>(mrb);
+                auto fcol = gl::Color(mrb::to_array<float, 4>(fg, mrb));
+                auto bcol = gl::Color(mrb::to_array<float, 4>(bg, mrb));
+                ptr->text(x, y, text, fcol.to_rgba(), bcol.to_rgba());
             }
             return mrb_nil_value();
         },
@@ -214,7 +225,7 @@ void RConsole::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(2));
 
     mrb_define_method(
-        ruby, RConsole::rclass, "tile_size",
+        ruby, RConsole::rclass, "set_tile_size",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             auto [x, y] = mrb::get_args<int, int>(mrb);
@@ -222,6 +233,16 @@ void RConsole::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RLayer::rclass, "get_tile_size",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* ptr = mrb::self_to<RConsole>(self);
+            std::array<int, 2> data{
+                ptr->console->tile_width, ptr->console->tile_height};
+            return mrb::to_value(data, mrb);
+        },
+        MRB_ARGS_NONE());
 
     mrb_define_method(
         ruby, RConsole::rclass, "goto_xy",
@@ -287,16 +308,31 @@ void RConsole::reg_class(mrb_state* ruby)
 
 void RConsole::update()
 {
-    console->default_style.bg = style.bg;
-    console->default_style.fg = style.fg;
+    console->default_style = {
+        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
 }
 
 void RConsole::reset()
 {
-    transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-    trans = {0.0F, 0.0F};
-    scale = {2.0F, 2.0F};
-    update_tx();
-    console->set_tile_size(8, 16);
+    RLayer::reset();
+
+    console->reset();
     console->font->clear();
+
+    int lines = height / console->tile_height;
+    float s = 1.0;
+    int total = lines;
+    while(total > 50) {
+        s += 1.0;
+        total -= lines;
+    }
+
+    scale = {s, s};
+    update_tx();
+
+    style.fg = default_fg;
+    style.bg = default_bg;
+    update();
+
+    clear();
 }
