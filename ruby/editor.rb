@@ -206,7 +206,7 @@ class Editor
             break if i >= @lines.length
             fg = Color::WHITE
             bg = Color::TRANSP
-            fg = Color::GREY if @lines[i][0] == '#'.ord
+            fg = Color::LIGHT_BLUE if @lines[i][0] == '#'.ord
             @con.text(0, y, @lines[i].pack('U*'), fg, bg) if i < @lines.length
         end 
 

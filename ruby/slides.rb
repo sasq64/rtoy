@@ -32,7 +32,7 @@ class Slide
         @tweens = []
         @blocks = []
         @block_no = 0
-        @header_sizes = [120, 80, 64, 48]
+        @header_sizes = [200, 120, 80, 60, 40]
         @anim = :none
         @justify = :left
 
@@ -131,7 +131,7 @@ class Slide
     end
 
     def space(y = 20)
-        @blocks << [:space, 20, '', @anim]
+        @blocks << [:space, y, '', @anim]
     end
 
     def h1(txt)
@@ -216,6 +216,7 @@ slides = SlideDeck.new {
     slide {
         anim :from_right
         justify :center
+        space 300
         h1 "R-Toy"
         anim :from_left
         sub "The Virtual Ruby Home Computer"
@@ -223,8 +224,9 @@ slides = SlideDeck.new {
 
     slide {
         anim :fade
-        para "Trying to replicate the effect an 80s home computer had
-    on a nerd like me."
+        para "R-Toy tries to be a modern (virtual) alternative
+        home computer."
+        para "Intended for play/experimenting, prototyping learnint etc"
         space 30
         code '10 PRINT "HELLO"
     20 GOTO 10'

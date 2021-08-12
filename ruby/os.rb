@@ -454,7 +454,7 @@ module OS
         if what == 'tutorial'
             ed = Editor.new
             ed.load('ruby/help.rb')
-            ed.activate
+            ed.run_editor
         elsif what == 'intro'
             cat('data/intro.txt')
         elsif what == 'design'

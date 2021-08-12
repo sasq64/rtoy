@@ -159,7 +159,8 @@ class Tween
         self
     end
 
-    def seconds(s)
+    def seconds(s, &block)
+        @block = block if block
         @total_time = s
         self
     end

@@ -40,8 +40,6 @@ struct GLConsole : public Console
 
     std::shared_ptr<TextureFont> font;
 
-    bool is_wide(char32_t) const override;
-
     gl_wrap::Texture frame_buffer;
 
     void set_tile_size(int tw, int th);

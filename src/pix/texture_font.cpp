@@ -30,6 +30,21 @@ TextureFont::TextureFont(const char* name, int size)
     needs_update = false;
     puts("TextureFont");
 }
+void TextureFont::clear()
+{
+    namespace gl = gl_wrap;
+    next_pos = {0, 0};
+    std::fill(data.begin(), data.end(), 0);
+    pix::Image image{texture_width, texture_height,
+        reinterpret_cast<std::byte*>(data.data()), 0};
+    textures.clear();
+    textures.push_back({std::make_shared<gl::Texture>(
+        texture_width, texture_height, data, GL_RGBA)});
+    renderer.clear();
+    for (char32_t c = 0x20; c <= 0x7f; c++) {
+        add_char(c);
+    }
+}
 
 void TextureFont::add_char(char32_t c)
 {
@@ -43,11 +58,6 @@ void TextureFont::add_char(char32_t c)
 
     // then check if this char is wide and flag it
     if (cw < char_width) { cw = char_width; }
-    if (cw > char_width * 2) {
-        cw = char_width * 2;
-        fmt::print("Wide {}\n", static_cast<int>(c));
-        is_wide.insert(c);
-    }
 
     float fx = (float)x / texture_width;
     float fy = (float)y / texture_height;
@@ -87,8 +97,8 @@ void TextureFont::render_text(
     render_text(xy, attrs, utils::utf8_decode(text));
 }
 
-void TextureFont::render_text(std::pair<float, float> xy, TextAttrs const& attrs,
-    std::u32string_view text32)
+void TextureFont::render_text(std::pair<float, float> xy,
+    TextAttrs const& attrs, std::u32string_view text32)
 {
     int last_index = -1;
     int lasti = 0;
@@ -105,7 +115,7 @@ void TextureFont::render_text(std::pair<float, float> xy, TextAttrs const& attrs
     };
 
     for (char32_t c : text32) {
-        //if (c == 1) { i++; continue; }
+        // if (c == 1) { i++; continue; }
 
         int tindex = renderer.get_texture_index(c);
         if (tindex == -1) {
@@ -115,9 +125,7 @@ void TextureFont::render_text(std::pair<float, float> xy, TextAttrs const& attrs
 
         if (last_index >= 0 && tindex != last_index) {
             render();
-            if (lasti != i) { 
-                draw();
-            }
+            if (lasti != i) { draw(); }
         }
         last_index = tindex;
         i++;

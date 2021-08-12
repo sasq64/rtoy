@@ -45,22 +45,13 @@ public:
 
     int tile_width = 0;
 
-    std::unordered_set<char32_t> is_wide;
     explicit TextureFont(const char* name, int size = -1);
 
     void set_tile_size(int tw, int th);
 
     void add_tile(char32_t index, gl_wrap::TexRef texture);
 
-    void clear()
-    {
-        next_pos = {0,0};
-        textures.resize(1);
-        renderer.clear();
-        for (char32_t c = 0x20; c <= 0x7f; c++) {
-            add_char(c);
-        }
-    }
+    void clear();
 
     void render_text(std::pair<float, float> xy, TextAttrs const& attrs,
         std::string_view text);

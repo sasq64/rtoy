@@ -21,7 +21,7 @@ class Music
 
     def initialize()
         @audio = Audio.default
-        @sound = Audio.load_wav("data/piano2.wav")
+        @sound = Audio.load_wav("data/piano.wav")
         @channel = 0
         @tempo = 0.2
     end 

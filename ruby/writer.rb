@@ -1,5 +1,6 @@
 
 display.bg = Color::BLACK
+canvas.fg = Color::WHITE
 clear()
 font = Font.from_file('data/Ubuntu-B.ttf')
 text = %w(

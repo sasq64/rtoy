@@ -30,11 +30,6 @@ Console::Char GLConsole::get(int x, int y) const
     return grid[x + width * y];
 }
 
-bool GLConsole::is_wide(char32_t c) const
-{
-    return font->is_wide.count(c) > 0;
-}
-
 Cursor GLConsole::text(int x, int y, std::string const& t)
 {
     uint32_t fg = default_style.fg;
@@ -45,7 +40,7 @@ Cursor GLConsole::text(int x, int y, std::string const& t)
 Cursor GLConsole::text(
     int x, int y, std::string const& t, uint32_t fg, uint32_t bg)
 {
-    fmt::print("PRINT {},{}: '{}'\n", x, y, t);
+    //fmt::print("PRINT {},{}: '{}'\n", x, y, t);
     auto text32 = utils::utf8_decode(t);
     dirty[y] = 1;
     for (auto c : text32) {

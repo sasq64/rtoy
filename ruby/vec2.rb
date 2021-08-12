@@ -22,6 +22,10 @@ class Vec2
     def self.rand(x,y)
         Vec2.new(Kernel::rand(x), Kernel::rand(y))
     end
+
+    def rand()
+        Vec2.new(Kernel::rand(@data[0]), Kernel::rand(@data[1]))
+    end
     
     def ==(v)
         a = v.to_a
