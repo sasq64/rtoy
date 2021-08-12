@@ -242,8 +242,6 @@ slides = SlideDeck.new {
     }
 }
 
-p "PLAY"
-
 slides.play
 OS.loop { OS.vsync() }
 

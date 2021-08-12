@@ -1,6 +1,7 @@
 
 [ ] Wait for key after error in editor
-[ ] Set default colors before showing error
+[x] Set default colors before showing error
+[ ] Scale issue when returning to editor
 [x] Fix font rendering bgcolor
 [ ] Option to auto run script after boot
 [ ] Option to run screenless (for testing)
