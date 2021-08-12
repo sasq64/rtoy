@@ -2,25 +2,24 @@ require 'os.rb'
 require 'tween.rb'
 require 'vec2.rb'
 
-OS.display.bg = Color::GREY
+OS.display.bg = Color::WHITE
 OS.clear()
 
-module Slides
 
-    # Slide Contract:
+# Slide Contract:
 
-    # Should not allocate any graphical resources on creationg
-    # start() will allow the Slide to animate and render to the canvas
-    # A slide can be stepped until :showing
-    # At this point all information is visible
-    # Calling exit() or stepping again will cause the slide to clear its
-    # content from the screen. The canvas must be empty after a call to
-    # exit, but sprites can be animating until :clear
-    #
-    # step() - Start or step to next state in slide. Returns state
-    # state() - Returns :unstarted, :in_progress, :showing, :exiting, :clear
-    # show() - Jump directly to showing everything
-    # exit() - Clear the slide contents from the screen
+# Should not allocate any graphical resources on creationg
+# start() will allow the Slide to animate and render to the canvas
+# A slide can be stepped until :showing
+# At this point all information is visible
+# Calling exit() or stepping again will cause the slide to clear its
+# content from the screen. The canvas must be empty after a call to
+# exit, but sprites can be animating until :clear
+#
+# step() - Start or step to next state in slide. Returns state
+# state() - Returns :unstarted, :in_progress, :showing, :exiting, :clear
+# show() - Jump directly to showing everything
+# exit() - Clear the slide contents from the screen
 
 class Slide
 
@@ -82,6 +81,24 @@ class Slide
                 @ypos += add(@font.render(txt, Color::BLACK, @header_sizes[arg]),
                              @ypos, anim)
             when :p
+                x = 20
+                y = 0
+                width = canvas.width
+                line = []
+                lines = []
+                ss = @font.get_size(' ', 48)
+                txt.split.each do |word|
+                    w,h = @font.get_size(word, 48)
+                    y = h if y = 0
+                    if w + x > width
+                        lines << line.join(' ')
+                        line = []
+                        x = 20
+                        y += h
+                    end
+                    line << word
+                    x += w
+                end
                 txt.split("\n").each do |line|
                     @ypos += add(@font.render(line, Color::BLACK, 48), @ypos, anim)
                 end
@@ -196,35 +213,33 @@ class SlideDeck
 end
 
 slides = SlideDeck.new {
+    slide {
+        anim :from_right
+        justify :center
+        h1 "R-Toy"
+        anim :from_left
+        sub "The Virtual Ruby Home Computer"
+    }
 
-slide {
-    anim :from_right
-    justify :center
-    h1 "R-Toy"
-    anim :from_left
-    sub "The Virtual Ruby Home Computer"
-}
+    slide {
+        anim :fade
+        para "Trying to replicate the effect an 80s home computer had
+    on a nerd like me."
+        space 30
+        code '10 PRINT "HELLO"
+    20 GOTO 10'
+    }
 
-slide {
-    anim :fade
-    para "Trying to replicate the effect an 80s home computer had
-on a nerd like me."
-    space 30
-    code '10 PRINT "HELLO"
-20 GOTO 10'
-}
-
-slide {
-    anim :from_right
-    h1 "Alternatives"
-    para "• UNITY"
-    para "• AOZ STUDIO (AMOS)"
-    para "• PYGAME"
-    para "• FLASH / ACTIONSCRIPT"
-    para "• MODDING / MINECRAFT"
-    para "• SONIC PI"
-}
-
+    slide {
+        anim :from_right
+        h1 "Alternatives"
+        para "• UNITY"
+        para "• AOZ STUDIO (AMOS)"
+        para "• PYGAME"
+        para "• FLASH / ACTIONSCRIPT"
+        para "• MODDING / MINECRAFT"
+        para "• SONIC PI"
+    }
 }
 
 p "PLAY"
@@ -232,4 +247,3 @@ p "PLAY"
 slides.play
 OS.loop { OS.vsync() }
 
-end

@@ -316,6 +316,8 @@ void RConsole::reset()
 {
     RLayer::reset();
 
+    console->reset();
+    console->font->clear();
 
     int lines = height / console->tile_height;
     float s = 1.0;
@@ -332,7 +334,5 @@ void RConsole::reset()
     style.bg = default_bg;
     update();
 
-    console->reset();
-    console->font->clear();
     clear();
 }

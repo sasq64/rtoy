@@ -1,3 +1,4 @@
+
 # Sprite split and tween example
 img = Image.from_file("data/face.png")
 sprites = img.split(20, 2).map { |img| add_sprite(img) }

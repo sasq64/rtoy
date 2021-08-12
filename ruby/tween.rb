@@ -129,6 +129,7 @@ end
 
 class Tween
     @@tweens = []
+    @@seconds = Timer.default.seconds
 
     LEGALS = [ :obj, :method, :func, :seconds, :steps, :from, :to ]
     REQUIRED = [ :obj, :method, :seconds, :from, :to ]
@@ -140,7 +141,7 @@ class Tween
         seconds = o if o.kind_of? Numeric
         @obj = o || obj
         @total_time = seconds
-        @start_time = Timer.default.seconds
+        @start_time = @@seconds
 
     end
 
@@ -179,7 +180,9 @@ class Tween
 
         kwargs.each do |key,val|
             r[:from] = r[:obj].send(key)
+            val = val.to_a if val.respond_to?(:to_a)
             r[:to] = val
+            r[:from] = r[:from].to_a if r[:from].respond_to?(:to_a)
             r[:to] = r[:from] - r[:from] + val
             r[:method] = [key, '='].join.to_sym
         end
@@ -197,6 +200,8 @@ class Tween
 
         kwargs.each do |key,val|
             r[:to] = r[:obj].send(key)
+            r[:to] = r[:to].to_a if r[:to].respond_to?(:to_a)
+            val = val.to_a if val.respond_to?(:to_a)
             r[:from] = r[:to] - r[:to] + val
             r[:method] = [key, '='].join.to_sym
         end
@@ -210,7 +215,7 @@ class Tween
     end
 
     def update(t)
-        delta = @total_time ? (Timer.default.seconds - @start_time) / @total_time : 0
+        delta = @total_time ? (@@seconds - @start_time) / @total_time : 0
         res = true
         if @block
             @block.call(delta)
@@ -232,7 +237,9 @@ class Tween
         @obj = nil
     end
 
+    # Called from handler
     def self.update_all(delta)
+        @@seconds = Timer.default.seconds
         @@tweens.delete_if do |tw|
             tw.update(delta)
         end
@@ -249,7 +256,7 @@ class Tween
     end
 
     def start()
-        @start_time = Timer.default.seconds
+        @start_time = @@seconds
         @@tweens.append(self)
         self
     end

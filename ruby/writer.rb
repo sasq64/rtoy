@@ -10,13 +10,13 @@ text = %w(
 )
 
 margin = 20
-pos = vec2(20,0)
+pos = vec2(margin, 0)
 edge = display.width - margin
 size = 100
 space = size/3
 
 text.each do |word|
-    img = font.render(word, Color::BLUE, size)
+    img = font.render(word, Color::WHITE, size)
     if pos.x + img.width > edge
         pos = vec2(margin, pos.y + size)
     end

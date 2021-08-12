@@ -7,7 +7,7 @@ with.
 
 To promote playing and experimentation, we want it to be;
 
-=== Self contained
+=== Self-contained
 
 Requiring the user to use and start different programs in an existing operating
 system such as windows has a few problems;
@@ -15,13 +15,13 @@ system such as windows has a few problems;
 It is hard to gain an understanding about how things work together.
 
 There is too much noise; features of different systems and programs that are
-not releveant to the programming process.
+not relevant to the programming process.
 
 It is easy to get distracted.
 
 We want a fullscreen experience that the user does not have to switch out of.
 
-A good target device is a Rasperry PI running in console mode (X11 not booted);
+A good target device is a Raspberry PI running in console mode (X11 not booted);
 here it is not even possible do start a web browser to do something else.
 
 === Coherent

@@ -8,10 +8,11 @@
 [x] Option to set different console font
 [x] Intelligent console sizing/scaling depending on system
 [ ] Fix Jetbrains font
-[ ] Reset changes tile size to 16
+[x] Reset changes tile size to 16
 [ ] Investigate RGB ordering strangeness
 [ ] Change prompt
-
+[ ] Style keyword args to drawing methods
+[ ] Box charater snake bug. After "reset" character appears in different location in texture but cache kept ?
 
 # SLIDES
 

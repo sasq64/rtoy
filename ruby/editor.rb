@@ -40,6 +40,9 @@ class Editor
             end
         end
 
+        @saved_fg = display.fg
+        @saved_bg = display.bg
+
         @quit_app = false
         begin
             p "EDITOR EVAL"
@@ -54,7 +57,8 @@ class Editor
         rescue Exception => e
             OS.clear_handlers()
             clear()
-            reset_display()
+            display.fg = @saved_fg
+            display.bg = @saved_bg
             display.console.goto_xy(0,0)
             puts "#{e.to_s}"
             e.backtrace.each { |bt| 

@@ -103,8 +103,6 @@ void Display::reset()
     bg = {0, 0, 0.8, 1.0};
     console->reset();
     canvas->reset();
-    console->reset();
-    canvas->reset();
     sprites->reset();
     SET_NIL_VALUE(draw_handler);
 }
@@ -179,6 +177,15 @@ void Display::reg_class(mrb_state* ruby, Settings const& settings)
             auto* display = mrb::self_to<Display>(self);
             auto* sprites = display->sprites.get();
             return mrb::new_data_obj(mrb, sprites);
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, Display::rclass, "reset",
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            display->reset();
+            return mrb_nil_value();
         },
         MRB_ARGS_NONE());
 
