@@ -43,7 +43,10 @@ external/flite/build/x86_64-emscripten/lib/libflite.a :
 	#make -C external/flite clean
 	make -C external/flite -j
 
-flite : external/flite/build/x86_64-linux-gnu/lib/libflite.a
+external/flite/config.log :
+	(cd external/flite ; ./configure)
+
+flite : external/flite/config.log external/flite/build/x86_64-linux-gnu/lib/libflite.a
 
 external/flite/build/x86_64-linux-gnu/lib/libflite.a :
 	#cd external/flite ; ./configure --with-audio=none --disable-sockets
