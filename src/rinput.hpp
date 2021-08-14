@@ -34,9 +34,7 @@ class RInput
     bool handle_event(TextEvent const& me);
 
 public:
-    explicit RInput(mrb_state* _ruby, System& _system)
-        : ruby{_ruby}, system{_system}
-    {}
+    explicit RInput(mrb_state* _ruby, System& _system);
 
     void reset();
     bool update();

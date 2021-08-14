@@ -44,7 +44,8 @@ void Toy::init()
 {
     ruby = mrb_open();
 
-    system = create_sdl_system();
+    //system = create_sdl_system();
+    system = create_pi_system();
 
     RLayer::reg_class(ruby);
     RConsole::reg_class(ruby);

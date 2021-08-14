@@ -65,3 +65,4 @@ public:
 };
 
 std::unique_ptr<System> create_sdl_system();
+std::unique_ptr<System> create_pi_system();

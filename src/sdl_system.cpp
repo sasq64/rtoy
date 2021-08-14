@@ -58,23 +58,23 @@ public:
     static uint32_t sdl2key(uint32_t code)
     {
         switch (code) {
-        case SDLK_LEFT: return KEY_LEFT;
-        case SDLK_RIGHT: return KEY_RIGHT;
-        case SDLK_PAGEUP: return KEY_PAGEUP;
-        case SDLK_PAGEDOWN: return KEY_PAGEDOWN;
-        case SDLK_UP: return KEY_UP;
-        case SDLK_DOWN: return KEY_DOWN;
-        case SDLK_END: return KEY_END;
-        case SDLK_HOME: return KEY_HOME;
-        case SDLK_ESCAPE: return KEY_ESCAPE;
-        case SDLK_RETURN: return KEY_ENTER;
-        case SDLK_INSERT: return KEY_INSERT;
-        case SDLK_DELETE: return KEY_DELETE;
-        case SDLK_F1: return KEY_F1;
-        case SDLK_F5: return KEY_F5;
-        case SDLK_F7: return KEY_F7;
-        case SDLK_F3: return KEY_F3;
-        case SDLK_F12: return KEY_F12;
+        case SDLK_LEFT: return RKEY_LEFT;
+        case SDLK_RIGHT: return RKEY_RIGHT;
+        case SDLK_PAGEUP: return RKEY_PAGEUP;
+        case SDLK_PAGEDOWN: return RKEY_PAGEDOWN;
+        case SDLK_UP: return RKEY_UP;
+        case SDLK_DOWN: return RKEY_DOWN;
+        case SDLK_END: return RKEY_END;
+        case SDLK_HOME: return RKEY_HOME;
+        case SDLK_ESCAPE: return RKEY_ESCAPE;
+        case SDLK_RETURN: return RKEY_ENTER;
+        case SDLK_INSERT: return RKEY_INSERT;
+        case SDLK_DELETE: return RKEY_DELETE;
+        case SDLK_F1: return RKEY_F1;
+        case SDLK_F5: return RKEY_F5;
+        case SDLK_F7: return RKEY_F7;
+        case SDLK_F3: return RKEY_F3;
+        case SDLK_F12: return RKEY_F12;
         default: return code;
         }
     }

@@ -1,27 +1,63 @@
 #include "system.hpp"
-
+#include "keycodes.h"
 #include <fmt/format.h>
 
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
-
+#include <linux/input.h>
+#include <fcntl.h>
 #include <bcm_host.h>
 
 #include <deque>
 #include <filesystem>
+#include <vector>
 
 namespace fs = std::filesystem;
+
+class display_exception : public std::exception {
+public:
+    display_exception(const std::string& msg) : msg(msg) {}
+    virtual const char* what() const throw() { return msg.c_str(); }
+
+private:
+    std::string msg;
+};
+
+/*constexpr */ bool test_bit(const std::vector<uint8_t> &v, int n) {
+	return (v[n/8] & (1<<(n%8))) != 0;
+}
+
+
 
 bool initEGL(EGLConfig& eglConfig, EGLContext& eglContext,
     EGLDisplay& eglDisplay, EGLSurface& eglSurface,
     EGLNativeWindowType nativeWin);
 
 class PiScreen : public Screen
-{};
-
-class SDLSystem : public System
 {
-    static EGL_DISPMANX_WINDOW_T nativewindow;
+    EGLDisplay eglDisplay;
+    EGLSurface eglSurface;
+    int width;
+    int height;
+public:
+    PiScreen(EGLDisplay d, EGLSurface s, int w, int h) : eglDisplay(d), eglSurface(s), width(w), height(h) {}
+    void swap() override
+    {
+        if(eglDisplay != EGL_NO_DISPLAY) {
+            eglSwapBuffers(eglDisplay, eglSurface);
+            //eglQuerySurface(eglDisplay, eglSurface, EGL_WIDTH, &screenWidth);
+            //eglQuerySurface(eglDisplay, eglSurface, EGL_HEIGHT, &screenHeight);
+        }
+    }
+    std::pair<int, int> get_size() override
+    {
+        return {width, height};
+    }
+};
+
+class PiSystem : public System
+{
+    EGL_DISPMANX_WINDOW_T nativewindow;
 
     EGLConfig eglConfig;
     EGLContext eglContext;
@@ -84,6 +120,7 @@ public:
         vc_dispmanx_update_submit_sync(dispman_update);
 
         initEGL(eglConfig, eglContext, eglDisplay, eglSurface, &nativewindow);
+        return std::make_shared<PiScreen>(eglDisplay, eglSurface, display_width, display_height);
     }
 
     void init_input(Settings const& settings) override
@@ -91,6 +128,7 @@ public:
         fs::path idir{"/dev/input"};
         std::vector<uint8_t> evbit((EV_MAX + 7) / 8);
         std::vector<uint8_t> keybit((KEY_MAX + 7) / 8);
+        int keyboardCount = 0;
 
         int fd = -1;
         if (fs::is_directory(idir)) {
@@ -114,12 +152,72 @@ public:
                         ::close(fd);
                     }
                 }
-                // LOGD("%s, %02x -- %02x", f.getName(), evbit, keybit);
+                //fmt::print("{}, {:02x} -- {:02x}\n", p.path().string(), evbit, keybit);
             }
         }
 
-        fmt::format("Found {} devices with keys\n", fdv.size());
+        fmt::print("Found {} devices with keys\n", fdv.size());
     }
+    static inline std::unordered_map<int, int> translate = {
+        { 'a', KEY_A },
+        { 'b', KEY_B },
+        { 'c', KEY_C },
+        { 'd', KEY_D },
+        { 'e', KEY_E },
+        { 'f', KEY_F },
+        { 'g', KEY_G },
+        { 'h', KEY_H },
+        { 'i', KEY_I },
+        { 'j', KEY_J },
+        { 'k', KEY_K },
+        { 'l', KEY_L },
+        { 'm', KEY_M },
+        { 'n', KEY_N },
+        { 'o', KEY_O },
+        { 'p', KEY_P },
+        { 'q', KEY_Q },
+        { 'r', KEY_R },
+        { 's', KEY_S },
+        { 't', KEY_T },
+        { 'u', KEY_U },
+        { 'v', KEY_V },
+        { 'w', KEY_W },
+        { 'x', KEY_X },
+        { 'y', KEY_Y },
+        { 'z', KEY_Z },
+        { '0', KEY_0 },
+
+        { '-', KEY_MINUS },
+        { '=', KEY_EQUAL },
+        { '[', KEY_LEFTBRACE },
+        { ']', KEY_LEFTBRACE },
+        { RKEY_F11, KEY_F11 },
+        { RKEY_F12, KEY_F12 },
+//        { BTN_LEFT, CLICK },
+//        { BTN_RIGHT, RIGHT_CLICK },
+        { RKEY_ENTER, KEY_ENTER },
+        { RKEY_SPACE, KEY_SPACE },
+        { RKEY_PAGEUP, KEY_PAGEUP },
+        { RKEY_PAGEDOWN, KEY_PAGEDOWN },
+        { RKEY_RIGHT, KEY_RIGHT },
+        { RKEY_LEFT, KEY_LEFT },
+        { RKEY_DOWN, KEY_DOWN },
+        { RKEY_UP, KEY_UP },
+        { RKEY_ESCAPE, KEY_ESC },
+        { RKEY_BACKSPACE, KEY_BACKSPACE },
+        { RKEY_DELETE, KEY_DELETE },
+        { RKEY_TAB, KEY_TAB },
+        { RKEY_END, KEY_END },
+        { RKEY_HOME, KEY_HOME },
+        /* { SHIFT_LEFT, KEY_LEFTSHIFT }, */
+        /* { SHIFT_RIGHT, KEY_RIGHTSHIFT }, */
+        /* { WINDOW_LEFT, KEY_LEFTMETA }, */
+        /* { WINDOW_RIGHT, KEY_RIGHTMETA }, */
+        /* { ALT_LEFT, KEY_LEFTALT }, */
+        /* { ALT_RIGHT, KEY_RIGHTALT }, */
+        /* { CTRL_LEFT, KEY_LEFTCTRL}, */
+        /* { CTRL_RIGHT, KEY_RIGHTCTRL } */
+    };
 
     std::deque<AnyEvent> events;
 
@@ -136,10 +234,10 @@ public:
 		fd_set readset;
 		struct timeval tv;
 
-		vector<uint8_t> buf(256);
+        std::vector<uint8_t> buf(256);
         if(!events.empty()) {
             auto e = events.front();
-            e.pop_front();
+            events.pop_front();
             return e;
         }
         FD_ZERO(&readset);
@@ -151,36 +249,35 @@ public:
         tv.tv_usec = 1000;
         int sr = select(maxfd + 1, &readset, nullptr, nullptr, &tv);
         if (sr > 0) {
-            // LOGD("Got signal");
+            fmt::print("Got signal\n");
             // static uint8_t buf[2048];
             for (auto fd : fdv) {
                 if (FD_ISSET(fd, &readset)) {
                     int rc = read(fd, &buf[0], sizeof(struct input_event) * 4);
                     auto* ptr = (struct input_event*)&buf[0];
-                    // if(rc >= sizeof(struct input_event))
-                    //	LOGD("[%02x]", buf);
+
+
                     while (rc >= sizeof(struct input_event)) {
+                        fmt::print("TYPE {} CODE {} VALUE {}\n", ptr->type, ptr->code, ptr->value);
                         if (ptr->type == EV_KEY) {
-                            // LOGD("TYPE %d CODE %d VALUE %d", ptr->type,
-                            // ptr->code, ptr->value);
                             if (ptr->value) {
-                                auto k = ptr->code;
-                                if (k >= KEY_1 && k <= KEY_9)
+                                uint32_t k = ptr->code;
+                                if (k >= KEY_1 && k <= KEY_9) {
                                     k += ('1' - KEY_1);
-                                else if (k >= KEY_F1 && k <= KEY_F10)
-                                    k += (F1 - KEY_F1);
-                                else {
-                                    for (auto t : Window::translate) {
+                                } else if (k >= KEY_F1 && k <= KEY_F10) {
+                                    fmt::print("F ");
+                                    k = k + RKEY_F1 - KEY_F1;
+                                } else {
+                                    for (auto t : translate) {
                                         if (t.second == k) {
                                             k = t.first;
                                             break;
                                         }
                                     }
                                 }
-                                putEvent<KeyEvent>(k);
+                                fmt::print("Converted to {}\n", k);
+                                putEvent(KeyEvent{k, 0});
                             }
-                            //if (ptr->code < 512)
-                            //    pressed_keys[ptr->code] = ptr->value;
                         }
                         ptr++;
                         rc -= sizeof(struct input_event);
@@ -188,5 +285,17 @@ public:
                 }
             }
         }
+        if(!events.empty()) {
+            auto e = events.front();
+            events.pop_front();
+            return e;
+        }
+        return NoEvent{};
     }
 };
+
+std::unique_ptr<System> create_pi_system()
+{
+    return std::make_unique<PiSystem>();
+}
+

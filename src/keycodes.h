@@ -1,42 +1,44 @@
 #pragma once
 enum
 {
-    KEY_NONE,
-    KEY_LEFT,
-    KEY_UP,
-    KEY_RIGHT,
-    KEY_DOWN,
+    RKEY_NONE,
+    RKEY_LEFT,
+    RKEY_UP,
+    RKEY_RIGHT,
+    RKEY_DOWN,
  
 
-    KEY_BACKSPACE = 8,
-    KEY_TAB = 9,
-    KEY_ENTER = 10,
-    KEY_END,
-    KEY_HOME,
-    KEY_DELETE,
-    KEY_PAGEUP,
-    KEY_PAGEDOWN,
+    RKEY_BACKSPACE = 8,
+    RKEY_TAB = 9,
+    RKEY_ENTER = 10,
+    RKEY_END,
+    RKEY_HOME,
+    RKEY_DELETE,
+    RKEY_PAGEUP,
+    RKEY_PAGEDOWN,
 
-    KEY_INSERT,
+    RKEY_INSERT,
 
-    KEY_F1 = 0x4000'003a,
-    KEY_F2,
-    KEY_F3,
-    KEY_F4,
-    KEY_F5,
-    KEY_F6,
-    KEY_F7,
-    KEY_F8,
-    KEY_F9,
-    KEY_F10,
-    KEY_F11,
-    KEY_F12,
+    RKEY_SPACE = ' ',
 
-    KEY_ESCAPE = 0x1b,
+    RKEY_F1 = 0x4000'003a,
+    RKEY_F2,
+    RKEY_F3,
+    RKEY_F4,
+    RKEY_F5,
+    RKEY_F6,
+    RKEY_F7,
+    RKEY_F8,
+    RKEY_F9,
+    RKEY_F10,
+    RKEY_F11,
+    RKEY_F12,
 
-    KEY_QUIT = 0x1fffd,
-    KEY_UNKNOWN = 0x1fffe,
-    KEY_TIMEOUT = 0x1ffff
+    RKEY_ESCAPE = 0x1b,
+
+    RKEY_QUIT = 0x1fffd,
+    RKEY_UNKNOWN = 0x1fffe,
+    RKEY_TIMEOUT = 0x1ffff
 
 
 };
