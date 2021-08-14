@@ -1,7 +1,5 @@
 #include "rinput.hpp"
 
-#include "SDL_keyboard.h"
-#include "SDL_video.h"
 #include "error.hpp"
 #include "keycodes.h"
 #include "mrb_tools.hpp"
@@ -9,78 +7,62 @@
 #include <coreutils/utf8.h>
 #include <mruby/class.h>
 
-#include <SDL.h>
-#include <SDL_events.h>
-#include <SDL_keycode.h>
 #include <fmt/format.h>
 
-uint32_t RInput::sdl2key(uint32_t code)
+bool RInput::handle_event(KeyEvent const& e)
 {
-    switch (code) {
-    case SDLK_LEFT: return KEY_LEFT;
-    case SDLK_RIGHT: return KEY_RIGHT;
-    case SDLK_PAGEUP: return KEY_PAGEUP;
-    case SDLK_PAGEDOWN: return KEY_PAGEDOWN;
-    case SDLK_UP: return KEY_UP;
-    case SDLK_DOWN: return KEY_DOWN;
-    case SDLK_END: return KEY_END;
-    case SDLK_HOME: return KEY_HOME;
-    case SDLK_ESCAPE: return KEY_ESCAPE;
-    case SDLK_RETURN: return KEY_ENTER;
-    case SDLK_INSERT: return KEY_INSERT;
-    case SDLK_DELETE: return KEY_DELETE;
-    case SDLK_F1: return KEY_F1;
-    case SDLK_F5: return KEY_F5;
-    case SDLK_F7: return KEY_F7;
-    case SDLK_F3: return KEY_F3;
-    default: return code;
+    auto code = e.key;
+    if (code == KEY_F12) {
+        do_reset = true;
+        return true;
     }
+    auto mod = e.mods;
+    if (code < 0x20 || code > 0x1fffc || (mod & 0xc0) != 0) {
+        call_proc(ruby, key_handler, code, mod);
+    }
+    return false;
 }
+
+bool RInput::handle_event(QuitEvent const&)
+{
+    do_quit = true;
+    return true;
+}
+
+bool RInput::handle_event(NoEvent const&)
+{
+    return true;
+}
+bool RInput::handle_event(ClickEvent const& me)
+{
+    call_proc(ruby, click_handler, me.x, me.y);
+    return false;
+}
+bool RInput::handle_event(MoveEvent const& me)
+{
+    if (me.buttons != 0) {
+        fmt::print("{:x} {} {}\n", me.buttons, me.x, me.y);
+        call_proc(ruby, drag_handler, me.x, me.y);
+    }
+    return false;
+}
+bool RInput::handle_event(TextEvent const& me)
+{
+    fmt::print("TEXT '{}'\n", me.text);
+    auto text32 = utils::utf8_decode(me.text);
+    for (auto s : text32) {
+        call_proc(ruby, key_handler, s, 0);
+    }
+    return false;
+}
+
 void RInput::poll_events()
 {
-    SDL_Event e;
-    while (SDL_PollEvent(&e) != 0) {
-        if (e.type == SDL_MOUSEMOTION) {
-            auto& me = e.motion;
-            if (me.state != 0) {
-                fmt::print("{:x} {} {}\n", me.state, me.x, me.y);
-                call_proc(ruby, drag_handler, me.x, me.y);
-            }
-        } else if (e.type == SDL_MOUSEBUTTONDOWN) {
-            call_proc(ruby, click_handler, e.button.x, e.button.y);
-        } else if (e.type == SDL_TEXTINPUT) {
-            fmt::print("TEXT '{}'\n", e.text.text);
-            auto text32 = utils::utf8_decode(e.text.text);
-            for(auto s : text32) {
-                call_proc(ruby, key_handler, s, 0);
-            }
-        } else if (e.type == SDL_KEYDOWN) {
-            if (e.key.keysym.sym == SDLK_F12) {
-                do_reset = true;
-                continue;
-            }
-            auto& ke = e.key;
-            auto code = sdl2key(ke.keysym.sym);
-            pressed[code] = 1;
-            auto mod = ke.keysym.mod;
-            if (code < 0x20 || code > 0x1fffc || (mod & 0xc0) != 0) {
-                fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
-                call_proc(ruby, key_handler, code, mod);
-            }
-        } else if (e.type == SDL_KEYUP) {
-            auto& ke = e.key;
-            auto code = sdl2key(ke.keysym.sym);
-            pressed[code] = 0;
-        } else if (e.type == SDL_QUIT) {
-            fmt::print("quit\n");
-            do_quit = true;
-        } else if (e.type == SDL_WINDOWEVENT) {
-            if (e.window.event == SDL_WINDOWEVENT_RESIZED) {
-                SDL_Log("Window %d resized to %dx%d", e.window.windowID,
-                    e.window.data1, e.window.data2);
-                resize = 50;
-            }
-        }
+    bool done = false;
+    while (!done) {
+        auto event = system.poll_events();
+        done =
+            std::visit([&](auto const& e) { return handle_event(e); }, event);
     }
 }
 bool RInput::should_reset()
@@ -91,7 +73,8 @@ bool RInput::should_reset()
 }
 bool RInput::update()
 {
-    poll_events();
+    while (!std::visit([&](auto const& e) { return handle_event(e); },
+        system.poll_events())) {}
     if (resize > 0) {
         resize--;
         if (resize == 0) { do_reset = true; }
@@ -104,7 +87,7 @@ void RInput::reset()
     SET_NIL_VALUE(click_handler);
     SET_NIL_VALUE(drag_handler);
 }
-void RInput::reg_class(mrb_state* ruby)
+void RInput::reg_class(mrb_state* ruby, System& system)
 {
     auto* keys = mrb_define_module(ruby, "Key");
     mrb_define_const(ruby, keys, "LEFT", mrb_fixnum_value(KEY_LEFT));
@@ -130,7 +113,7 @@ void RInput::reg_class(mrb_state* ruby)
     rclass = mrb_define_class(ruby, "Input", ruby->object_class);
     MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
 
-    default_input = new RInput(ruby);
+    default_input = new RInput(ruby, system);
 
     mrb_define_class_method(
         ruby, rclass, "default",
@@ -142,7 +125,8 @@ void RInput::reg_class(mrb_state* ruby)
     mrb_define_class_method(
         ruby, rclass, "get_clipboard",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            const char* clip = SDL_GetClipboardText();
+            // TODO
+            const char* clip = nullptr; // SDL_GetClipboardText();
             if (clip == nullptr) { return mrb_nil_value(); }
             return mrb::to_value(clip, mrb);
         },
@@ -161,7 +145,8 @@ void RInput::reg_class(mrb_state* ruby)
         ruby, rclass, "get_modifiers",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* input = mrb::self_to<RInput>(self);
-            uint32_t mods = SDL_GetModState();
+            // TODO
+            uint32_t mods = 0; // SDL_GetModState();
             return mrb::to_value(mods, mrb);
         },
         MRB_ARGS_BLOCK());

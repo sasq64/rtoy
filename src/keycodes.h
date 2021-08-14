@@ -27,6 +27,10 @@ enum
     KEY_F6,
     KEY_F7,
     KEY_F8,
+    KEY_F9,
+    KEY_F10,
+    KEY_F11,
+    KEY_F12,
 
     KEY_ESCAPE = 0x1b,
 

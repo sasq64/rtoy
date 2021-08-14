@@ -52,10 +52,10 @@ void Toy::init()
     RFont::reg_class(ruby);
     RImage::reg_class(ruby);
     Display::reg_class(ruby, *system, settings);
-    RInput::reg_class(ruby);
+    RInput::reg_class(ruby, *system);
     RSprites::reg_class(ruby);
     RTimer::reg_class(ruby);
-    RAudio::reg_class(ruby);
+    RAudio::reg_class(ruby, *system, settings);
     RSpeech::reg_class(ruby);
 
     mrb_define_module_function(

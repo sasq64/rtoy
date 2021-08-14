@@ -53,7 +53,7 @@ public:
         return std::make_shared<SDLWindow>(window);
     }
 
-    void init_input(Settings const& settings) {}
+    void init_input(Settings const& settings) override {}
 
     static uint32_t sdl2key(uint32_t code)
     {
@@ -74,14 +74,14 @@ public:
         case SDLK_F5: return KEY_F5;
         case SDLK_F7: return KEY_F7;
         case SDLK_F3: return KEY_F3;
+        case SDLK_F12: return KEY_F12;
         default: return code;
         }
     }
 
     bool is_pressed(uint32_t code) { return pressed[code] != 0; }
 
-    std::variant<NoEvent, KeyEvent, MoveEvent, ClickEvent, TextEvent>
-    poll_events() override
+    AnyEvent poll_events() override
     {
         SDL_Event e;
         while (SDL_PollEvent(&e) != 0) {
@@ -113,6 +113,7 @@ public:
                 pressed[code] = 0;
             } else if (e.type == SDL_QUIT) {
                 fmt::print("quit\n");
+                return QuitEvent{};
             } else if (e.type == SDL_WINDOWEVENT) {
                 if (e.window.event == SDL_WINDOWEVENT_RESIZED) {
                     SDL_Log("Window %d resized to %dx%d", e.window.windowID,
@@ -124,6 +125,12 @@ public:
     }
 
     std::function<void(float*, size_t)> audio_callback;
+
+    void set_audio_callback(
+        std::function<void(float*, size_t)> const& cb) override
+    {
+        audio_callback = cb;
+    }
 
     void init_audio(Settings const& settings) override
     {

@@ -17,6 +17,9 @@ struct KeyEvent
 struct NoEvent
 {};
 
+struct QuitEvent
+{};
+
 struct ClickEvent
 {
     int x;
@@ -36,6 +39,9 @@ struct TextEvent
     std::string text;
 };
 
+using AnyEvent = std::variant<NoEvent, KeyEvent, MoveEvent, ClickEvent,
+    TextEvent, QuitEvent>;
+
 class Screen
 {
 public:
@@ -50,12 +56,12 @@ public:
     {
         return nullptr;
     }
-    virtual void init_audio(Settings const& settings) {}
-    virtual std::variant<NoEvent, KeyEvent, MoveEvent, ClickEvent, TextEvent>
-    poll_events()
-    {
-        return NoEvent{};
-    }
+    virtual void init_audio(Settings const&) {}
+    virtual AnyEvent poll_events() { return NoEvent{}; }
+    virtual void set_audio_callback(std::function<void(float*, size_t)> const&)
+    {}
+
+    virtual void init_input(Settings const&) {}
 };
 
 std::unique_ptr<System> create_sdl_system();
