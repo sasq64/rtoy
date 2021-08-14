@@ -5,12 +5,11 @@
 #include "rimage.hpp"
 #include "rsprites.hpp"
 
+
 #include "error.hpp"
 #include "gl/functions.hpp"
 #include "mrb_tools.hpp"
 #include "pix/gl_console.hpp"
-#include <SDL.h>
-#include <SDL_video.h>
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <mruby/compile.h>
@@ -30,34 +29,19 @@ mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
                               }
                           }};
 
-Display::Display(mrb_state* state, Settings const& _settings)
+Display::Display(mrb_state* state, System& system, Settings const& _settings)
     : ruby(state), settings{_settings}, RLayer(0, 0)
 {
     glm::mat4x4 m(1.0F);
     memcpy(Id.data(), glm::value_ptr(m), 16 * 4);
 
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-    window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-#ifdef OSX
-        w / 2, h / 2,
-        SDL_WINDOW_ALLOW_HIGHDPI |
-#else
-        w, h,
-#endif
-            SDL_WINDOW_OPENGL |
-            (settings.screen == ScreenType::Full ? SDL_WINDOW_FULLSCREEN_DESKTOP
-                                                 : 0));
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    SDL_GL_CreateContext(window);
-    GLenum err = glewInit();
+    window = system.init_screen(settings);
     setup();
 }
 
 void Display::setup()
 {
-    SDL_GL_GetDrawableSize(window, &w, &h);
+    auto [w,h] = window->get_size();
     RLayer::width = w;
     RLayer::height = h;
 
@@ -95,7 +79,8 @@ void Display::end_draw()
     canvas->render();
     sprites->render();
 
-    SDL_GL_SwapWindow(window);
+
+    window->swap();
 }
 
 void Display::reset()
@@ -107,13 +92,13 @@ void Display::reset()
     SET_NIL_VALUE(draw_handler);
 }
 
-void Display::reg_class(mrb_state* ruby, Settings const& settings)
+void Display::reg_class(mrb_state* ruby, System& system, Settings const& settings)
 {
     Display::rclass = mrb_define_class(ruby, "Display", RLayer::rclass);
     MRB_SET_INSTANCE_TT(Display::rclass, MRB_TT_DATA);
 
     if (Display::default_display == nullptr) {
-        Display::default_display = new Display(ruby, settings);
+        Display::default_display = new Display(ruby, system, settings);
     } else {
         Display::default_display->ruby = ruby;
     }

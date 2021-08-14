@@ -44,12 +44,14 @@ void Toy::init()
 {
     ruby = mrb_open();
 
+    system = create_sdl_system();
+
     RLayer::reg_class(ruby);
     RConsole::reg_class(ruby);
     RCanvas::reg_class(ruby);
     RFont::reg_class(ruby);
     RImage::reg_class(ruby);
-    Display::reg_class(ruby, settings);
+    Display::reg_class(ruby, *system, settings);
     RInput::reg_class(ruby);
     RSprites::reg_class(ruby);
     RTimer::reg_class(ruby);

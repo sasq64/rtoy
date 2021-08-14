@@ -13,7 +13,9 @@
 [ ] Investigate RGB ordering strangeness
 [ ] Change prompt
 [ ] Style keyword args to drawing methods
-[ ] Box charater snake bug. After "reset" character appears in different location in texture but cache kept ?
+[X] Box charater snake bug
+[ ] Move SDL code to system specific class
+[ ] Port to Raspberry PI
 
 # SLIDES
 

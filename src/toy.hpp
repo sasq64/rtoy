@@ -1,6 +1,7 @@
 #pragma once
 
 #include "settings.hpp"
+#include "system.hpp"
 
 #include <mruby.h>
 #include <mruby/data.h>
@@ -35,6 +36,7 @@ class Toy
     }
 
     Settings const& settings;
+    std::unique_ptr<System> system;
 
     mrb_state* ruby = nullptr;
     static inline int stack_keep = 0;

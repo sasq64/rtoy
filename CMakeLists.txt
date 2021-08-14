@@ -140,6 +140,7 @@ add_executable(${TARGET}
     src/rfont.cpp
     src/raudio.cpp
     src/rspeech.cpp
+    src/sdl_system.cpp
     src/pix/gl_console.cpp)
 
 target_include_directories(${TARGET} PUBLIC
