@@ -44,8 +44,11 @@ void Toy::init()
 {
     ruby = mrb_open();
 
-    //system = create_sdl_system();
+#ifdef RASPBERRY_PI
     system = create_pi_system();
+#else
+    system = create_sdl_system();
+#endif
 
     RLayer::reg_class(ruby);
     RConsole::reg_class(ruby);
@@ -272,6 +275,7 @@ int Toy::run()
         exit(1);
     }
     puts("Loaded");
+    return 0;
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(
         [](void* data) {

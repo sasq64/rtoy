@@ -10,6 +10,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 cmake_policy(SET CMP0072 NEW)
 
+if(EXISTS /opt/vc)
+    set(RASPBERRY_PI 1)
+endif()
+
+if(RASPBERRY_PI)
+    set(VC /opt/vc)
+    include_directories(
+        ${VC}/include
+        ${VC}/include/interface/vcos/pthreads
+        ${VC}/include/interface/vmcs_host/linux)
+    link_directories(${VC}/lib)
+    add_compile_definitions(RASPBERRY_PI)
+endif()
+
 if(WIN32)
   add_compile_options(/utf-8)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES
@@ -78,20 +92,20 @@ add_subdirectory(external/doctest)
 #option(SKIP_PERFORMANCE_COMPARISON "" ON)
 #add_subdirectory(external/cpp-httplib)
 
-if(EXISTS /opt/vc)
-endif()
-
-set(VC /opt/vc)
-include_directories(${VC}/include ${VC}/include/interface/vcos/pthreads ${VC}/include/interface/vmcs_host/linux)
-link_directories(${VC}/lib)
-
-if(NOT EMSCRIPTEN)
-    #find_package(SDL2 REQUIRED)
+if(RASPBERRY_PI)
     include(FindFreetype)
     find_package(Freetype REQUIRED)
     find_package(OpenGL)
     set(GL ${OPENGL_LIBRARIES} stdc++fs EGL GLESv2 vcos vchiq_arm bcm_host)
+    add_compile_definitions(USE_GLES)
+elseif(NOT EMSCRIPTEN)
+    find_package(SDL2 REQUIRED)
+    include(FindFreetype)
+    find_package(Freetype REQUIRED)
+    find_package(OpenGL)
+    set(GL ${OPENGL_LIBRARIES} GLEW)
 endif()
+
 
 # set(MUS_LIB ${PROJECT_SOURCE_DIR}/../musicplayer)
 # add_library(music INTERFACE)
@@ -116,7 +130,6 @@ target_include_directories(pix
   PUBLIC ${SDL2_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} /usr/local/include/SDL2
   PRIVATE external/lodepng)
 target_include_directories(pix PUBLIC src)
-target_compile_definitions(pix PUBLIC USE_GLES)
 
 target_link_libraries( pix PUBLIC
     ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES} freetype)
@@ -134,7 +147,7 @@ else()
         ${PROJECT_SOURCE_DIR}/external/flite/build/x86_64-linux-gnu)
 endif()
 
-add_executable(${TARGET}
+set(SRC_FILES
     src/main.cpp
     src/toy.cpp
     src/rlayer.cpp
@@ -148,10 +161,15 @@ add_executable(${TARGET}
     src/rfont.cpp
     src/raudio.cpp
     src/rspeech.cpp
-    #src/sdl_system.cpp
-    src/eglutil.cpp
-    src/pi_system.cpp
     src/pix/gl_console.cpp)
+
+if(RASPBERRY_PI)
+    set(SRC_FILES ${SRC_FILES} src/pi_system.cpp src/eglutil.cpp)
+else()
+    set(SRC_FILES ${SRC_FILES} src/sdl_system.cpp)
+endif()
+
+add_executable(${TARGET} ${SRC_FILES})
 
 target_include_directories(${TARGET} PUBLIC
     ${MRB_INC} external external/flite/include)

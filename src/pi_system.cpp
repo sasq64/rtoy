@@ -209,14 +209,14 @@ public:
         { RKEY_TAB, KEY_TAB },
         { RKEY_END, KEY_END },
         { RKEY_HOME, KEY_HOME },
-        /* { SHIFT_LEFT, KEY_LEFTSHIFT }, */
-        /* { SHIFT_RIGHT, KEY_RIGHTSHIFT }, */
-        /* { WINDOW_LEFT, KEY_LEFTMETA }, */
-        /* { WINDOW_RIGHT, KEY_RIGHTMETA }, */
-        /* { ALT_LEFT, KEY_LEFTALT }, */
-        /* { ALT_RIGHT, KEY_RIGHTALT }, */
-        /* { CTRL_LEFT, KEY_LEFTCTRL}, */
-        /* { CTRL_RIGHT, KEY_RIGHTCTRL } */
+        { RKEY_LSHIFT, KEY_LEFTSHIFT },
+        { RKEY_RSHIFT, KEY_RIGHTSHIFT },
+        { RKEY_LWIN, KEY_LEFTMETA },
+        { RKEY_RWIN, KEY_RIGHTMETA },
+        { RKEY_LALT, KEY_LEFTALT },
+        { RKEY_RALT, KEY_RIGHTALT },
+        { RKEY_LCTRL, KEY_LEFTCTRL},
+        { RKEY_RCTRL, KEY_RIGHTCTRL }
     };
 
     std::deque<AnyEvent> events;

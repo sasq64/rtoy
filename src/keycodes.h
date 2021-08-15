@@ -19,6 +19,8 @@ enum
 
     RKEY_INSERT,
 
+    RKEY_ESCAPE = 0x1b,
+
     RKEY_SPACE = ' ',
 
     RKEY_F1 = 0x4000'003a,
@@ -34,12 +36,14 @@ enum
     RKEY_F11,
     RKEY_F12,
 
-    RKEY_ESCAPE = 0x1b,
-
-    RKEY_QUIT = 0x1fffd,
-    RKEY_UNKNOWN = 0x1fffe,
-    RKEY_TIMEOUT = 0x1ffff
-
+    RKEY_LSHIFT,
+    RKEY_RSHIFT,
+    RKEY_LCTRL,
+    RKEY_RCTRL,
+    RKEY_LALT,
+    RKEY_RALT,
+    RKEY_LWIN,
+    RKEY_RWIN,
 
 };
 
