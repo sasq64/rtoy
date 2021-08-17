@@ -52,9 +52,6 @@ Cursor GLConsole::text(
         }
 
         auto& t = grid[x + width * y];
-        if(c > 0x1000) {
-            fmt::print("!{:x}\n", (uint32_t)c); 
-        }
         t = {c, fg, bg};
         x++;
         if (x >= width) {
@@ -84,10 +81,6 @@ void GLConsole::fill(uint32_t fg, uint32_t bg)
 {
     std::fill(dirty.begin(), dirty.end(), 1);
     std::fill(grid.begin(), grid.end(), Char{' ', fg, bg});
-    frame_buffer.set_target();
-    gl_wrap::clearColor({default_style.bg});
-    glClear(GL_COLOR_BUFFER_BIT);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GLConsole::blit(int x, int y, int stride, std::vector<Char> const& source)

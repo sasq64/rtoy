@@ -4,13 +4,21 @@ class Repl
 
     include OS
 
+    def initialize()
+        @prompt = '→'
+    end
+
+    def set_prompt(p)
+        @prompt = p
+    end
+
     def repl_run()
         clear()
         puts "R-Toy READY. Type 'help' if you need it."
         _repl_b = binding
         rl = LineReader.new('toy.history')
         while true do
-            print('→')
+            print(@prompt)
             line = rl.read_line()
             puts ""
             begin

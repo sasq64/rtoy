@@ -5,7 +5,6 @@
 #include "rimage.hpp"
 #include "rsprites.hpp"
 
-
 #include "error.hpp"
 #include "gl/functions.hpp"
 #include "mrb_tools.hpp"
@@ -41,15 +40,15 @@ Display::Display(mrb_state* state, System& system, Settings const& _settings)
 
 void Display::setup()
 {
-    auto [w,h] = window->get_size();
+    auto [w, h] = window->get_size();
     RLayer::width = w;
     RLayer::height = h;
 
     fmt::print("{}\n", settings.console_font.string());
 
     console = std::make_shared<RConsole>(w, h,
-        Style{
-            0xffffffff, 0x00008000, settings.console_font.string(), settings.font_size});
+        Style{0xffffffff, 0x00008000, settings.console_font.string(),
+            settings.font_size});
     puts("Console");
     gl::setViewport({w, h});
     fmt::print("{} {}\n", w, h);
@@ -59,6 +58,9 @@ void Display::setup()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 }
 
 bool Display::begin_draw()
@@ -79,7 +81,6 @@ void Display::end_draw()
     canvas->render();
     sprites->render();
 
-
     window->swap();
 }
 
@@ -92,7 +93,8 @@ void Display::reset()
     SET_NIL_VALUE(draw_handler);
 }
 
-void Display::reg_class(mrb_state* ruby, System& system, Settings const& settings)
+void Display::reg_class(
+    mrb_state* ruby, System& system, Settings const& settings)
 {
     Display::rclass = mrb_define_class(ruby, "Display", RLayer::rclass);
     MRB_SET_INSTANCE_TT(Display::rclass, MRB_TT_DATA);

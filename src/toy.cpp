@@ -279,6 +279,19 @@ Toy::Toy(Settings const& _settings) : settings{_settings}
 int Toy::run()
 {
     init();
+
+    auto con = Display::default_display->console->console;
+
+    if(settings.console_benchmark) {
+        for (int i = 0; i < 500; i++) {
+            con->fill(0xff00ff00, 0x00ff00ff);
+            con->flush();
+            con->fill(0x00ff00ff, 0xff00ff00);
+            con->flush();
+        }
+        return 0;
+    }
+
     puts("Main");
     std::ifstream ruby_file;
     ruby_file.open(settings.boot_script);

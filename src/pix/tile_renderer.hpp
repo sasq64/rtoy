@@ -31,7 +31,7 @@ class TileRenderer
     };
 
     static inline char const* vertex_shader =
-        R"gl(#version 300 es
+        R"gl(#version 330
     #ifdef GL_ES
         precision mediump float;
     #endif

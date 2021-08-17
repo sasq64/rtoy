@@ -27,7 +27,7 @@ RConsole::RConsole(int w, int h, Style style)
 void RConsole::clear()
 {
     console->fill(console->default_style.fg, console->default_style.bg);
-    console->flush();
+    //console->flush();
     xpos = ypos = 0;
 }
 
