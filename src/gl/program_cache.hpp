@@ -19,11 +19,11 @@ struct ProgramCache
     #ifdef GL_ES
         precision mediump float;
     #endif
-        attribute vec2 in_pos;
+        layout(location = 0) in vec2 in_pos;
         uniform mat4 in_transform;
         #ifdef TEXTURED
-          attribute vec2 in_uv;
-          varying vec2 out_uv;
+          in vec2 in_uv;
+          out vec2 out_uv;
         #endif
         void main() {
             vec4 v = in_transform * vec4(in_pos, 0, 1);
@@ -40,20 +40,31 @@ struct ProgramCache
         uniform vec4 in_color;
         #ifdef TEXTURED
           uniform sampler2D in_tex;
-          varying vec2 out_uv;
+          in vec2 out_uv;
         #endif
+        out vec4 fragColor;
         void main() {
             #ifdef TEXTURED
-              gl_FragColor = texture2D(in_tex, out_uv) * in_color;
+              fragColor = texture(in_tex, out_uv) * in_color;
             #else
-              gl_FragColor = in_color;
+              fragColor = in_color;
             #endif
         })gl"};
 
+#ifdef EMSCRIPTEN
+    static const inline std::string version = "#version 300 es\n";
+#else
+    static const inline std::string version = "#version 330\n";
+#endif
+
     Program get_program(std::string_view prefix) const
     {
-        Shader<ShaderType::Vertex> vs{std::string(prefix) + vertex_shader};
-        Shader<ShaderType::Fragment> fs{std::string(prefix) + fragment_shader};
+        using namespace std::string_literals;
+        Shader<ShaderType::Vertex> vs{
+            version + std::string(prefix) + vertex_shader};
+
+        Shader<ShaderType::Fragment> fs{
+            version + std::string(prefix) + fragment_shader};
 
         // Get info log
         auto info = getShaderInfoLog(vs.shader);

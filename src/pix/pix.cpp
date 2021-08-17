@@ -26,6 +26,23 @@ void set_colors(gl::Color fg, gl::Color bg)
     plain.setUniform("in_color", fg);
 }
 
+void draw_with_uvs()
+{
+    gl::ProgramCache::get_instance().textured.use();
+    auto& program = gl::Program::current();
+    //auto& program = gl::ProgramCache::get_instance().textured;
+    program.use();
+    auto pos = program.getAttribute("in_pos");
+    auto uv = program.getAttribute("in_uv");
+    pos.enable();
+    uv.enable();
+    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
+    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
+    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
+    //pos.disable();
+    //uv.disable();
+}
+
 void draw_quad_invy()
 {
     float x0 = -1;
@@ -39,19 +56,7 @@ void draw_quad_invy()
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad()
@@ -67,19 +72,7 @@ void draw_quad()
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad_uvs(std::array<float, 8> const& uvs)
@@ -96,19 +89,7 @@ void draw_quad_uvs(std::array<float, 8> const& uvs)
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad_uvs(
@@ -133,19 +114,7 @@ void draw_quad_uvs(
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad_impl(float x, float y, float sx, float sy)
@@ -166,21 +135,7 @@ void draw_quad_impl(float x, float y, float sx, float sy)
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    // program.setUniform("in_color", gl::Color(0xffffffff));
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad_filled(float x, float y, float sx, float sy)

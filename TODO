@@ -11,11 +11,11 @@
 [ ] Fix Jetbrains font
 [x] Reset changes tile size to 16
 [ ] Investigate RGB ordering strangeness
-[ ] Change prompt
+[X] Change prompt
 [ ] Style keyword args to drawing methods
 [X] Box charater snake bug
-[ ] Move SDL code to system specific class
-[ ] Port to Raspberry PI
+[X] Move SDL code to system specific class
+[X] Port to Raspberry PI
 
 # SLIDES
 
@@ -23,3 +23,35 @@ Add font.get_size method
 Render whole paragraph to one image
 Do word wrap
 Background rect on code block
+
+
+kwargs to set state of layer...
+layer has default style
+
+push/pop style ?
+
+NEW CONSOLE
+
+TileRenderer
+
+Renders sequences of quads form indexes. Expects tile texture to
+be already bound. Needs to be told UVs for each index.
+
+TextureFont
+
+Binds together TTFFont and TileRenderer
+
+
+DRAWING A QUAD
+
+Create an array buffer with vertices AND UVs
+
+get the location of pos/uv in the shader
+
+Bind pos/uv to offsets in array buffer
+
+Draw
+
+SHADER DEPENDS ON
+
+Transform

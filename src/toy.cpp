@@ -62,6 +62,12 @@ void Toy::init()
     RAudio::reg_class(ruby, *system, settings);
     RSpeech::reg_class(ruby);
 
+    auto* rclass = mrb_define_class(ruby, "Settings", nullptr);
+    mrb_define_const(
+        ruby, rclass, "BOOT_CMD", mrb::to_value(settings.boot_cmd, ruby));
+    mrb_define_const(ruby, rclass, "CONSOLE_FONT",
+        mrb::to_value(settings.console_font.string(), ruby));
+
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
@@ -90,23 +96,34 @@ void Toy::init()
         MRB_ARGS_REQ(1));
 
     mrb_define_module_function(
+        ruby, ruby->kernel_module, "file_time",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            auto [name] = mrb::get_args<std::string>(mrb);
+            auto rb_file = fs::canonical(name);
+            auto modified = fs::last_write_time(rb_file);
+            auto tt = static_cast<double>(to_time_t(modified));
+            return mrb::to_value(tt, mrb);
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_module_function(
         ruby, ruby->kernel_module, "require",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [name] = mrb::get_args<std::string>(mrb);
             fmt::print("Require {}\n", name);
-            auto p = ruby_path / name;
-            if (p.extension() == "") { p.replace_extension(".rb"); }
-            if (fs::exists(p)) {
-                auto cp = fs::canonical(p);
-                auto t = fs::last_write_time(cp);
+            auto rb_file = ruby_path / name;
+            if (rb_file.extension() == "") { rb_file.replace_extension(".rb"); }
+            if (fs::exists(rb_file)) {
+                rb_file = fs::canonical(rb_file);
+                auto modified = fs::last_write_time(rb_file);
 
-                auto it = already_loaded.find(cp.string());
+                auto it = already_loaded.find(rb_file.string());
 
-                if (it != already_loaded.end() && it->second == t) {
-                    fmt::print("{} already loaded\n", cp.string());
+                if (it != already_loaded.end() && it->second == modified) {
+                    fmt::print("{} already loaded\n", rb_file.string());
                     return mrb_nil_value();
                 }
-                already_loaded[cp.string()] = t;
+                already_loaded[rb_file.string()] = modified;
 
                 FILE* fp = fopen(("ruby/"s + name).c_str(), "rbe");
                 if (fp != nullptr) {
@@ -275,7 +292,6 @@ int Toy::run()
         exit(1);
     }
     puts("Loaded");
-    return 0;
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(
         [](void* data) {

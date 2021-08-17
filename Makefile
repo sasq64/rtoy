@@ -7,6 +7,9 @@ endif
 toy : mruby debug flite
 	cmake --build builds/debug -- -j8 toy
 
+release: mruby builds/release/cmake_install.cmake flite
+	cmake --build builds/release -- -j8 toy
+
 emtoy : emruby embuild emflite
 	cmake --build builds/em -- -j8
 
@@ -21,11 +24,16 @@ builds/debug/cmake_install.cmake :
 	rm -rf builds/debug
 	cmake -Bbuilds/debug -H. ${CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=Debug
 
+builds/release/cmake_install.cmake :
+	rm -rf builds/release
+	cmake -Bbuilds/release -H. ${CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
 compile_commands.json : builds/debug/compile_commands.json
 	rm -f compile_commands.json
 	ln -s builds/debug/compile_commands.json .
 
 debug : builds/debug/cmake_install.cmake compile_commands.json
+
 
 embuild : builds/em/cmake_install.cmake
 

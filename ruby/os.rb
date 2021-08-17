@@ -1,166 +1,22 @@
+require 'tween.rb'
+require 'vec2.rb'
+
 require 'meth_attrs.rb'
 require 'color.rb'
 require 'music.rb'
 
-class Sprites
-    extend MethAttrs
-    class_doc! "Sprite layer"
-    doc! "Create and display new sprite from a given `Image`", :add_sprite
-    returns! Sprite, :add_sprite
-end
-
-class Canvas
-    extend MethAttrs
-    returns! Font, :font
-end
-
-class Font
-    extend MethAttrs
-    returns! Image, :render
-end
-
-class Sprite
-    extend MethAttrs
-
-    def pos=(v)
-        a = v.to_a
-        move(a[0], a[1])
-    end
-    def pos()
-        Vec2.new(x, y)
-    end
-
-    returns! Image,:img
-end
-
-class Layer
-    alias set_scale scale=
-    alias get_scale scale
-
-    def scale=(v)
-        set_scale(v.to_a)
-    end
-    def scale()
-        Vec2.new(*get_scale())
-    end
-end
-
-class Display
-    extend MethAttrs
-    def size
-        Vec2.new(width, height)
-    end
-
-    alias set_bg bg=
-    alias get_bg bg
-
-    # def bg=(col)
-    #     set_bg(col.to_i)
-    # end
-    # def bg
-    #     Color.new(get_bg())
-    # end
-
-    returns! Canvas, :canvas
-    returns! Sprites, :sprites
-    returns! Console, :console
-end
-
-class Console
-    def visible_rows
-        ts = self.get_tile_size()
-        s = self.scale.to_a
-        (self.height / (ts[1] * s[1])).to_i
-    end
-end
-
-class Audio
-    extend MethAttrs
-    returns! Sound, :load_wav
-
-end
+require 'extend.rb'
+require 'shortcuts.rb'
+require 'doc.rb'
 
 module OS
 
     extend MethAttrs
+    include Shortcuts
+    include Doc
 
     @@display = Display.default
     @@boot_fiber = nil
-
-    def doc(cls)
-
-        while cls.class != Class and cls.class != Module
-            cls = cls.class
-        end
-
-        console.fg = Color::YELLOW
-        puts "class #{cls}"
-        has_doc = cls.respond_to?(:get_doc) 
-        doc = has_doc ? cls.get_doc() : nil
-        if doc
-            console.fg = Color::GREY
-            puts doc
-        end
-        methods = cls.instance_methods(false)
-        if cls.respond_to?(:superclass) && cls.superclass == Layer
-            methods += cls.superclass.instance_methods(false)
-        end
-        setters = []
-        methods.each do |method|
-            m = method.to_s
-            if m[-1] == '='
-                setters << m[0...-1]
-            end
-        end
-        setters.each do |s| 
-            methods.delete((s + '=').to_sym)
-            if methods.include?(s.to_sym)
-                methods.delete(s.to_sym)
-            end
-        end
-        p setters
-
-        console.fg = Color::YELLOW
-        puts "METHODS"
-        methods.each do |m|
-            console.fg = Color::WHITE
-            params = cls.instance_method(m).parameters
-            txt = nil
-            params.each do |param|
-                if txt
-                    txt += ","
-                else
-                    txt = ""
-                end
-                txt += param[1].to_s
-            end
-            txt = "" if !txt
-            print "    " + m.to_s + "(" + txt + ")"
-            doc = has_doc ? cls.get_doc(m) : nil
-            if doc
-                console.fg = Color::LIGHT_GREY
-                puts " - " + doc
-            end
-            puts
-        end
-        console.fg = Color::YELLOW
-        puts "ATTRIBUTES"
-        setters.each do |m|
-            console.fg = Color::WHITE
-            puts "    " + m.to_s
-            doc = cls.get_doc(m)
-            if doc
-                console.fg = Color::LIGHT_GREY
-                puts doc
-            end
-        end
-        console.fg = Color::WHITE
-
-    end
-
-    def vec2(x,y)
-        Vec2.new(x,y)
-    end
 
     class Handlers
         def initialize()
@@ -277,46 +133,6 @@ module OS
         p "HANDLERS DONE"
     end
 
-    doc! "Returns the default display"
-    returns! Display
-    def display() @@display end
-
-    doc! "Returns the default console layer"
-    returns! Console
-    def console() @@display.console end
-
-    doc! "Returns the default canvas layer"
-    returns! Canvas
-    def canvas() @@display.canvas end
-
-    doc! "Returns the default sprites layer"
-    returns! Sprites
-    def sprites() @@display.sprites end
-
-    doc! "Returns the default Audio instance"
-    returns! Audio
-    def audio() Audio.default end
-
-    doc! "Returns the default Speech instance"
-    returns! Speech
-    def speech() Speech.default end
-
-    doc! "Use text to speech to vocalize the given text"
-    def say(text)
-        sound = Speech.default.text_to_sound(text)
-        audio.play(sound)
-    end
-
-    doc! "Play a sound at default or given frequency"
-    def play(sound, freq = nil)
-        audio.play(sound)
-    end
-
-    doc! "Load an image (png)"
-    returns! Image
-    takes_file! 
-    def load_image(*args) Image.from_file(*args) end
-
     doc! "Print text to screen without linefeed"
     def print(text)
         x,y = @@display.console.get_xy
@@ -330,25 +146,6 @@ module OS
         @@display.console.print(text + "\n")
         Fiber.yield if !@@handlers.in_callbacks
     end
-
-    doc! "Draw text at specific location with specific colors"
-    def text(*args) @@display.console.text(*args) end
-    doc! "Draw a line in the canvas from x,y to x2,y2"
-    def line(x, y, x2, y2) @@display.canvas.line(x, y, x2, y2) end
-    doc! "Draw a circle in the canvas at x,y with radius r"
-    def circle(x, y, r) @@display.canvas.circle(x, y, r) end
-    doc! "Get the character at x,y in the console"
-    def get_char(x, y) @@display.console.get_char(x, y) end
-    def scale(x, y = x) @@display.console.scale = [x,y] end
-    def offset(x, y) @@display.console.offset(x,y) end
-    
-    returns! Sprite
-    def add_sprite(img) @@display.sprites.add_sprite(img) end
-    def remove_sprite(spr) @@display.sprites.remove_sprite(spr) end
-    def clear()
-        @@display.clear
-    end
-
 
     doc! "Wait for vsync, or provide a block that will be called every vsync"
     def vsync()
@@ -381,22 +178,31 @@ module OS
     def run(name, clear: true)
         raise "Can't run() in callback handlers" if @@handlers.in_callbacks
         handlers = OS.get_handlers
-        OS.clear_handlers if clear
-        f = Fiber.new do
-            src = File.read(name)
-            p "LOAD #{name}"
-            m = Module.new
-            m.send(:extend, OS)
-            m.instance_eval(src, name, 1)
-        end
-        while f.alive? do
-            break if block_given? and yield
-            f.resume
-            mods = Input.default.get_modifiers()
-            if Input.default.get_key('c'.ord)
-                break if mods & 0xc0 != 0
+        run_it = true
+        while run_it
+            run_it = false
+            OS.clear_handlers if clear
+            t = file_time(name)
+            f = Fiber.new do
+                src = File.read(name)
+                p "LOAD #{name}"
+                m = Module.new
+                m.send(:extend, OS)
+                m.instance_eval(src, name, 1)
             end
-            Fiber.yield if f.alive?
+            while f.alive? do
+                break if block_given? and yield
+                f.resume
+                mods = Input.default.get_modifiers()
+                if Input.default.get_key('c'.ord)
+                    break if mods & 0xc0 != 0
+                end
+                # if t != file_time(name)
+                #     run_it = true
+                #     break
+                # end
+                Fiber.yield if f.alive?
+            end
         end
         OS.set_handlers(handlers)
     end

@@ -31,54 +31,39 @@ class TileRenderer
     };
 
     static inline char const* vertex_shader =
-        R"gl(
+        R"gl(#version 300 es
     #ifdef GL_ES
         precision mediump float;
     #endif
-        attribute vec2 in_pos;
-        attribute vec2 in_uv;
+        in vec2 in_pos;
+        in vec2 in_uv;
         uniform float scale;
         uniform vec2 screen_scale;
         uniform vec2 xypos;
-        varying vec2 out_uv;
+        out vec2 out_uv;
         void main() {
             out_uv = in_uv;
             gl_Position = vec4((in_pos * scale + xypos) * screen_scale, 0, 1);
         }
     )gl";
-        /*
-         *
-         *  FA  BA  TA -> A
-         *  1   1   -     1
-         *  1   0   -     TA
-         *
-         *  if fg.a and bg.a = 1
-         *  mix(fg, bg, ta)
-         *  
-         *  ta 0 ---------> 1
-         *     bg --------> fg
-         *     
-         * if bg.a is 0, a unmodified
-         * if bg.a is 1, a = 1
-         * ie
-         * a : a --- > 1
-         */
 
     static inline char const* pixel_shader =
-        R"gl(
+        R"gl(#version 300 es
     #ifdef GL_ES
         precision mediump float;
     #endif
         uniform sampler2D in_tex;
-        varying vec2 out_uv;
+        in vec2 out_uv;
         uniform vec4 fg_color;
         uniform vec4 bg_color;
+        out vec4 fragColor;
         void main() {
-            vec4 col = texture2D(in_tex, out_uv);
+            vec4 col = texture(in_tex, out_uv);
             float a = col.a;
             col.a = mix(a, 1.0, bg_color.a);
-            col.rgb = mix(fg_color.rgb * col.rgb, bg_color.rgb, (1.0 - a) * bg_color.a);
-            gl_FragColor = col;
+            col.rgb = mix(fg_color.rgb * col.rgb, bg_color.rgb,
+                          (1.0 - a) * bg_color.a);
+            fragColor = col;
         }
     )gl";
 

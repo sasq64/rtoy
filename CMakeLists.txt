@@ -189,11 +189,18 @@ target_link_libraries(${TARGET} PRIVATE
     ${CMAKE_DL_LIBS}
     fmt::fmt)
 
+
+if(NOT EMSCRIPTEN)
+    add_executable(con contest.cpp src/sdl_system.cpp)
+    target_link_libraries(con PRIVATE pix fmt::fmt)
+endif()
+
 #add_executable(toytest src/tests/testmain.cpp src/tests/resample_test.cpp)
 #target_link_libraries(toytest PRIVATE fmt::fmt doctest::doctest resample)
 
 if(EMSCRIPTEN)
     target_link_options(toy.html PRIVATE "SHELL:-s MAX_WEBGL_VERSION=2")
+    target_link_options(toy.html PRIVATE "SHELL:-s MIN_WEBGL_VERSION=2")
     target_link_options(toy.html PRIVATE
         "SHELL:--preload-file ../../data@data")
     target_link_options(toy.html PRIVATE

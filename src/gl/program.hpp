@@ -29,11 +29,16 @@ struct Program
 
     explicit Program(GLuint _program) : program(_program) {}
 
+    static inline Program& current()
+    {
+        static Program p;
+        glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint*>(&p.program));
+        return p;
+    }
+
     ~Program()
     {
-        if (program != 0) {
-            glDeleteProgram(program);
-        }
+        if (program != 0) { glDeleteProgram(program); }
     }
 
     Program(VertexShader const& vs, FragmentShader const& fs)
@@ -92,15 +97,13 @@ struct Program
         glUniform4f(location, color.red, color.green, color.blue, color.alpha);
     }
 
-    static void glUniform(GLint location, float v) { 
-        glUniform1f(location, v);
-    }
+    static void glUniform(GLint location, float v) { glUniform1f(location, v); }
 
     template <typename... ARGS>
     void setUniform(const char* name, ARGS... args) const
     {
         auto location = glGetUniformLocation(program, name);
-        if(location == -1) {
+        if (location == -1) {
             fmt::print("WARN: '{}' does not exist\n", name);
             return;
         }
