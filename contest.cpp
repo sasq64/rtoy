@@ -11,19 +11,21 @@
 
 #include <variant>
 
-namespace gl = gl_wrap;
+class PixConsole
+{
 
-int texture_width = 256;
-int texture_height = 256;
-int char_width = 8;
-int char_height = 16;
+    int texture_width = 256;
+    int texture_height = 256;
+    int char_width = 8;
+    int char_height = 16;
+
+    FTFont font;
 
     std::string vertex_shader{R"gl( 
     #ifdef GL_ES
         precision mediump float;
     #endif
         attribute vec2 in_pos;
-        //uniform mat4 in_transform;
         attribute vec2 in_uv;
         varying vec2 out_uv;
         void main() {
@@ -43,9 +45,9 @@ int char_height = 16;
         //uniform vec4 colors[256];
         void main() {
               const vec4 text_color = vec4(1,1,1,1);
-              const vec2 console_size = vec2(32.0, 32.0);
+              const vec2 console_size = vec2(120.0, 50.0);
               const vec2 texture_size = vec2(256.0, 256.0);
-              const vec2 half_texel = 0.75 / texture_size;
+              const vec2 half_texel = 1.0 / texture_size;
               const vec2 char_size = vec2(8.0, 16.0);
               const vec2 vn = char_size / texture_size;
 
@@ -55,56 +57,113 @@ int char_height = 16;
               gl_FragColor = texture2D(in_tex, uv).a * text_color;
         })gl"};
 
-#if 0
-static inline char const* pixel_shader =
-    R"gl(
-    #ifdef GL_ES
-        precision mediump float;
-    #endif
-        uniform sampler2D in_tex;
-        varying vec2 out_uv;
-        uniform vec4 fg_color;
-        uniform vec4 bg_color;
-        void main() {
-            vec4 col = texture2D(in_tex, vec2(out_uv.x, - out_uv.y));
-            float a = col.a;
-            col.a = mix(a, 1.0, bg_color.a);
-            col.rgb = mix(fg_color.rgb * col.rgb, bg_color.rgb,
-                          (1.0 - a) * bg_color.a);
-            gl_FragColor = col;
+    std::pair<int, int> next_pos{0, 0};
+
+    std::unordered_map<char32_t, uint32_t> char_uvs;
+    gl_wrap::Texture font_texture;
+    gl_wrap::Texture uv_texture;
+    gl_wrap::Program program;
+    std::vector<uint32_t> data;
+    std::vector<uint32_t> uvdata;
+
+    unsigned width;
+    unsigned height;
+
+public:
+    PixConsole(unsigned w, unsigned h)
+        : font{"data/unscii-16.ttf"}, width(w), height(h)
+    {
+        font.set_pixel_size(16);
+        data.resize(256 * 256);
+        std::fill(data.begin(), data.end(), 0);
+
+        for (char32_t c = 0x20; c <= 0x7f; c++) {
+            add_char(c);
         }
-    )gl";
-#endif
+        fmt::print("{:x}\n", char_uvs['C']);
+        font_texture = gl_wrap::Texture{256, 256, data};
 
-std::pair<int, int> next_pos{0, 0};
+        uvdata.resize(w * h);
+        std::fill(uvdata.begin(), uvdata.end(), 0);
+        uv_texture = gl_wrap::Texture{w, h, uvdata};
 
-std::unordered_map<char32_t, uint32_t> char_uvs;
-
-void add_char(char32_t c, uint32_t* data, FTFont& font)
-{
-    if (c == 1) { return; }
-
-    // First render character into texture
-    auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
-    int x = next_pos.first;
-    int y = next_pos.second;
-    auto cw = font.render_char(c, ptr, 0xffffff00, texture_width);
-    fmt::print("{}\n", cw);
-
-    // then check if this char is wide and flag it
-    if (cw < char_width) { cw = char_width; }
-
-    char_uvs[c] = (x) | (y << 8);
-
-    next_pos.first += char_width;
-    if (next_pos.first >= (texture_width - char_width)) {
-        next_pos.first = 0;
-        next_pos.second += char_height;
+        uv_texture.bind(1);
+        font_texture.bind(0);
+        program = gl_wrap::Program({vertex_shader}, {fragment_shader});
     }
-}
+
+    void text(int x, int y, std::string const& t)
+    {
+        auto text32 = utils::utf8_decode(t);
+        for (auto c : text32) {
+            if (c == 10) {
+                x = 0;
+                y++;
+                continue;
+            }
+
+            auto& t = uvdata[x + width * y];
+            t = char_uvs[c];
+            x++;
+            if (x >= width) {
+                x = 0;
+                y++;
+            }
+        }
+        uv_texture.update(uvdata.data());
+    }
+
+    void add_char(char32_t c)
+    {
+        // First render character into texture
+        auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
+        int x = next_pos.first;
+        int y = next_pos.second;
+        auto cw = font.render_char(c, ptr, 0xffffff00, texture_width);
+        fmt::print("{}\n", cw);
+
+        // then check if this char is wide and flag it
+        if (cw < char_width) { cw = char_width; }
+
+        char_uvs[c] = (x) | (y << 8);
+
+        next_pos.first += char_width;
+        if (next_pos.first >= (texture_width - char_width)) {
+            next_pos.first = 0;
+            next_pos.second += char_height;
+        }
+    }
+
+    void render()
+    {
+        namespace gl = gl_wrap;
+        float x = 1;
+        float y = 1;
+
+        float sx = 0;
+        float sy = 0;
+        for(auto& u : uvdata) {
+            u = char_uvs['!' + rand() % 0x40];
+        }
+        uv_texture.update(uvdata.data());
+
+        std::array<float, 8> uvs{sx, y, x, y, x, sy, sx, sy};
+        glEnable(GL_BLEND);
+        pix::set_colors(0xffffffff, 0);
+        auto [w, h] = gl::getViewport();
+        uv_texture.bind(1);
+        font_texture.bind(0);
+        program.setUniform("in_tex", 0);
+        program.setUniform("uv_tex", 1);
+        // program.setUniform("in_transform", transform);
+        program.use();
+        pix::draw_quad_uvs(uvs);
+    }
+};
 
 int main()
 {
+    namespace gl = gl_wrap;
 #ifdef RASPBERRY_PI
     auto system = create_pi_system();
 #else
@@ -116,68 +175,21 @@ int main()
     auto window = system->init_screen(settings);
 
     system->init_input(settings);
-    gl::Color bg{0xff0000ff};
+    gl::Color bg{0xffff00ff};
 
+    PixConsole con{120, 50};
 
-    FTFont font{"data/unscii-16.ttf"};
-    font.set_pixel_size(16);
-    std::vector<uint32_t> data(256 * 256);
-    std::fill(data.begin(), data.end(), 0);
-
-
-    for (char32_t c = 0x20; c <= 0x7f; c++) {
-        add_char(c, data.data(), font);
-    }
-    fmt::print("{:x}\n", char_uvs['C']);
-    gl::Texture font_texture(256, 256, data);
-
-    std::vector<uint32_t> uvdata(32 * 32);
-    for (int i = 0; i < 32 * 32; i++) {
-        uvdata[i] = char_uvs['Z' - (i % 26)];
-    }
-    uvdata[0] = char_uvs['a'];
-    uvdata[31] = char_uvs['z'];
-    uvdata[31*32] = char_uvs['1'];
-    uvdata[32*32-1] = char_uvs['2'];
-    gl::Texture uv_texture{32, 32, uvdata};
-    auto vao = gl::genVertexArrays<1>();
-    glBindVertexArray(vao[0]);
-
-    auto program = gl_wrap::Program({vertex_shader}, {fragment_shader});
-
-    float x = 0.25;
-    float y = 0.25;
-
-    float sx = 0;
-    float sy = 0;
-
-    uv_texture.bind(1);
-    font_texture.bind(0);
+    con.text(2, 2, "ZweZxywXVwooPO");
     while (true) {
 
-    std::array<float, 8> uvs {
-        sx,y, x, y, x, sy, sx, sy
-    };
-        //x *= 1.01;
-        //y *= 1.01;
-        sx += 0.0001;
-        x += 0.0001;
         auto event = system->poll_events();
         if (std::holds_alternative<QuitEvent>(event)) { break; }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gl::clearColor(bg);
         glClear(GL_COLOR_BUFFER_BIT);
-        //auto& program = gl::ProgramCache::get_instance().textured;
-        //program.use();
-        glEnable(GL_BLEND);
-        pix::set_colors(0xffffffff, 0);
-        auto [w, h] = gl::getViewport();
-        program.setUniform("in_tex", 0);
-        program.setUniform("uv_tex", 1);
-    //program.setUniform("in_transform", transform);
-        program.use();
-        pix::draw_quad_uvs(uvs);
-        //pix::draw_quad();
+        // auto& program = gl::ProgramCache::get_instance().textured;
+        // program.use();
+        con.render();
 
         window->swap();
     }

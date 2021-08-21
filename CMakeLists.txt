@@ -114,6 +114,7 @@ endif()
 
 # Graphics
 add_library(pix STATIC
+    src/gl/texture.cpp
     src/pix/pix.cpp
     src/pix/font.cpp
     src/pix/texture_font.cpp

@@ -17,15 +17,7 @@ struct Texture
 
     Texture() = default;
 
-    void init()
-    {
-        glGenTextures(1, &tex_id);
-        glBindTexture(GL_TEXTURE_2D, tex_id);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    }
+    void init();
 
     template <typename T, size_t N>
     Texture(GLuint w, GLuint h, std::array<T, N> const& data,
@@ -131,6 +123,20 @@ struct Texture
     {
         glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
         setViewport({width, height});
+    }
+
+    template <typename T>
+    void update(
+        T const* ptr, GLint source_format = -1, GLenum type = GL_UNSIGNED_BYTE)
+    {
+        if (source_format < 0) {
+            constexpr static std::array translate{
+                0, GL_ALPHA, 0, GL_RGB, GL_RGBA};
+            source_format = translate[sizeof(T)];
+        }
+        glBindTexture(GL_TEXTURE_2D, tex_id);
+        glTexSubImage2D(
+            GL_TEXTURE_2D, 0, 0, 0, width, height, source_format, type, ptr);
     }
 
     std::pair<float, float> size() const { return {width, height}; }
