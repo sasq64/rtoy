@@ -7,6 +7,7 @@
 #include "mrb_tools.hpp"
 
 #include <pix/gl_console.hpp>
+#include <gl/program_cache.hpp>
 
 #include <mruby.h>
 #include <mruby/class.h>
@@ -107,5 +108,6 @@ void RImage::draw(float x, float y, float scale)
     fmt::print("Draw {}x{} at {},{}\n", image.width, image.height, x, y);
     upload();
     texture.bind();
+    gl_wrap::ProgramCache::get_instance().textured.use();
     pix::draw_quad_uvs(x, y, width() * scale, height() * scale, texture.uvs);
 }

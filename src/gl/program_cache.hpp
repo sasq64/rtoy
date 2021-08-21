@@ -19,11 +19,11 @@ struct ProgramCache
     #ifdef GL_ES
         precision mediump float;
     #endif
-        layout(location = 0) in vec2 in_pos;
+        attribute vec2 in_pos;
         uniform mat4 in_transform;
         #ifdef TEXTURED
-          in vec2 in_uv;
-          out vec2 out_uv;
+          attribute vec2 in_uv;
+          varying vec2 out_uv;
         #endif
         void main() {
             vec4 v = in_transform * vec4(in_pos, 0, 1);
@@ -40,21 +40,20 @@ struct ProgramCache
         uniform vec4 in_color;
         #ifdef TEXTURED
           uniform sampler2D in_tex;
-          in vec2 out_uv;
+          varying vec2 out_uv;
         #endif
-        out vec4 fragColor;
         void main() {
             #ifdef TEXTURED
-              fragColor = texture(in_tex, out_uv) * in_color;
+              gl_FragColor = texture2D(in_tex, out_uv) * in_color;
             #else
-              fragColor = in_color;
+              gl_FragColor = in_color;
             #endif
         })gl"};
 
 #ifdef EMSCRIPTEN
-    static const inline std::string version = "#version 300 es\n";
+    static const inline std::string version = "#version 150 es\n";
 #else
-    static const inline std::string version = "#version 330\n";
+    static const inline std::string version = "";
 #endif
 
     Program get_program(std::string_view prefix) const

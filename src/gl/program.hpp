@@ -99,6 +99,8 @@ struct Program
 
     static void glUniform(GLint location, float v) { glUniform1f(location, v); }
 
+    static void glUniform(GLint location, int32_t v) { glUniform1i(location, v); }
+
     template <typename... ARGS>
     void setUniform(const char* name, ARGS... args) const
     {

@@ -39,6 +39,7 @@ pix::Image RCanvas::read_image(int x, int y, int w, int h)
 void RCanvas::draw_quad(float x, float y, float w, float h)
 {
     canvas.set_target();
+    gl::ProgramCache::get_instance().textured.use();
     pix::set_colors(style.fg, style.bg);
     pix::draw_quad_filled(x, y, w, h);
 }
@@ -84,12 +85,12 @@ void RCanvas::draw_image(float x, float y, RImage* image, float scale)
 void RCanvas::render()
 {
     canvas.bind();
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
     glEnable(GL_BLEND);
     pix::set_transform(transform);
     pix::set_colors(0xffffffff, 0);
     auto [w, h] = gl::getViewport();
+    auto& program = gl::ProgramCache::get_instance().textured;
+    program.use();
     pix::draw_quad();
 }
 

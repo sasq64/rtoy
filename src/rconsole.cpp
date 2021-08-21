@@ -99,6 +99,7 @@ void RConsole::render()
     console->frame_buffer.bind();
     pix::set_colors(0xffffffff, 0);
     pix::set_transform(transform);
+    gl::ProgramCache::get_instance().textured.use();
     pix::draw_quad_invy();
 }
 

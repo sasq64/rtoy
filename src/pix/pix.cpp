@@ -28,7 +28,7 @@ void set_colors(gl::Color fg, gl::Color bg)
 
 void draw_with_uvs()
 {
-    gl::ProgramCache::get_instance().textured.use();
+    //gl::ProgramCache::get_instance().textured.use();
     auto& program = gl::Program::current();
     //auto& program = gl::ProgramCache::get_instance().textured;
     program.use();

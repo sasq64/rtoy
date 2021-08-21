@@ -22,8 +22,8 @@ TextureFont::TextureFont(const char* name, int size)
         add_char(c);
     }
 
-    pix::Image image{texture_width, texture_height,
-        reinterpret_cast<std::byte*>(data.data()), 0};
+    //pix::Image image{texture_width, texture_height,
+    //    reinterpret_cast<std::byte*>(data.data()), 0};
 
     textures.push_back({std::make_shared<gl::Texture>(
         texture_width, texture_height, data, GL_RGBA)});
@@ -35,8 +35,8 @@ void TextureFont::clear()
     namespace gl = gl_wrap;
     next_pos = {0, 0};
     std::fill(data.begin(), data.end(), 0);
-    pix::Image image{texture_width, texture_height,
-        reinterpret_cast<std::byte*>(data.data()), 0};
+    //pix::Image image{texture_width, texture_height,
+    //    reinterpret_cast<std::byte*>(data.data()), 0};
     textures.clear();
     textures.push_back({std::make_shared<gl::Texture>(
         texture_width, texture_height, data, GL_RGBA)});

@@ -47,8 +47,6 @@ void RSprites::clear()
 void RSprites::render()
 {
     if (sprites.empty()) { return; }
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
     glEnable(GL_BLEND);
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
@@ -65,6 +63,8 @@ void RSprites::render()
             last_alpha = sprite->alpha;
         }
         pix::set_transform(sprite->transform);
+        auto& program = gl::ProgramCache::get_instance().textured;
+        program.use();
         pix::draw_quad_uvs(sprite->texture.uvs);
     }
 }

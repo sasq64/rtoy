@@ -15,8 +15,8 @@ struct Settings
     path boot_script = "ruby/main.rb";
     path console_font = "data/unscii-16.ttf";
     int font_size = 16;
-    int display_width = 1440;
-    int display_height = 960;
+    int display_width = 512;
+    int display_height = 512;
     std::string boot_cmd;
     bool console_benchmark = false;
 };

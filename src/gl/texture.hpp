@@ -22,7 +22,7 @@ struct Texture
         glGenTextures(1, &tex_id);
         glBindTexture(GL_TEXTURE_2D, tex_id);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
@@ -33,12 +33,12 @@ struct Texture
         GLenum type = GL_UNSIGNED_BYTE)
         : width(w), height(h)
     {
-        init();
         if (source_format < 0) {
             constexpr static std::array translate{
                 0, GL_ALPHA, 0, GL_RGB, GL_RGBA};
             source_format = translate[sizeof(T)];
         }
+        init();
         glTexImage2D(GL_TEXTURE_2D, 0, target_format, w, h, 0,
             // Defines how many of the underlying elements form a pixel
             source_format,
@@ -52,12 +52,12 @@ struct Texture
         GLenum type = GL_UNSIGNED_BYTE)
         : width(w), height(h)
     {
-        init();
         if (source_format < 0) {
             constexpr static std::array translate{
                 0, GL_ALPHA, 0, GL_RGB, GL_RGBA};
             source_format = translate[sizeof(T)];
         }
+        init();
         glTexImage2D(GL_TEXTURE_2D, 0, target_format, w, h, 0,
             // Defines how many of the underlying elements form a pixel
             source_format,
@@ -123,7 +123,7 @@ struct Texture
 
     void bind(int unit = 0) const
     {
-        // glActiveTexture(GL_TEXTURE0 + unit);
+        glActiveTexture(GL_TEXTURE0 + unit);
         glBindTexture(GL_TEXTURE_2D, tex_id);
     }
 
@@ -141,7 +141,7 @@ struct TexRef
     std::shared_ptr<Texture> tex;
     std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     void bind(int unit = 0) { tex->bind(unit); }
-    bool operator==(TexRef const& other) { return tex == other.tex; }
+    bool operator==(TexRef const& other) const { return tex == other.tex; }
 };
 
 } // namespace gl_wrap
