@@ -41,19 +41,18 @@ class PixConsole
         uniform vec4 in_color;
         uniform sampler2D in_tex;
         uniform sampler2D uv_tex;
+        uniform vec2 console_size;
+        uniform vec2 char_size;
+        uniform vec2 texture_size;
         varying vec2 out_uv;
         //uniform vec4 colors[256];
         void main() {
               const vec4 text_color = vec4(1,1,1,1);
-              const vec2 console_size = vec2(120.0, 50.0);
-              const vec2 texture_size = vec2(256.0, 256.0);
-              const vec2 half_texel = 1.0 / texture_size;
-              const vec2 char_size = vec2(8.0, 16.0);
-              const vec2 vn = char_size / texture_size;
-
+              vec2 half_texel = 1.0 / texture_size;
+              vec2 vn = char_size / texture_size;
               vec4 ux = texture2D(uv_tex, out_uv);
               vec2 uvf = fract(out_uv * console_size);
-              vec2 uv = ux + uvf * vn - half_texel; 
+              vec2 uv = ux.xy + uvf * vn - half_texel; 
               gl_FragColor = texture2D(in_tex, uv).a * text_color;
         })gl"};
 
@@ -65,6 +64,7 @@ class PixConsole
     gl_wrap::Program program;
     std::vector<uint32_t> data;
     std::vector<uint32_t> uvdata;
+    std::array<float, 8> uvs;
 
     unsigned width;
     unsigned height;
@@ -89,7 +89,21 @@ public:
 
         uv_texture.bind(1);
         font_texture.bind(0);
+        float x = 1;
+        float y = 1;
+
+        float sx = 0;
+        float sy = 0;
+        uvs = {sx, y, x, y, x, sy, sx, sy};
+
         program = gl_wrap::Program({vertex_shader}, {fragment_shader});
+        program.setUniform("console_size", std::pair<float, float>(w, h));
+        program.setUniform("texture_size", std::pair<float, float>(256, 256));
+        program.setUniform("char_size", std::pair<float, float>(8, 16));
+        for(auto& u : uvdata) {
+            u = char_uvs['!' + rand() % 0x40];
+        }
+        uv_texture.update(uvdata.data());
     }
 
     void text(int x, int y, std::string const& t)
@@ -136,28 +150,21 @@ public:
 
     void render()
     {
-        namespace gl = gl_wrap;
-        float x = 1;
-        float y = 1;
 
-        float sx = 0;
-        float sy = 0;
-        for(auto& u : uvdata) {
-            u = char_uvs['!' + rand() % 0x40];
-        }
-        uv_texture.update(uvdata.data());
-
-        std::array<float, 8> uvs{sx, y, x, y, x, sy, sx, sy};
         glEnable(GL_BLEND);
         pix::set_colors(0xffffffff, 0);
-        auto [w, h] = gl::getViewport();
+        //auto [w, h] = gl::getViewport();
         uv_texture.bind(1);
         font_texture.bind(0);
         program.setUniform("in_tex", 0);
         program.setUniform("uv_tex", 1);
         // program.setUniform("in_transform", transform);
         program.use();
-        pix::draw_quad_uvs(uvs);
+        float x = 0;
+        float y = 0;
+        float w = 2 * width * 8.0F;
+        float h = 2 * height * 16.0F;
+        pix::draw_quad_impl(x, y, w, h);
     }
 };
 
@@ -177,9 +184,10 @@ int main()
     system->init_input(settings);
     gl::Color bg{0xffff00ff};
 
-    PixConsole con{120, 50};
+    PixConsole con{256, 256};
 
     con.text(2, 2, "ZweZxywXVwooPO");
+    con.text(2, 60, "Hello citizens of the earth! This console is fast!");
     while (true) {
 
         auto event = system->poll_events();
