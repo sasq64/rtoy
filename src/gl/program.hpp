@@ -5,6 +5,7 @@
 #include "shader.hpp"
 
 #include <cassert>
+#include <vector>
 
 namespace gl_wrap {
 
@@ -97,9 +98,26 @@ struct Program
         glUniform4f(location, color.red, color.green, color.blue, color.alpha);
     }
 
+    static void glUniform(GLint location, std::vector<Color> const& colors)
+    {
+        std::vector<float> data(colors.size() * 4);
+        int i = 0;
+        for (auto const& c : colors) {
+            data[i++] = c.red;
+            data[i++] = c.green;
+            data[i++] = c.blue;
+            data[i++] = c.alpha;
+        }
+        glUniform4fv(
+            location, static_cast<GLsizei>(colors.size()), data.data());
+    }
+
     static void glUniform(GLint location, float v) { glUniform1f(location, v); }
 
-    static void glUniform(GLint location, int32_t v) { glUniform1i(location, v); }
+    static void glUniform(GLint location, int32_t v)
+    {
+        glUniform1i(location, v);
+    }
 
     template <typename... ARGS>
     void setUniform(const char* name, ARGS... args) const

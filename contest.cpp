@@ -45,15 +45,23 @@ class PixConsole
         uniform vec2 char_size;
         uniform vec2 texture_size;
         varying vec2 out_uv;
-        //uniform vec4 colors[256];
+        uniform vec4 colors[8];
         void main() {
-              const vec4 text_color = vec4(1,1,1,1);
-              vec2 half_texel = 1.0 / texture_size;
+              //vec2 half_texel = 0.5 / texture_size;
               vec2 vn = char_size / texture_size;
-              vec4 ux = texture2D(uv_tex, out_uv);
+              vec4 up = texture2D(uv_tex, out_uv);
+              vec4 fg_color = colors[int(up.z * 256.0)];
+              vec4 bg_color = colors[int(up.w * 256.0)];
+              vec2 ux = floor(up.xy * 256.0) / 256.0;
+              //ux = ux + half_texel;
               vec2 uvf = fract(out_uv * console_size);
-              vec2 uv = ux.xy + uvf * vn - half_texel; 
-              gl_FragColor = texture2D(in_tex, uv).a * text_color;
+              vec2 uv = ux + uvf * vn;// - half_texel; 
+              vec4 col = texture2D(in_tex, uv);
+              float a = col.a;
+              col.a = mix(a, 1.0, bg_color.a);
+              col.rgb = mix(fg_color.rgb * col.rgb, bg_color.rgb,
+                            (1.0 - a) * bg_color.a);
+              gl_FragColor = col;
         })gl"};
 
     std::pair<int, int> next_pos{0, 0};
@@ -97,11 +105,20 @@ public:
         uvs = {sx, y, x, y, x, sy, sx, sy};
 
         program = gl_wrap::Program({vertex_shader}, {fragment_shader});
+
+        std::vector<gl_wrap::Color> colors;
+        colors.emplace_back(0xffffffff);
+        colors.emplace_back(0xff0000ff);
+        colors.emplace_back(0x0000ffff);
+        program.setUniform("colors", colors);
+
         program.setUniform("console_size", std::pair<float, float>(w, h));
         program.setUniform("texture_size", std::pair<float, float>(256, 256));
         program.setUniform("char_size", std::pair<float, float>(8, 16));
         for(auto& u : uvdata) {
-            u = char_uvs['!' + rand() % 0x40];
+            uint32_t x = char_uvs['!' + rand() % 0x40];
+            x |= 0x01000000;
+            u = x;
         }
         uv_texture.update(uvdata.data());
     }
@@ -118,6 +135,7 @@ public:
 
             auto& t = uvdata[x + width * y];
             t = char_uvs[c];
+            t |= 0x02000000;
             x++;
             if (x >= width) {
                 x = 0;
@@ -148,8 +166,12 @@ public:
         }
     }
 
+    float s = 1.0;
+
     void render()
     {
+
+        s *= 1.001;
 
         glEnable(GL_BLEND);
         pix::set_colors(0xffffffff, 0);
@@ -162,8 +184,8 @@ public:
         program.use();
         float x = 0;
         float y = 0;
-        float w = 2 * width * 8.0F;
-        float h = 2 * height * 16.0F;
+        float w = s * width * 8.0F;
+        float h = s * height * 16.0F;
         pix::draw_quad_impl(x, y, w, h);
     }
 };
@@ -187,7 +209,7 @@ int main()
     PixConsole con{256, 256};
 
     con.text(2, 2, "ZweZxywXVwooPO");
-    con.text(2, 60, "Hello citizens of the earth! This console is fast!");
+    con.text(2, 30, "Hello citizens of the earth! This console is fast!");
     while (true) {
 
         auto event = system->poll_events();
