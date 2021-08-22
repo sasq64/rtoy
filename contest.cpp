@@ -47,15 +47,13 @@ class PixConsole
         varying vec2 out_uv;
         uniform vec4 colors[8];
         void main() {
-              //vec2 half_texel = 0.5 / texture_size;
               vec2 vn = char_size / texture_size;
               vec4 up = texture2D(uv_tex, out_uv);
-              vec4 fg_color = colors[int(up.z * 256.0)];
-              vec4 bg_color = colors[int(up.w * 256.0)];
-              vec2 ux = floor(up.xy * 256.0) / 256.0;
-              //ux = ux + half_texel;
+              vec4 fg_color = colors[int(up.z * 255.0)];
+              vec4 bg_color = colors[int(up.w * 255.0)];
+              vec2 ux = (up.xy * 255.0) / 256.0;
               vec2 uvf = fract(out_uv * console_size);
-              vec2 uv = ux + uvf * vn;// - half_texel; 
+              vec2 uv = ux + uvf * vn;
               vec4 col = texture2D(in_tex, uv);
               float a = col.a;
               col.a = mix(a, 1.0, bg_color.a);
