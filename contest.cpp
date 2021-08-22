@@ -41,25 +41,29 @@ class PixConsole
         uniform vec4 in_color;
         uniform sampler2D in_tex;
         uniform sampler2D uv_tex;
+        uniform sampler2D col_tex;
         uniform vec2 console_size;
         uniform vec2 char_size;
         uniform vec2 texture_size;
         varying vec2 out_uv;
-        uniform vec4 colors[8];
         void main() {
-              vec2 vn = char_size / texture_size;
               vec4 up = texture2D(uv_tex, out_uv);
-              vec4 fg_color = colors[int(up.z * 255.0)];
-              vec4 bg_color = colors[int(up.w * 255.0)];
+              vec4 color = texture2D(col_tex, out_uv);
+
+              vec2 vn = char_size / texture_size;
+              vec4 fg_color = vec4(up.wz, color.a, 1.0);
+              vec4 bg_color = vec4(color.rgb, 1.0);
               vec2 ux = (up.xy * 255.0) / 256.0;
               vec2 uvf = fract(out_uv * console_size);
               vec2 uv = ux + uvf * vn;
               vec4 col = texture2D(in_tex, uv);
-              float a = col.a;
-              col.a = mix(a, 1.0, bg_color.a);
-              col.rgb = mix(fg_color.rgb * col.rgb, bg_color.rgb,
-                            (1.0 - a) * bg_color.a);
-              gl_FragColor = col;
+              gl_FragColor = fg_color * col.a + bg_color * (1.0 - col.a);
+
+              //float a = col.a;
+              //col.a = mix(a, 1.0, bg_color.a);
+              //col.rgb = mix(fg_color.rgb * col.rgb, bg_color.rgb,
+              //              (1.0 - a) * bg_color.a);
+              //gl_FragColor = col;
         })gl"};
 
     std::pair<int, int> next_pos{0, 0};
@@ -67,10 +71,11 @@ class PixConsole
     std::unordered_map<char32_t, uint32_t> char_uvs;
     gl_wrap::Texture font_texture;
     gl_wrap::Texture uv_texture;
+    gl_wrap::Texture col_texture;
     gl_wrap::Program program;
     std::vector<uint32_t> data;
     std::vector<uint32_t> uvdata;
-    std::array<float, 8> uvs;
+    std::vector<uint32_t> coldata;
 
     unsigned width;
     unsigned height;
@@ -93,32 +98,34 @@ public:
         std::fill(uvdata.begin(), uvdata.end(), 0);
         uv_texture = gl_wrap::Texture{w, h, uvdata};
 
+        coldata.resize(w * h);
+        std::fill(coldata.begin(), coldata.end(), 0);
+        col_texture = gl_wrap::Texture{w, h, coldata};
+
+        col_texture.bind(2);
         uv_texture.bind(1);
         font_texture.bind(0);
-        float x = 1;
-        float y = 1;
-
-        float sx = 0;
-        float sy = 0;
-        uvs = {sx, y, x, y, x, sy, sx, sy};
 
         program = gl_wrap::Program({vertex_shader}, {fragment_shader});
 
-        std::vector<gl_wrap::Color> colors;
-        colors.emplace_back(0xffffffff);
-        colors.emplace_back(0xff0000ff);
-        colors.emplace_back(0x0000ffff);
-        program.setUniform("colors", colors);
+        program.setUniform("in_tex", 0);
+        program.setUniform("uv_tex", 1);
+        program.setUniform("col_tex", 2);
 
         program.setUniform("console_size", std::pair<float, float>(w, h));
         program.setUniform("texture_size", std::pair<float, float>(256, 256));
         program.setUniform("char_size", std::pair<float, float>(8, 16));
-        for(auto& u : uvdata) {
+        for (auto& u : uvdata) {
             uint32_t x = char_uvs['!' + rand() % 0x40];
             x |= 0x01000000;
             u = x;
         }
         uv_texture.update(uvdata.data());
+
+        for (auto& c : coldata) {
+            c = 0x00FF00FF;
+        }
+        col_texture.update(coldata.data());
     }
 
     void text(int x, int y, std::string const& t)
@@ -133,14 +140,69 @@ public:
 
             auto& t = uvdata[x + width * y];
             t = char_uvs[c];
-            t |= 0x02000000;
+            t |= 0xFFFF'0000;
             x++;
             if (x >= width) {
                 x = 0;
                 y++;
             }
         }
+    }
+
+    static constexpr std::pair<uint32_t, uint32_t> make_col(
+        uint32_t fg, uint32_t bg)
+    {
+        bg >>= 8;
+        return std::pair<uint32_t, uint32_t>{
+            fg & 0xffff0000, ((bg & 0xff) << 16) | (bg & 0xff00) | (bg >> 16) |
+                                 ((fg << 16) & 0xff000000)};
+    }
+
+    void text(int x, int y, std::string const& t, uint32_t fg, uint32_t bg)
+    {
+        auto text32 = utils::utf8_decode(t);
+
+        auto [w0, w1] = make_col(fg, bg);
+        for (auto c : text32) {
+            if (c == 10) {
+                x = 0;
+                y++;
+                continue;
+            }
+
+            uvdata[x + width * y] = char_uvs[c] | w0;
+            coldata[x + width * y] = w1;
+            x++;
+            if (x >= width) {
+                x = 0;
+                y++;
+            }
+        }
+    }
+
+    void flush()
+    {
         uv_texture.update(uvdata.data());
+        col_texture.update(coldata.data());
+    }
+
+    void put_char(int x, int y, char32_t c) {}
+
+    void put_color(int x, int y, uint32_t fg, uint32_t bg)
+    {
+        auto [w0, w1] = make_col(fg, bg);
+        uvdata[x + width * y] = (uvdata[x + width * y] & 0xffff) | w0;
+        coldata[x + width * y] = w1;
+    }
+
+    void fill(uint32_t fg, uint32_t bg)
+    {
+        auto [w0, w1] = make_col(fg, bg);
+        w0 |= char_uvs[' '];
+        for (int i = 0; i < uvdata.size(); i++) {
+            uvdata[i] = w0;
+            coldata[i] = w1;
+        }
     }
 
     void add_char(char32_t c)
@@ -149,12 +211,7 @@ public:
         auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
         int x = next_pos.first;
         int y = next_pos.second;
-        auto cw = font.render_char(c, ptr, 0xffffff00, texture_width);
-        fmt::print("{}\n", cw);
-
-        // then check if this char is wide and flag it
-        if (cw < char_width) { cw = char_width; }
-
+        font.render_char(c, ptr, 0xffffff00, texture_width);
         char_uvs[c] = (x) | (y << 8);
 
         next_pos.first += char_width;
@@ -164,27 +221,18 @@ public:
         }
     }
 
-    float s = 1.0;
+    float s = 2.0;
 
     void render()
     {
-
-        s *= 1.001;
-
         glEnable(GL_BLEND);
-        pix::set_colors(0xffffffff, 0);
-        //auto [w, h] = gl::getViewport();
+        col_texture.bind(2);
         uv_texture.bind(1);
         font_texture.bind(0);
-        program.setUniform("in_tex", 0);
-        program.setUniform("uv_tex", 1);
-        // program.setUniform("in_transform", transform);
         program.use();
-        float x = 0;
-        float y = 0;
         float w = s * width * 8.0F;
         float h = s * height * 16.0F;
-        pix::draw_quad_impl(x, y, w, h);
+        pix::draw_quad_impl(0, 0, w, h);
     }
 };
 
@@ -206,8 +254,12 @@ int main()
 
     PixConsole con{256, 256};
 
-    con.text(2, 2, "ZweZxywXVwooPO");
-    con.text(2, 30, "Hello citizens of the earth! This console is fast!");
+    con.fill(0xffffffff, 0x004040ff);
+
+    // con.text(2, 2, "ZweZxywXVwooPO");
+    con.text(2, 30, "Hello citizens of the earth! This console is fast!",
+        0x8080ffff, 0x0000ffff);
+    con.flush();
     while (true) {
 
         auto event = system->poll_events();
@@ -215,8 +267,6 @@ int main()
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gl::clearColor(bg);
         glClear(GL_COLOR_BUFFER_BIT);
-        // auto& program = gl::ProgramCache::get_instance().textured;
-        // program.use();
         con.render();
 
         window->swap();
