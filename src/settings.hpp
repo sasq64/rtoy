@@ -11,7 +11,7 @@ enum ScreenType
 struct Settings
 {
     using path = std::filesystem::path;
-    ScreenType screen = ScreenType::Full;
+    ScreenType screen = ScreenType::Window;
     path boot_script = "ruby/main.rb";
     path console_font = "data/unscii-16.ttf";
     int font_size = 16;

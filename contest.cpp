@@ -14,10 +14,10 @@
 class PixConsole
 {
 
-    int texture_width = 256;
-    int texture_height = 256;
-    int char_width = 8;
-    int char_height = 16;
+    unsigned texture_width = 512;
+    unsigned texture_height = 512;
+    unsigned char_width = 13;
+    unsigned char_height = 24;
 
     FTFont font;
 
@@ -38,32 +38,25 @@ class PixConsole
     #ifdef GL_ES
         precision mediump float;
     #endif
-        uniform vec4 in_color;
         uniform sampler2D in_tex;
         uniform sampler2D uv_tex;
         uniform sampler2D col_tex;
+
         uniform vec2 console_size;
-        uniform vec2 char_size;
-        uniform vec2 texture_size;
+        uniform vec2 uv_scale;
         varying vec2 out_uv;
+
         void main() {
               vec4 up = texture2D(uv_tex, out_uv);
               vec4 color = texture2D(col_tex, out_uv);
-
-              vec2 vn = char_size / texture_size;
               vec4 fg_color = vec4(up.wz, color.a, 1.0);
               vec4 bg_color = vec4(color.rgb, 1.0);
               vec2 ux = (up.xy * 255.0) / 256.0;
               vec2 uvf = fract(out_uv * console_size);
-              vec2 uv = ux + uvf * vn;
+              vec2 uv = ux + uvf * uv_scale;
               vec4 col = texture2D(in_tex, uv);
-              gl_FragColor = fg_color * col.a + bg_color * (1.0 - col.a);
 
-              //float a = col.a;
-              //col.a = mix(a, 1.0, bg_color.a);
-              //col.rgb = mix(fg_color.rgb * col.rgb, bg_color.rgb,
-              //              (1.0 - a) * bg_color.a);
-              //gl_FragColor = col;
+              gl_FragColor = fg_color * col * col.a + bg_color * (1.0 - col.a);
         })gl"};
 
     std::pair<int, int> next_pos{0, 0};
@@ -82,17 +75,21 @@ class PixConsole
 
 public:
     PixConsole(unsigned w, unsigned h)
-        : font{"data/unscii-16.ttf"}, width(w), height(h)
+        : font{"data/bedstead.otf"}, width(w), height(h)
     {
-        font.set_pixel_size(16);
-        data.resize(256 * 256);
+        font.set_pixel_size(32);
+        data.resize(texture_width * texture_height);
+        std::tie(char_width, char_height) = font.get_size();
+
+        char_height = (char_height + 1) & 0xfffffffe;
+        char_width = (char_width + 1) & 0xfffffffe;
+
         std::fill(data.begin(), data.end(), 0);
 
         for (char32_t c = 0x20; c <= 0x7f; c++) {
             add_char(c);
         }
-        fmt::print("{:x}\n", char_uvs['C']);
-        font_texture = gl_wrap::Texture{256, 256, data};
+        font_texture = gl_wrap::Texture{texture_width, texture_height, data};
 
         uvdata.resize(w * h);
         std::fill(uvdata.begin(), uvdata.end(), 0);
@@ -113,8 +110,11 @@ public:
         program.setUniform("col_tex", 2);
 
         program.setUniform("console_size", std::pair<float, float>(w, h));
-        program.setUniform("texture_size", std::pair<float, float>(256, 256));
-        program.setUniform("char_size", std::pair<float, float>(8, 16));
+        program.setUniform("uv_scale",
+            std::pair<float, float>(static_cast<float>(char_width) /
+                                        static_cast<float>(texture_width),
+                static_cast<float>(char_height) /
+                    static_cast<float>(texture_height)));
         for (auto& u : uvdata) {
             uint32_t x = char_uvs['!' + rand() % 0x40];
             x |= 0x01000000;
@@ -207,32 +207,36 @@ public:
 
     void add_char(char32_t c)
     {
+        auto cw = char_width + 2;
         // First render character into texture
         auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
-        int x = next_pos.first;
-        int y = next_pos.second;
+        int x = next_pos.first / 2;
+        int y = next_pos.second / 2;
         font.render_char(c, ptr, 0xffffff00, texture_width);
         char_uvs[c] = (x) | (y << 8);
 
-        next_pos.first += char_width;
-        if (next_pos.first >= (texture_width - char_width)) {
+        next_pos.first += cw;
+        if (next_pos.first >= (texture_width - cw)) {
             next_pos.first = 0;
-            next_pos.second += char_height;
+            next_pos.second += (char_height + 2);
         }
     }
 
-    float s = 2.0;
+    float s = 1.0;
+    float x = 0;
 
     void render()
     {
-        glEnable(GL_BLEND);
+        // s *= 1.001;
+        glDisable(GL_BLEND);
         col_texture.bind(2);
         uv_texture.bind(1);
         font_texture.bind(0);
         program.use();
-        float w = s * width * 8.0F;
-        float h = s * height * 16.0F;
-        pix::draw_quad_impl(0, 0, w, h);
+        float w = s * static_cast<float>(width * char_width);
+        float h = s * static_cast<float>(height * char_height);
+        pix::draw_quad_impl(x, 0, w, h);
+        x -= 1;
     }
 };
 
@@ -254,10 +258,10 @@ int main()
 
     PixConsole con{256, 256};
 
-    con.fill(0xffffffff, 0x004040ff);
+    // con.fill(0xffffffff, 0x004040ff);
 
     // con.text(2, 2, "ZweZxywXVwooPO");
-    con.text(2, 30, "Hello citizens of the earth! This console is fast!",
+    con.text(2, 3, "Hello citizens of the earth! This console is fast!",
         0x8080ffff, 0x0000ffff);
     con.flush();
     while (true) {
