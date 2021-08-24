@@ -7,7 +7,7 @@
 #include <linux/input.h>
 #include <fcntl.h>
 #include <bcm_host.h>
-
+#include <cctype>
 #include <deque>
 #include <filesystem>
 #include <vector>
@@ -94,7 +94,7 @@ public:
         uint16_t dha = 0;
 
         // Scale 50% on hires screens
-        if (display_width > 1024) {
+        if (display_width > 2024) {
             display_width /= 2;
             display_height /= 2;
             dwa = display_width;
@@ -191,6 +191,12 @@ public:
         { '=', KEY_EQUAL },
         { '[', KEY_LEFTBRACE },
         { ']', KEY_LEFTBRACE },
+        { '\\', KEY_BACKSLASH },
+        { ';', KEY_SEMICOLON },
+        { ',', KEY_COMMA },
+        { '.', KEY_DOT },
+        { '/', KEY_SLASH },
+        { '\'', KEY_APOSTROPHE },
         { RKEY_F11, KEY_F11 },
         { RKEY_F12, KEY_F12 },
 //        { BTN_LEFT, CLICK },
@@ -218,6 +224,8 @@ public:
         { RKEY_LCTRL, KEY_LEFTCTRL},
         { RKEY_RCTRL, KEY_RIGHTCTRL }
     };
+
+    bool shift_down = false;
 
     std::deque<AnyEvent> events;
 
@@ -260,8 +268,11 @@ public:
                     while (rc >= sizeof(struct input_event)) {
                         fmt::print("TYPE {} CODE {} VALUE {}\n", ptr->type, ptr->code, ptr->value);
                         if (ptr->type == EV_KEY) {
+                            uint32_t k = ptr->code;
+                            if (k == KEY_LEFTSHIFT || k == KEY_RIGHTSHIFT) {
+                                shift_down = ptr->value != 0;
+                            }
                             if (ptr->value) {
-                                uint32_t k = ptr->code;
                                 if (k >= KEY_1 && k <= KEY_9) {
                                     k += ('1' - KEY_1);
                                 } else if (k >= KEY_F1 && k <= KEY_F10) {
@@ -274,6 +285,10 @@ public:
                                             break;
                                         }
                                     }
+                                }
+                                if (shift_down) {
+                                    k = toupper(k);
+                                    if(k == '\'') k = '\"';
                                 }
                                 fmt::print("Converted to {}\n", k);
                                 putEvent(KeyEvent{k, 0});

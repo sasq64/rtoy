@@ -8,6 +8,7 @@
 #include <gl/program.hpp>
 #include <gl/texture.hpp>
 #include <pix/font.hpp>
+
 int main()
 {
     namespace gl = gl_wrap;
@@ -24,7 +25,7 @@ int main()
     system->init_input(settings);
     gl::Color bg{0xffff00ff};
 
-    PixConsole con{256, 256};
+    PixConsole con{120, 34};
 
     con.set_tile_size(38, 38);
     con.fill(0xffffffff, 0x004040ff);
@@ -38,7 +39,7 @@ int main()
         0x8080ffff, 0x0000ffff);
     con.flush();
     while (true) {
-
+        //con.scramble();
         auto event = system->poll_events();
         if (std::holds_alternative<QuitEvent>(event)) { break; }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

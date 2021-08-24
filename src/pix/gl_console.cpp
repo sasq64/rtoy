@@ -109,8 +109,8 @@ GLConsole::GLConsole(int w, int h, Style style)
           style.font.c_str(), style.font_size)),
       frame_buffer(w, h)
 {
-    width = 256;  // w / font->char_width;
-    height = 256; // h / font->char_height;
+    width = w / font->char_width;
+    height = h / font->char_height;
 
     tile_width = font->char_width;
     tile_height = font->char_height;

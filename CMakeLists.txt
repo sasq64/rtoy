@@ -192,7 +192,11 @@ target_link_libraries(${TARGET} PRIVATE
 
 
 if(NOT EMSCRIPTEN)
-    add_executable(con contest.cpp src/sdl_system.cpp)
+    if (RASPBERRY_PI)
+        add_executable(con contest.cpp src/pi_system.cpp src/eglutil.cpp)
+    else ()
+        add_executable(con contest.cpp src/sdl_system.cpp)
+    endif()
     target_link_libraries(con PRIVATE pix fmt::fmt)
 endif()
 
