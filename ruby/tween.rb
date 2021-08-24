@@ -8,10 +8,6 @@
 class TweenError < StandardError
 end
 
-def by_elem(a, b, method)
-    [a, b].transpose.map {|x| x.reduce(method)}
-end
-
 class TweenFunc
     def self.ease_out_back(t)
         s = 1.70158
@@ -94,7 +90,7 @@ class TweenTarget
         @from = from
         @steps = steps - 1
         @to = to
-        @value = from
+        @value = from.clone
         @func = func
         @callback = nil
     end
@@ -113,8 +109,9 @@ class TweenTarget
             if @from.nil?
                 @obj.send @method,d
             elsif @from.kind_of? Array
-                @value = by_elem(@from, by_elem(@to, @from, :-).
-                                 map{|x| x * d}, :+)
+                (0...@from.size).each { |i|
+                    @value[i] = @from[i] + (@to[i] - @from[i]) * d
+                }
                 @obj.send @method, @value
             else
                 @value = @from + (@to - @from) * d
