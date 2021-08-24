@@ -28,8 +28,8 @@ class Display : public RLayer
 
     Settings const& settings;
 
-    int w = 1440;
-    int h = 960;
+    //int w = 1440;
+    //int h = 960;
     std::array<float, 4> bg = {0, 0, 0.8, 1.0};
     std::array<float, 16> Id = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 

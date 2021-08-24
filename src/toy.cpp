@@ -6,6 +6,7 @@
 #include <mruby/value.h>
 
 #include <pix/gl_console.hpp>
+#include "pixel_console.hpp"
 
 #include "error.hpp"
 #include "mrb_tools.hpp"
@@ -232,10 +233,10 @@ bool Toy::render_loop()
             RTimer::default_timer->reset();
         }
         display->console->clear();
-        display->console->console->text(0, 0, e.text);
+        display->console->text(0, 0, e.text);
         int y = 2;
         for (auto& bt : e.backtrace) {
-            display->console->console->text(2, y++, bt);
+            display->console->text(2, y++, bt);
         }
     }
 

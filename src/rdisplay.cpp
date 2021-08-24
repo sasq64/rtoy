@@ -76,7 +76,7 @@ void Display::end_draw()
     gl::clearColor({bg});
     glClear(GL_COLOR_BUFFER_BIT);
 
-    gl::setViewport({w, h});
+    gl::setViewport({width, height});
     console->render();
     canvas->render();
     sprites->render();

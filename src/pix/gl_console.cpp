@@ -30,12 +30,12 @@ Console::Char GLConsole::get(int x, int y) const
     return grid[x + width * y];
 }
 
-Cursor GLConsole::text(int x, int y, std::string const& t)
-{
-    uint32_t fg = default_style.fg;
-    uint32_t bg = default_style.bg;
-    return text(x, y, t, fg, bg);
-}
+/* Cursor GLConsole::text(int x, int y, std::string const& t) */
+/* { */
+/*     uint32_t fg = default_style.fg; */
+/*     uint32_t bg = default_style.bg; */
+/*     return text(x, y, t, fg, bg); */
+/* } */
 
 Cursor GLConsole::text(
     int x, int y, std::string const& t, uint32_t fg, uint32_t bg)
@@ -104,13 +104,11 @@ void GLConsole::reset()
     set_tile_size(font->char_width, font->char_height);
 }
 
-GLConsole::GLConsole(int w, int h, Style _default_style)
-    : default_style(std::move(_default_style)),
-      font(std::make_shared<TextureFont>(
-          default_style.font.c_str(), default_style.font_size)),
+GLConsole::GLConsole(int w, int h, Style style)
+    : font(std::make_shared<TextureFont>(
+          style.font.c_str(), style.font_size)),
       frame_buffer(w, h)
 {
-
     width = 256;  // w / font->char_width;
     height = 256; // h / font->char_height;
 
@@ -121,10 +119,10 @@ GLConsole::GLConsole(int w, int h, Style _default_style)
     fflush(stdout);
     grid.resize(width * height);
     old_grid.resize(width * height);
-    fill(default_style.fg, default_style.bg);
+    fill(style.fg, style.bg);
     frame_buffer.set_target();
     fflush(stdout);
-    gl_wrap::clearColor({default_style.bg});
+    gl_wrap::clearColor({style.bg});
     glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

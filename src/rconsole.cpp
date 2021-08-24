@@ -2,6 +2,9 @@
 #include "mrb_tools.hpp"
 #include "pix/texture_font.hpp"
 #include "rimage.hpp"
+
+#include "pixel_console.hpp"
+
 #include <mruby/array.h>
 
 #include <coreutils/utf8.h>
@@ -11,11 +14,11 @@
 #include <pix/pix.hpp>
 
 RConsole::RConsole(int w, int h, Style style)
-    : RLayer{w, h}, console(std::make_shared<GLConsole>(w, h, style))
+    : RLayer{w, h},
+      console(std::make_shared<PixConsole>(256, 256, style.font, style.font_size))
 {
     default_fg = this->style.fg = gl::Color(style.fg).to_array();
     default_bg = this->style.bg = gl::Color(style.bg).to_array();
-    update();
     reset();
     /* trans = {0.0F, 0.0F}; */
     /* scale = {2.0F, 2.0F}; */
@@ -26,23 +29,24 @@ RConsole::RConsole(int w, int h, Style style)
 
 void RConsole::clear()
 {
-    console->fill(console->default_style.fg, console->default_style.bg);
-    //console->flush();
+    auto fg = gl::Color(style.fg).to_rgba();
+    auto bg = gl::Color(style.bg).to_rgba();
+    console->fill(fg, bg);
+    // console->flush();
     xpos = ypos = 0;
 }
 
-void RConsole::update_pos(Cursor const& cursor)
+void RConsole::update_pos(std::pair<int, int> const& cursor)
 {
-    xpos = cursor.x;
-    ypos = cursor.y;
+    xpos = cursor.first;
+    ypos = cursor.second;
     // Calculate visible size.
     // TODO: Include tile_size? wrap attributes ?
-    int w = static_cast<int>(static_cast<float>(width) /
-                             static_cast<float>(console->font->char_width) /
-                             scale[0]);
+    auto [char_width, char_height] = console->get_char_size();
+    int w = static_cast<int>(
+        static_cast<float>(width) / static_cast<float>(char_width) / scale[0]);
     int h = static_cast<int>(static_cast<float>(height) /
-                             static_cast<float>(console->font->char_height) /
-                             scale[1]);
+                             static_cast<float>(char_height) / scale[1]);
     while (xpos >= w) {
         xpos -= w;
         ypos++;
@@ -55,9 +59,9 @@ void RConsole::update_pos(Cursor const& cursor)
 
 void RConsole::text(std::string const& t)
 {
-    console->default_style = {
-        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
-    auto cursor = console->text(xpos, ypos, t);
+    auto fg = gl::Color(style.fg).to_rgba();
+    auto bg = gl::Color(style.bg).to_rgba();
+    auto cursor = console->text(xpos, ypos, t, fg, bg);
     update_pos(cursor);
 }
 
@@ -69,9 +73,9 @@ void RConsole::text(std::string const& t, uint32_t fg, uint32_t bg)
 
 void RConsole::text(int x, int y, std::string const& t)
 {
-    console->default_style = {
-        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
-    console->text(x, y, t);
+    auto fg = gl::Color(style.fg).to_rgba();
+    auto bg = gl::Color(style.bg).to_rgba();
+    console->text(x, y, t, fg, bg);
 }
 
 void RConsole::text(
@@ -94,18 +98,19 @@ void RConsole::scroll(int dy, int dx)
 void RConsole::render()
 {
     console->flush();
-    auto& program = gl_wrap::ProgramCache::get_instance().textured;
-    program.use();
-    console->frame_buffer.bind();
-    pix::set_colors(0xffffffff, 0);
-    pix::set_transform(transform);
-    gl::ProgramCache::get_instance().textured.use();
-    pix::draw_quad_invy();
+    console->render();
+    /* auto& program = gl_wrap::ProgramCache::get_instance().textured; */
+    /* program.use(); */
+    /* console->frame_buffer.bind(); */
+    /* pix::set_colors(0xffffffff, 0); */
+    /* pix::set_transform(transform); */
+    /* gl::ProgramCache::get_instance().textured.use(); */
+    /* pix::draw_quad_invy(); */
 }
 
-Console::Char RConsole::get(int x, int y) const
+uint32_t RConsole::get(int x, int y) const
 {
-    return console->get(x, y);
+    return console->get_char(x, y);
 }
 
 void RConsole::reg_class(mrb_state* ruby)
@@ -114,27 +119,6 @@ void RConsole::reg_class(mrb_state* ruby)
 
     MRB_SET_INSTANCE_TT(RConsole::rclass, MRB_TT_DATA);
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "buffer",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto [bufno] = mrb::get_args<int>(mrb);
-            if (bufno == ptr->current_buf) { return mrb_nil_value(); }
-
-            if (ptr->buffers.size() <= bufno) {
-                ptr->buffers.resize(bufno + 1);
-            }
-
-            ptr->buffers[ptr->current_buf] = ptr->console->grid;
-
-            ptr->current_buf = bufno;
-            auto& buf = ptr->buffers[bufno];
-            if (buf.empty()) { buf.resize(ptr->console->grid.size()); }
-            ptr->console->grid = buf;
-
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
     mrb_define_method(
         ruby, RConsole::rclass, "print",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -152,6 +136,17 @@ void RConsole::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_NONE());
+    mrb_define_method(
+        ruby, RConsole::rclass, "fill_bg",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          auto* ptr = mrb::self_to<RConsole>(self);
+          auto [bg] = mrb::get_args<mrb_value>(mrb);
+          ptr->style.bg = mrb::to_array<float, 4>(bg, mrb);
+          auto bcol = gl::Color(ptr->style.bg);
+          ptr->console->fill(bcol.to_rgba());
+          return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
     mrb_define_method(
         ruby, RConsole::rclass, "scroll",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -211,7 +206,7 @@ void RConsole::reg_class(mrb_state* ruby)
         ruby, RConsole::rclass, "get_tile",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto chr = mrb::method(&RConsole::get, mrb, self);
-            return mrb::to_value(static_cast<int>(chr.c), mrb);
+            return mrb::to_value(static_cast<int>(chr), mrb);
         },
         MRB_ARGS_REQ(2));
 
@@ -219,7 +214,7 @@ void RConsole::reg_class(mrb_state* ruby)
         ruby, RConsole::rclass, "get_char",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto chr = mrb::method(&RConsole::get, mrb, self);
-            std::u32string s = {chr.c, 0};
+            std::u32string s = {chr, 0};
             auto str = utils::utf8_encode(s);
             return mrb::to_value(str, mrb);
         },
@@ -239,8 +234,8 @@ void RConsole::reg_class(mrb_state* ruby)
         ruby, RLayer::rclass, "get_tile_size",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
-            std::array<int, 2> data{
-                ptr->console->tile_width, ptr->console->tile_height};
+            auto [tw, th] = ptr->console->get_char_size();
+            std::array<unsigned, 2> data{tw, th};
             return mrb::to_value(data, mrb);
         },
         MRB_ARGS_NONE());
@@ -271,14 +266,15 @@ void RConsole::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RConsole::rclass, "clear_line",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto [y] = mrb::get_args<int>(mrb);
-            auto w = ptr->console->width;
-            auto i = w * y;
-            for (size_t x = 0; x < w; x++) {
-                ptr->console->grid[i++] = {' ', ptr->console->default_style.fg,
-                    ptr->console->default_style.bg};
-            }
+            /* auto* ptr = mrb::self_to<RConsole>(self); */
+            /* auto [y] = mrb::get_args<int>(mrb); */
+            /* auto w = ptr->console->width; */
+            /* auto i = w * y; */
+            /* auto fg = gl::Color(ptr->style.fg).to_rgba(); */
+            /* auto bg = gl::Color(ptr->style.bg).to_rgba(); */
+            /* for (size_t x = 0; x < w; x++) { */
+            /*     ptr->console->grid[i++] = {' ', fg, bg}; */
+            /* } */
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -301,29 +297,30 @@ void RConsole::reg_class(mrb_state* ruby)
             mrb_get_args(mrb, "id", &index, &image, &RImage::dt);
             auto* rconsole = mrb::self_to<RConsole>(self);
             image->upload();
-            rconsole->console->font->add_tile(index, image->texture);
+            //rconsole->console->font->add_tile(index, image->texture);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
 }
 
-void RConsole::update()
-{
-    console->default_style = {
-        gl::Color(style.fg).to_rgba(), gl::Color(style.bg).to_rgba()};
+void RConsole::update_tx() {
+    RLayer::update_tx();
+    console->set_scale({scale[0], scale[1]});
 }
 
 void RConsole::reset()
 {
     RLayer::reset();
 
-    console->reset();
-    console->font->clear();
+    //console->reset();
+    //console->font->clear();
+    //
+    auto [_, tile_height] = console->get_char_size();
 
-    int lines = height / console->tile_height;
+    int lines = height / tile_height;
     float s = 1.0;
     int total = lines;
-    while(total > 50) {
+    while (total > 50) {
         s += 1.0;
         total -= lines;
     }
@@ -333,7 +330,6 @@ void RConsole::reset()
 
     style.fg = default_fg;
     style.bg = default_bg;
-    update();
 
     clear();
 }

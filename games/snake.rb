@@ -62,8 +62,8 @@ def step_worm
 end
 
 scale(4.0, 2.0)
-display.bg = Color::BLACK
-display.console.fg = Color::GREEN
+console.fill_bg(Color::BLACK)
+console.fg = Color::GREEN
 clear()
 draw_box(0,TOP, WIDTH, HEIGHT-TOP)
 

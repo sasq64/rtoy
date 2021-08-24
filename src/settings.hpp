@@ -16,7 +16,7 @@ struct Settings
     path console_font = "data/unscii-16.ttf";
     int font_size = 16;
     int display_width = 1920;
-    int display_height = 1080;
+    int display_height = 1024;
     std::string boot_cmd;
     bool console_benchmark = false;
 };

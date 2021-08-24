@@ -205,7 +205,7 @@ class Editor
             i = y + @scrollpos
             break if i >= @lines.length
             fg = Color::WHITE
-            bg = Color::TRANSP
+            bg = Color::BLUE
             fg = Color::LIGHT_BLUE if @lines[i][0] == '#'.ord
             @con.text(0, y, @lines[i].pack('U*'), fg, bg) if i < @lines.length
         end 
@@ -217,7 +217,7 @@ class Editor
 
         @con.bg = Color::RED
         @con.clear_line(count)
-        @con.bg = Color::TRANSP
+        @con.bg = Color::BLUE
         @con.text(0, count, "LINE:#{@ypos+1} - F5 = Run - ESC = Exit",
                   Color::WHITE, Color::RED);
     end
@@ -274,6 +274,7 @@ class Editor
         @line = @lines[0]
 
         @con.clear
+        @con.fill_bg(Color::BLUE)
         @con.goto_xy(0,0)
         @key_i = on_key { |key,mod| editor_key(key, mod) }
         @draw_i = on_draw { |t| editor_draw(t) }

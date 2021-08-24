@@ -32,7 +32,6 @@ protected:
     int width = -1;
     int height = -1;
 
-    void update_tx();
 
 public:
     virtual void reset();
@@ -44,6 +43,6 @@ public:
 
     RStyle style{{1,1,1,1}, {0,0,0,0}, 2.0F};
     virtual void render() {}
-    virtual void update() {}
+    virtual void update_tx();
 };
 
