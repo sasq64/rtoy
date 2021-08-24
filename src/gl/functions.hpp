@@ -183,14 +183,14 @@ template <size_t N>
 std::array<GLuint, N> genVertexArrays()
 {
     std::array<GLuint, N> res;
-    glGenVertexArrays(N, res.data());
+    //glGenVertexArrays(N, res.data());
     return res;
 }
 
 inline GLuint genVertexArray()
 {
     GLuint res; // NOLINT
-    glGenVertexArrays(1, &res);
+    //glGenVertexArrays(1, &res);
     return res;
 }
 
