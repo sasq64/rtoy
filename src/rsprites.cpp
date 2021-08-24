@@ -51,6 +51,8 @@ void RSprites::render()
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
     // pix::set_transform(transform);
+    auto& textured = gl::ProgramCache::get_instance().textured;
+    textured.use();
     float last_alpha = -1;
     for (auto const& sprite : sprites) {
         sprite->texture.bind();
@@ -58,13 +60,10 @@ void RSprites::render()
 
             gl::Color fg = style.fg;
             fg.alpha = sprite->alpha;
-
-            pix::set_colors(fg, style.bg);
+            textured.setUniform("in_color", fg);
             last_alpha = sprite->alpha;
         }
-        pix::set_transform(sprite->transform);
-        auto& program = gl::ProgramCache::get_instance().textured;
-        program.use();
+        textured.setUniform("in_transform", sprite->transform);
         pix::draw_quad_uvs(sprite->texture.uvs);
     }
 }

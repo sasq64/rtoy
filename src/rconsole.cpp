@@ -306,6 +306,7 @@ void RConsole::reg_class(mrb_state* ruby)
 void RConsole::update_tx() {
     RLayer::update_tx();
     console->set_scale({scale[0], scale[1]});
+    console->set_offset({trans[0], trans[1]});
 }
 
 void RConsole::reset()

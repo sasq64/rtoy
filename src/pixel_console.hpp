@@ -351,5 +351,6 @@ public:
         float w = scale.first * static_cast<float>(width * char_width);
         float h = scale.second * static_cast<float>(height * char_height);
         pix::draw_quad_impl(offset.first, offset.second, w, h);
+        glEnable(GL_BLEND);
     }
 };

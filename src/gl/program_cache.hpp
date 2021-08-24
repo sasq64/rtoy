@@ -50,11 +50,11 @@ struct ProgramCache
             #endif
         })gl"};
 
-#ifdef EMSCRIPTEN
-    static const inline std::string version = "#version 150 es\n";
-#else
+//#ifdef EMSCRIPTEN
+//    static const inline std::string version = "#version 150 es\n";
+//#else
     static const inline std::string version = "";
-#endif
+//#endif
 
     Program get_program(std::string_view prefix) const
     {

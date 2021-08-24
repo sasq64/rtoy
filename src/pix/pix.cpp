@@ -39,8 +39,8 @@ void draw_with_uvs()
     gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
     gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
     gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    //pos.disable();
-    //uv.disable();
+    pos.disable();
+    uv.disable();
 }
 
 void draw_quad_invy()
@@ -77,14 +77,8 @@ void draw_quad()
 
 void draw_quad_uvs(std::array<float, 8> const& uvs)
 {
-    float x0 = -1;
-    float y0 = -1;
-
-    float x1 = 1;
-    float y1 = 1;
-
     std::array vertexData{
-        x0, y0, x1, y0, x1, y1, x0, y1, 0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
+        -1.F, -1.F, 1.F, -1.F, 1.F, 1.F, -1.F, 1.F, 0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     std::copy(uvs.begin(), uvs.end(), vertexData.begin() + 8);
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
