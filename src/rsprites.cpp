@@ -1,6 +1,7 @@
 
 #include "rsprites.hpp"
 
+#include "gl/buffer.hpp"
 #include "mrb_tools.hpp"
 #include "rimage.hpp"
 
@@ -54,6 +55,10 @@ void RSprites::render()
     auto& textured = gl::ProgramCache::get_instance().textured;
     textured.use();
     float last_alpha = -1;
+    auto pos = textured.getAttribute("in_pos");
+    auto uv = textured.getAttribute("in_uv");
+    pos.enable();
+    uv.enable();
 
     for (auto& [_, batch] : batches) {
         batch.texture->bind();
@@ -69,9 +74,15 @@ void RSprites::render()
                 sprite->update_tx(width, height);
             }
             textured.setUniform("in_transform", sprite->transform);
-            pix::draw_quad_uvs(sprite->uvs);
+            sprite->vbo.bind();
+            gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
+            gl::vertexAttrib(
+                uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
+            gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
         }
     }
+    pos.disable();
+    uv.disable();
 }
 
 RSprite* RSprites::add_sprite(RImage* image)
@@ -83,9 +94,14 @@ RSprite* RSprites::add_sprite(RImage* image)
         batch.texture = image->texture.tex;
         batch.image = image->image;
     }
+    auto& uvs = image->texture.uvs;
+    std::array vertexData{-1.F, -1.F, 1.F, -1.F, 1.F, 1.F, -1.F, 1.F, 0.F, 0.F,
+        1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
+    std::copy(uvs.begin(), uvs.end(), vertexData.begin() + 8);
 
     batch.sprites.push_back(
-        new RSprite{static_cast<float>(width), static_cast<float>(height)});
+        new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData},
+            static_cast<float>(width), static_cast<float>(height)});
     auto* spr = batch.sprites.back();
     spr->parent = &batch;
     spr->uvs = image->texture.uvs;
@@ -93,6 +109,7 @@ RSprite* RSprites::add_sprite(RImage* image)
     spr->height = image->height();
     spr->trans[0] = image->x();
     spr->trans[1] = image->y();
+
     spr->update_tx(width, height);
     return spr;
 }

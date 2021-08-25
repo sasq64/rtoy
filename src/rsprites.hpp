@@ -1,5 +1,6 @@
 
 #pragma once
+#include "gl/buffer.hpp"
 #include "rlayer.hpp"
 
 #include <mruby.h>
@@ -15,6 +16,7 @@ struct SpriteBatch;
 
 struct RSprite
 {
+    gl_wrap::ArrayBuffer<GL_STATIC_DRAW> vbo;
     float width{};
     float height{};
     float alpha = 1.0F;
