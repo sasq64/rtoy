@@ -17,7 +17,7 @@
 mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {}};
 mrb_data_type RSprites::dt{"Sprites", [](mrb_state*, void* data) {}};
 
-void RSprite::update_tx()
+void RSprite::update_tx(float screen_width, float screen_height)
 {
     glm::mat4x4 m(1.0F);
     m = glm::scale(m, glm::vec3(2.0 / screen_width, 2.0 / screen_height, 1.0));
@@ -36,17 +36,17 @@ RSprites::RSprites(int w, int h) : RLayer{w, h} {}
 void RSprites::reset()
 {
     RLayer::reset();
-    sprites.clear();
+    batches.clear();
 }
 
 void RSprites::clear()
 {
-    sprites.clear();
+    batches.clear();
 }
 
 void RSprites::render()
 {
-    if (sprites.empty()) { return; }
+    if (batches.empty()) { return; }
     glEnable(GL_BLEND);
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
@@ -54,31 +54,35 @@ void RSprites::render()
     auto& textured = gl::ProgramCache::get_instance().textured;
     textured.use();
     float last_alpha = -1;
-    for (auto const& sprite : sprites) {
-        sprite->texture.bind();
-        if (last_alpha != sprite->alpha) {
 
-            gl::Color fg = style.fg;
-            fg.alpha = sprite->alpha;
-            textured.setUniform("in_color", fg);
-            last_alpha = sprite->alpha;
+    for (auto& [_, batch] : batches) {
+        batch.texture->bind();
+        for (auto const& sprite : batch.sprites) {
+            if (last_alpha != sprite->alpha) {
+                gl::Color fg = style.fg;
+                fg.alpha = sprite->alpha;
+                textured.setUniform("in_color", fg);
+                last_alpha = sprite->alpha;
+            }
+            textured.setUniform("in_transform", sprite->transform);
+            pix::draw_quad_uvs(sprite->uvs);
         }
-        textured.setUniform("in_transform", sprite->transform);
-        pix::draw_quad_uvs(sprite->texture.uvs);
     }
 }
 
 RSprite* RSprites::add_sprite(RImage* image)
 {
     image->upload();
-    sprites.push_back(new RSprite{image->image, image->texture,
-        static_cast<float>(width), static_cast<float>(height)});
-    auto* spr = sprites.back();
+
+    auto& batch = batches[image->texture.tex->tex_id];
+
+    batch.sprites.push_back(new RSprite{static_cast<float>(width), static_cast<float>(height)});
+    auto* spr = batch.sprites.back();
     spr->width = image->width();
     spr->height = image->height();
     spr->trans[0] = image->x();
     spr->trans[1] = image->y();
-    spr->update_tx();
+    spr->update_tx(batch.screen_width, batch.screen_height);
     return spr;
 }
 

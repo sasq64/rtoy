@@ -8,20 +8,17 @@
 #include <gl/texture.hpp>
 #include <pix/pix.hpp>
 
+#include <unordered_map>
+
 struct RImage;
 
 struct RSprite
 {
-    pix::Image image;
-    gl_wrap::TexRef texture;
-
-    float screen_width{};
-    float screen_height{};
-
     float width{};
     float height{};
     float alpha = 1.0F;
 
+    std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     std::array<float, 2> trans = {0.0F, 0.0F};
@@ -32,12 +29,22 @@ struct RSprite
     static inline RClass* rclass;
     static mrb_data_type dt;
 
-    void update_tx();
+    void update_tx(float screen_width, float screen_height);
+};
+
+struct SpriteBatch
+{
+    float screen_width{};
+    float screen_height{};
+
+    pix::Image image;
+    std::shared_ptr<gl_wrap::Texture> texture;
+    std::vector<RSprite*> sprites;
 };
 
 class RSprites : public RLayer
 {
-    std::vector<RSprite*> sprites;
+    std::unordered_map<int, SpriteBatch> batches;
     RSprite* add_sprite(RImage* image);
     void remove_sprite(RSprite* spr);
 
