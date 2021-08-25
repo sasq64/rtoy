@@ -11,12 +11,15 @@
 #include <unordered_map>
 
 struct RImage;
+struct SpriteBatch;
 
 struct RSprite
 {
     float width{};
     float height{};
     float alpha = 1.0F;
+    bool dirty = false;
+    SpriteBatch* parent = nullptr;
 
     std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     std::array<float, 16> transform{
@@ -34,9 +37,6 @@ struct RSprite
 
 struct SpriteBatch
 {
-    float screen_width{};
-    float screen_height{};
-
     pix::Image image;
     std::shared_ptr<gl_wrap::Texture> texture;
     std::vector<RSprite*> sprites;

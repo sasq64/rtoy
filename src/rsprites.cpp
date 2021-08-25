@@ -64,6 +64,10 @@ void RSprites::render()
                 textured.setUniform("in_color", fg);
                 last_alpha = sprite->alpha;
             }
+            if (sprite->dirty) {
+                sprite->dirty = false;
+                sprite->update_tx(width, height);
+            }
             textured.setUniform("in_transform", sprite->transform);
             pix::draw_quad_uvs(sprite->uvs);
         }
@@ -75,21 +79,31 @@ RSprite* RSprites::add_sprite(RImage* image)
     image->upload();
 
     auto& batch = batches[image->texture.tex->tex_id];
+    if (batch.texture == nullptr) {
+        batch.texture = image->texture.tex;
+        batch.image = image->image;
+    }
 
-    batch.sprites.push_back(new RSprite{static_cast<float>(width), static_cast<float>(height)});
+    batch.sprites.push_back(
+        new RSprite{static_cast<float>(width), static_cast<float>(height)});
     auto* spr = batch.sprites.back();
+    spr->parent = &batch;
+    spr->uvs = image->texture.uvs;
     spr->width = image->width();
     spr->height = image->height();
     spr->trans[0] = image->x();
     spr->trans[1] = image->y();
-    spr->update_tx(batch.screen_width, batch.screen_height);
+    spr->update_tx(width, height);
     return spr;
 }
 
 void RSprites::remove_sprite(RSprite* spr)
 {
+    // TODO: Optimize
+    auto& sprites = spr->parent->sprites;
     sprites.erase(
         std::remove(sprites.begin(), sprites.end(), spr), sprites.end());
+    if (sprites.empty()) {}
 }
 
 void RSprites::reg_class(mrb_state* ruby)
@@ -128,7 +142,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto [y] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->trans[1] = y;
-            rspr->update_tx();
+            rspr->dirty = true;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -147,7 +161,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto [x] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->trans[0] = x;
-            rspr->update_tx();
+            rspr->dirty = true;
             // rspr->pos.first = x;
             return mrb_nil_value();
         },
@@ -164,26 +178,28 @@ void RSprites::reg_class(mrb_state* ruby)
         ruby, RSprite::rclass, "img",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rspr = mrb::self_to<RSprite>(self);
-            auto* rimage = new RImage(rspr->image);
+            auto* rimage = new RImage(rspr->parent->image);
+            rimage->texture.tex = rspr->parent->texture;
+            rimage->texture.uvs = rspr->uvs;
             return mrb::new_data_obj(mrb, rimage);
         },
         MRB_ARGS_NONE());
 
-    mrb_define_method(
-        ruby, RSprite::rclass, "img=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* spr = mrb::self_to<RSprite>(self);
-            RImage* image = nullptr;
-            mrb_get_args(mrb, "d", &image, &RImage::dt);
-            image->upload();
-            spr->image = image->image;
-            spr->texture = image->texture;
-            spr->width = image->width();
-            spr->height = image->height();
-            spr->update_tx();
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "img=", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* spr = mrb::self_to<RSprite>(self); */
+    /*         RImage* image = nullptr; */
+    /*         mrb_get_args(mrb, "d", &image, &RImage::dt); */
+    /*         image->upload(); */
+    /*         spr->image = image->image; */
+    /*         spr->texture = image->texture; */
+    /*         spr->width = image->width(); */
+    /*         spr->height = image->height(); */
+    /*         spr->dirty = true; */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(1)); */
 
     mrb_define_method(
         ruby, RSprite::rclass, "alpha=",
@@ -208,7 +224,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto [x] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->scale[0] = x;
-            rspr->update_tx();
+            rspr->dirty = true;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -218,7 +234,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto [y] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->scale[1] = y;
-            rspr->update_tx();
+            rspr->dirty = true;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -228,7 +244,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto [x] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->scale[0] = rspr->scale[1] = x;
-            rspr->update_tx();
+            rspr->dirty = true;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -247,7 +263,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->scale[0] = x;
             rspr->scale[1] = y;
-            rspr->update_tx();
+            rspr->dirty = true;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
@@ -258,7 +274,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto [x] = mrb::get_args<float>(mrb);
             auto* rsprite = mrb::self_to<RSprite>(self);
             rsprite->rot = static_cast<float>(x);
-            rsprite->update_tx();
+            rsprite->dirty = true;
             return mrb::to_value(rsprite->rot, mrb);
         },
         MRB_ARGS_REQ(1));
@@ -277,7 +293,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto [x, y] = mrb::get_args<float, float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->trans = {static_cast<float>(x), static_cast<float>(y)};
-            rspr->update_tx();
+            rspr->dirty = true;
             return self;
         },
         MRB_ARGS_REQ(2));
