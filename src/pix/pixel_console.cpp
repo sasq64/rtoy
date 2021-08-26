@@ -146,7 +146,7 @@ void PixConsole::set_tile_size(int w, int h)
     for (char32_t c = 0x20; c <= 0x7f; c++) {
         add_char(c);
     }
-    font_texture = gl_wrap::Texture{texture_width, texture_height, data};
+    dirty = true;
 }
 
 void PixConsole::reset()
@@ -190,7 +190,7 @@ void PixConsole::set_tile_image(
         src += (image.width - w);
         h--;
     }
-    font_texture = gl_wrap::Texture{texture_width, texture_height, data};
+    dirty = true;
 }
 
 std::pair<int, int> PixConsole::text(int x, int y, std::string const& t)
