@@ -46,8 +46,8 @@ public:
                 (settings.screen == ScreenType::Full
                         ? SDL_WINDOW_FULLSCREEN_DESKTOP
                         : 0));
-        //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDL_GL_CreateContext(window);
         GLenum err = glewInit();
         return std::make_shared<SDLWindow>(window);
@@ -144,6 +144,9 @@ public:
         want.samples = 4096;
         want.userdata = this;
         want.callback = [](void* userdata, Uint8* stream, int len) {
+            if (stream == nullptr || len < 0) {
+                fmt::print("{}/{}\n", stream, len);
+            };
             auto* sys = static_cast<SDLSystem*>(userdata);
             if (sys->audio_callback) {
                 sys->audio_callback(reinterpret_cast<float*>(stream), len / 4);

@@ -1,6 +1,6 @@
 
 #include "src/system.hpp"
-#include "src/pixel_console.hpp"
+#include "src/pix/pixel_console.hpp"
 
 #include <gl/color.hpp>
 #include <gl/functions.hpp>

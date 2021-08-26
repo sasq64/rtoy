@@ -15,7 +15,6 @@ class Repl
     def repl_run()
         clear()
         puts "R-Toy READY. Type 'help' if you need it."
-        canvas.circle(display.width - 100, 100, 50)
         _repl_b = binding
         rl = LineReader.new('toy.history')
         while true do

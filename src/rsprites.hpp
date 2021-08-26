@@ -46,7 +46,7 @@ struct SpriteBatch
 
 class RSprites : public RLayer
 {
-    std::unordered_map<int, SpriteBatch> batches;
+    std::unordered_map<GLuint, SpriteBatch> batches;
     RSprite* add_sprite(RImage* image);
     void remove_sprite(RSprite* spr);
 

@@ -5,8 +5,7 @@
 #include <mruby/compile.h>
 #include <mruby/value.h>
 
-#include <pix/gl_console.hpp>
-#include "pixel_console.hpp"
+#include <pix/pixel_console.hpp>
 
 #include "error.hpp"
 #include "mrb_tools.hpp"

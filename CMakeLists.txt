@@ -120,7 +120,7 @@ add_library(pix STATIC
     src/pix/font.cpp
     src/pix/texture_font.cpp
     src/pix/tile_renderer.cpp
-    src/pix/gl_console.cpp
+    src/pix/pixel_console.cpp
     external/lodepng/lodepng.cpp)
 
 if(EMSCRIPTEN)

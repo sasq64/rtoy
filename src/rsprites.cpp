@@ -120,7 +120,10 @@ void RSprites::remove_sprite(RSprite* spr)
     auto& sprites = spr->parent->sprites;
     sprites.erase(
         std::remove(sprites.begin(), sprites.end(), spr), sprites.end());
-    if (sprites.empty()) {}
+    if (sprites.empty()) {
+        batches.erase(spr->parent->texture->tex_id);
+        fmt::print("Removing batch, {} left\n", batches.size());
+    }
 }
 
 void RSprites::reg_class(mrb_state* ruby)
