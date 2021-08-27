@@ -71,6 +71,9 @@ class PiSystem : public System
 
     std::unique_ptr<LinuxPlayer> player;
 
+    int32_t display_width;
+    int32_t display_height;
+
 public:
     std::shared_ptr<Screen> init_screen(Settings const& settings) override
     {
@@ -82,13 +85,14 @@ public:
         VC_RECT_T dst_rect;
         VC_RECT_T src_rect;
 
-        uint32_t display_width;
-        uint32_t display_height;
-
+        uint32_t dw;
+        uint32_t dh;
         // create an EGL window surface, passing context width/height
-        int success = graphics_get_display_size(
-            0 /* LCD */, &display_width, &display_height);
+        int success = graphics_get_display_size(0 /* LCD */, &dw, &dh);
         if (success < 0) throw display_exception("Cound not get display size");
+
+        display_width = dw;
+        display_height = dh;
 
         dst_rect.x = 0;
         dst_rect.y = 0;
@@ -174,6 +178,9 @@ public:
     }
 
     bool shift_down = false;
+    int mouse_x = 0;
+    int mouse_y = 0;
+    int mouse_buttons = 0;
 
     std::deque<AnyEvent> events;
 
@@ -213,16 +220,40 @@ public:
                     auto* ptr = (struct input_event*)&buf[0];
 
                     while (rc >= sizeof(struct input_event)) {
-                        // fmt::print("TYPE {} CODE {} VALUE {}\n", ptr->type,
-                        // ptr->code, ptr->value);
+                        if (ptr->type == EV_REL) {
+                            if(ptr->code == REL_X) {
+                                mouse_x += ptr->value;
+                                if(mouse_x > display_width) {
+                                    mouse_x = display_width;
+                                } else if (mouse_x < 0) {
+                                    mouse_x = 0;
+                                }
+                                putEvent(MoveEvent{mouse_x, mouse_y, mouse_buttons});
+                            } else if(ptr->code == REL_Y) {
+                                mouse_y += ptr->value;
+                                if(mouse_y > display_height) {
+                                    mouse_y = display_height;
+                                } else if (mouse_y < 0) {
+                                    mouse_y = 0;
+                                }
+                                putEvent(MoveEvent{mouse_x, mouse_y, mouse_buttons});
+                            }
+                        } else
                         if (ptr->type == EV_KEY) {
                             uint32_t k = ptr->code;
                             int mods = 0;
                             if (k == KEY_LEFTSHIFT || k == KEY_RIGHTSHIFT) {
                                 shift_down = ptr->value != 0;
                             }
+                            if(k == BTN_LEFT) {
+                                if (ptr->value == 0) {
+                                    mouse_buttons &= (~1);
+                                } else {
+                                    mouse_buttons |= 1;
+                                    putEvent(ClickEvent{mouse_x, mouse_y, mouse_buttons});
+                                }
+                            }
                             if (ptr->value) {
-
                                 mods = 0;
                                 if (shift_down) mods |= 1;
                                 auto it = mappings.find(k | (mods << 24));
@@ -231,8 +262,13 @@ public:
                                         it->second);
                                     k = it->second;
                                     putEvent(KeyEvent{k, 0});
+                                } else {
+                                    fmt::print("Unhandled key {:x}\n", ptr->code);
                                 }
                             }
+                        } else if(ptr->type != 0) {
+                            fmt::print("TYPE {} CODE {} VALUE {}\n", ptr->type,
+                            ptr->code, ptr->value);
                         }
                         ptr++;
                         rc -= sizeof(struct input_event);
@@ -257,7 +293,7 @@ public:
         std::function<void(float*, size_t)> const& fcb) override
     {
 
-        player->play([&](int16_t* data, size_t sz) {
+        player->play([fcb](int16_t* data, size_t sz) {
             std::array<float, 32768> fa; // NOLINT
             fcb(fa.data(), sz);
             for (int i = 0; i < sz; i++) {

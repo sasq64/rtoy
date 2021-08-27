@@ -179,6 +179,7 @@ target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)
 target_link_options(${TARGET} PRIVATE -L${FLITE_LIB}/lib)
 target_link_libraries(${TARGET} PRIVATE
     pix
+    asound
     #music
     flite_cmu_us_kal
     flite_usenglish
