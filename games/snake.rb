@@ -61,6 +61,7 @@ def step_worm
     c
 end
 
+#tween(console).to(scale: [4,2])
 scale(4.0, 2.0)
 console.fill_bg(Color::BLACK)
 console.fg = Color::GREEN

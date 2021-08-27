@@ -1,21 +1,23 @@
-#include "system.hpp"
 #include "keycodes.h"
+#include "player_linux.h"
+#include "system.hpp"
 #include <fmt/format.h>
 
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
-#include <linux/input.h>
-#include <fcntl.h>
 #include <bcm_host.h>
 #include <cctype>
 #include <deque>
+#include <fcntl.h>
 #include <filesystem>
+#include <linux/input.h>
 #include <unordered_map>
 #include <vector>
 
 namespace fs = std::filesystem;
 
-class display_exception : public std::exception {
+class display_exception : public std::exception
+{
 public:
     display_exception(const std::string& msg) : msg(msg) {}
     virtual const char* what() const throw() { return msg.c_str(); }
@@ -24,8 +26,9 @@ private:
     std::string msg;
 };
 
-/*constexpr */ bool test_bit(const std::vector<uint8_t> &v, int n) {
-	return (v[n/8] & (1<<(n%8))) != 0;
+/*constexpr */ bool test_bit(const std::vector<uint8_t>& v, int n)
+{
+    return (v[n / 8] & (1 << (n % 8))) != 0;
 }
 
 bool initEGL(EGLConfig& eglConfig, EGLContext& eglContext,
@@ -38,20 +41,21 @@ class PiScreen : public Screen
     EGLSurface eglSurface;
     int width;
     int height;
+
 public:
-    PiScreen(EGLDisplay d, EGLSurface s, int w, int h) : eglDisplay(d), eglSurface(s), width(w), height(h) {}
+    PiScreen(EGLDisplay d, EGLSurface s, int w, int h)
+        : eglDisplay(d), eglSurface(s), width(w), height(h)
+    {}
     void swap() override
     {
-        if(eglDisplay != EGL_NO_DISPLAY) {
+        if (eglDisplay != EGL_NO_DISPLAY) {
             eglSwapBuffers(eglDisplay, eglSurface);
-            //eglQuerySurface(eglDisplay, eglSurface, EGL_WIDTH, &screenWidth);
-            //eglQuerySurface(eglDisplay, eglSurface, EGL_HEIGHT, &screenHeight);
+            // eglQuerySurface(eglDisplay, eglSurface, EGL_WIDTH, &screenWidth);
+            // eglQuerySurface(eglDisplay, eglSurface, EGL_HEIGHT,
+            // &screenHeight);
         }
     }
-    std::pair<int, int> get_size() override
-    {
-        return {width, height};
-    }
+    std::pair<int, int> get_size() override { return {width, height}; }
 };
 
 class PiSystem : public System
@@ -64,6 +68,8 @@ class PiSystem : public System
     EGLSurface eglSurface;
 
     std::vector<int> fdv;
+
+    std::unique_ptr<LinuxPlayer> player;
 
 public:
     std::shared_ptr<Screen> init_screen(Settings const& settings) override
@@ -119,7 +125,8 @@ public:
         vc_dispmanx_update_submit_sync(dispman_update);
 
         initEGL(eglConfig, eglContext, eglDisplay, eglSurface, &nativewindow);
-        return std::make_shared<PiScreen>(eglDisplay, eglSurface, display_width, display_height);
+        return std::make_shared<PiScreen>(
+            eglDisplay, eglSurface, display_width, display_height);
     }
 
     void init_input(Settings const& settings) override
@@ -151,84 +158,19 @@ public:
                         ::close(fd);
                     }
                 }
-                //fmt::print("{}, {:02x} -- {:02x}\n", p.path().string(), evbit, keybit);
+                // fmt::print("{}, {:02x} -- {:02x}\n", p.path().string(),
+                // evbit, keybit);
             }
         }
 
         fmt::print("Found {} devices with keys\n", fdv.size());
     }
-    static inline std::unordered_map<int, int> translate = {
-        { 'a', KEY_A },
-        { 'b', KEY_B },
-        { 'c', KEY_C },
-        { 'd', KEY_D },
-        { 'e', KEY_E },
-        { 'f', KEY_F },
-        { 'g', KEY_G },
-        { 'h', KEY_H },
-        { 'i', KEY_I },
-        { 'j', KEY_J },
-        { 'k', KEY_K },
-        { 'l', KEY_L },
-        { 'm', KEY_M },
-        { 'n', KEY_N },
-        { 'o', KEY_O },
-        { 'p', KEY_P },
-        { 'q', KEY_Q },
-        { 'r', KEY_R },
-        { 's', KEY_S },
-        { 't', KEY_T },
-        { 'u', KEY_U },
-        { 'v', KEY_V },
-        { 'w', KEY_W },
-        { 'x', KEY_X },
-        { 'y', KEY_Y },
-        { 'z', KEY_Z },
-        { '0', KEY_0 },
-
-        { '-', KEY_MINUS },
-        { '=', KEY_EQUAL },
-        { '[', KEY_LEFTBRACE },
-        { ']', KEY_LEFTBRACE },
-        { '\\', KEY_BACKSLASH },
-        { ';', KEY_SEMICOLON },
-        { ',', KEY_COMMA },
-        { '.', KEY_DOT },
-        { '/', KEY_SLASH },
-        { '\'', KEY_APOSTROPHE },
-        { RKEY_F11, KEY_F11 },
-        { RKEY_F12, KEY_F12 },
-//        { BTN_LEFT, CLICK },
-//        { BTN_RIGHT, RIGHT_CLICK },
-        { RKEY_ENTER, KEY_ENTER },
-        { RKEY_SPACE, KEY_SPACE },
-        { RKEY_PAGEUP, KEY_PAGEUP },
-        { RKEY_PAGEDOWN, KEY_PAGEDOWN },
-        { RKEY_RIGHT, KEY_RIGHT },
-        { RKEY_LEFT, KEY_LEFT },
-        { RKEY_DOWN, KEY_DOWN },
-        { RKEY_UP, KEY_UP },
-        { RKEY_ESCAPE, KEY_ESC },
-        { RKEY_BACKSPACE, KEY_BACKSPACE },
-        { RKEY_DELETE, KEY_DELETE },
-        { RKEY_TAB, KEY_TAB },
-        { RKEY_END, KEY_END },
-        { RKEY_HOME, KEY_HOME },
-        { RKEY_LSHIFT, KEY_LEFTSHIFT },
-        { RKEY_RSHIFT, KEY_RIGHTSHIFT },
-        { RKEY_LWIN, KEY_LEFTMETA },
-        { RKEY_RWIN, KEY_RIGHTMETA },
-        { RKEY_LALT, KEY_LEFTALT },
-        { RKEY_RALT, KEY_RIGHTALT },
-        { RKEY_LCTRL, KEY_LEFTCTRL},
-        { RKEY_RCTRL, KEY_RIGHTCTRL }
-    };
 
     std::unordered_map<uint32_t, uint32_t> mappings;
 
     void map_key(uint32_t code, uint32_t target, int mods) override
     {
-        mappings[code | (mods<<24)] = target;
+        mappings[code | (mods << 24)] = target;
     }
 
     bool shift_down = false;
@@ -243,13 +185,13 @@ public:
 
     AnyEvent poll_events() override
     {
-		int maxfd = -1;
+        int maxfd = -1;
 
-		fd_set readset;
-		struct timeval tv;
+        fd_set readset;
+        struct timeval tv;
 
         std::vector<uint8_t> buf(256);
-        if(!events.empty()) {
+        if (!events.empty()) {
             auto e = events.front();
             events.pop_front();
             return e;
@@ -270,9 +212,9 @@ public:
                     int rc = read(fd, &buf[0], sizeof(struct input_event) * 4);
                     auto* ptr = (struct input_event*)&buf[0];
 
-
                     while (rc >= sizeof(struct input_event)) {
-                        //fmt::print("TYPE {} CODE {} VALUE {}\n", ptr->type, ptr->code, ptr->value);
+                        // fmt::print("TYPE {} CODE {} VALUE {}\n", ptr->type,
+                        // ptr->code, ptr->value);
                         if (ptr->type == EV_KEY) {
                             uint32_t k = ptr->code;
                             int mods = 0;
@@ -282,34 +224,14 @@ public:
                             if (ptr->value) {
 
                                 mods = 0;
-                                if(shift_down) mods |= 1;
-                                auto it = mappings.find(k | (mods<<24));
-                                if(it != mappings.end()) {
+                                if (shift_down) mods |= 1;
+                                auto it = mappings.find(k | (mods << 24));
+                                if (it != mappings.end()) {
                                     fmt::print("Converted to {:x} > {:x}\n", k,
-                                            it->second);
+                                        it->second);
                                     k = it->second;
                                     putEvent(KeyEvent{k, 0});
                                 }
-
-                                /* if (k >= KEY_1 && k <= KEY_9) { */
-                                /*     k += ('1' - KEY_1); */
-                                /* } else if (k >= KEY_F1 && k <= KEY_F10) { */
-                                /*     fmt::print("F "); */
-                                /*     k = k + RKEY_F1 - KEY_F1; */
-                                /* } else { */
-                                /*     for (auto t : translate) { */
-                                /*         if (t.second == k) { */
-                                /*             k = t.first; */
-                                /*             break; */
-                                /*         } */
-                                /*     } */
-                                /* } */
-                                /* if (shift_down) { */
-                                /*     k = toupper(k); */
-                                /*     if(k == '\'') k = '\"'; */
-                                /* } */
-                                /* fmt::print("Converted to {}\n", k); */
-                                /* putEvent(KeyEvent{k, 0}); */
                             }
                         }
                         ptr++;
@@ -318,12 +240,30 @@ public:
                 }
             }
         }
-        if(!events.empty()) {
+        if (!events.empty()) {
             auto e = events.front();
             events.pop_front();
             return e;
         }
         return NoEvent{};
+    }
+
+    void init_audio(Settings const&) override
+    {
+        player = std::make_unique<LinuxPlayer>(44100);
+    }
+
+    void set_audio_callback(
+        std::function<void(float*, size_t)> const& fcb) override
+    {
+
+        player->play([&](int16_t* data, size_t sz) {
+            std::array<float, 32768> fa; // NOLINT
+            fcb(fa.data(), sz);
+            for (int i = 0; i < sz; i++) {
+                data[i] = static_cast<int16_t>(fa[i] * 32767.0);
+            }
+        });
     }
 };
 

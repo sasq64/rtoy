@@ -121,8 +121,9 @@ void RSprites::remove_sprite(RSprite* spr)
     sprites.erase(
         std::remove(sprites.begin(), sprites.end(), spr), sprites.end());
     if (sprites.empty()) {
-        batches.erase(spr->parent->texture->tex_id);
-        fmt::print("Removing batch, {} left\n", batches.size());
+        //batches.erase(spr->parent->texture->tex_id);
+        spr->parent->texture = nullptr;
+        //fmt::print("Removing batch, {} left\n", batches.size());
     }
 }
 
