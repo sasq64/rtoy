@@ -164,7 +164,7 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
     } else if constexpr (std::is_floating_point_v<RET>) {
         return mrb_float_value(mrb, r);
     } else if constexpr (std::is_integral_v<RET>) {
-        return mrb_fixnum_value(r);
+        return mrb_int_value(mrb, r);
     } else if constexpr (std::is_same_v<RET, std::string>) {
         return mrb_str_new_cstr(mrb, r.c_str());
     } else if constexpr (std::is_same_v<RET, const char*>) {

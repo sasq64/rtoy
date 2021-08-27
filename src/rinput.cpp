@@ -18,7 +18,9 @@
 bool RInput::handle_event(KeyEvent const& e)
 {
     auto code = e.key;
+    fmt::print("CODE {:x}\n", e.key);
     if (code == RKEY_F12) {
+        fmt::print("RESET!\n");
         do_reset = true;
         return true;
     }
@@ -94,25 +96,35 @@ void RInput::reset()
 void RInput::reg_class(mrb_state* ruby, System& system)
 {
     auto* keys = mrb_define_module(ruby, "Key");
-    mrb_define_const(ruby, keys, "LEFT", mrb_fixnum_value(RKEY_LEFT));
-    mrb_define_const(ruby, keys, "RIGHT", mrb_fixnum_value(RKEY_RIGHT));
-    mrb_define_const(ruby, keys, "PAGE_UP", mrb_fixnum_value(RKEY_PAGEUP));
-    mrb_define_const(ruby, keys, "PAGE_DOWN", mrb_fixnum_value(RKEY_PAGEDOWN));
-    mrb_define_const(ruby, keys, "UP", mrb_fixnum_value(RKEY_UP));
-    mrb_define_const(ruby, keys, "DOWN", mrb_fixnum_value(RKEY_DOWN));
-    mrb_define_const(ruby, keys, "BACKSPACE", mrb_fixnum_value(RKEY_BACKSPACE));
-    mrb_define_const(ruby, keys, "ENTER", mrb_fixnum_value(RKEY_ENTER));
-    mrb_define_const(ruby, keys, "HOME", mrb_fixnum_value(RKEY_HOME));
-    mrb_define_const(ruby, keys, "END", mrb_fixnum_value(RKEY_END));
-    mrb_define_const(ruby, keys, "ESCAPE", mrb_fixnum_value(RKEY_ESCAPE));
-    mrb_define_const(ruby, keys, "TAB", mrb_fixnum_value(RKEY_TAB));
-    mrb_define_const(ruby, keys, "DEL", mrb_fixnum_value(RKEY_DELETE));
-    mrb_define_const(ruby, keys, "INSERT", mrb_fixnum_value(RKEY_INSERT));
-    mrb_define_const(ruby, keys, "END_", mrb_fixnum_value(RKEY_END));
-    mrb_define_const(ruby, keys, "F1", mrb_fixnum_value(RKEY_F1));
-    mrb_define_const(ruby, keys, "F3", mrb_fixnum_value(RKEY_F3));
-    mrb_define_const(ruby, keys, "F5", mrb_fixnum_value(RKEY_F5));
-    mrb_define_const(ruby, keys, "F7", mrb_fixnum_value(RKEY_F7));
+    mrb_define_const(ruby, keys, "LEFT", mrb_int_value(ruby, RKEY_LEFT));
+    mrb_define_const(ruby, keys, "RIGHT", mrb_int_value(ruby, RKEY_RIGHT));
+    mrb_define_const(ruby, keys, "PAGE_UP", mrb_int_value(ruby, RKEY_PAGEUP));
+    mrb_define_const(ruby, keys, "PAGE_DOWN", mrb_int_value(ruby, RKEY_PAGEDOWN));
+    mrb_define_const(ruby, keys, "UP", mrb_int_value(ruby, RKEY_UP));
+    mrb_define_const(ruby, keys, "DOWN", mrb_int_value(ruby, RKEY_DOWN));
+    mrb_define_const(ruby, keys, "BACKSPACE", mrb_int_value(ruby, RKEY_BACKSPACE));
+    mrb_define_const(ruby, keys, "ENTER", mrb_int_value(ruby, RKEY_ENTER));
+    mrb_define_const(ruby, keys, "HOME", mrb_int_value(ruby, RKEY_HOME));
+    mrb_define_const(ruby, keys, "END", mrb_int_value(ruby, RKEY_END));
+    mrb_define_const(ruby, keys, "ESCAPE", mrb_int_value(ruby, RKEY_ESCAPE));
+    mrb_define_const(ruby, keys, "TAB", mrb_int_value(ruby, RKEY_TAB));
+    mrb_define_const(ruby, keys, "DEL", mrb_int_value(ruby, RKEY_DELETE));
+    mrb_define_const(ruby, keys, "INSERT", mrb_int_value(ruby, RKEY_INSERT));
+    mrb_define_const(ruby, keys, "END_", mrb_int_value(ruby, RKEY_END));
+    mrb_define_const(ruby, keys, "LEFT_SHIFT", mrb_int_value(ruby, RKEY_LSHIFT));
+    mrb_define_const(ruby, keys, "LEFT_ALT", mrb_int_value(ruby, RKEY_LALT));
+    mrb_define_const(ruby, keys, "F1", mrb_int_value(ruby, RKEY_F1));
+    mrb_define_const(ruby, keys, "F2", mrb_int_value(ruby, RKEY_F2));
+    mrb_define_const(ruby, keys, "F3", mrb_int_value(ruby, RKEY_F3));
+    mrb_define_const(ruby, keys, "F4", mrb_int_value(ruby, RKEY_F4));
+    mrb_define_const(ruby, keys, "F5", mrb_int_value(ruby, RKEY_F5));
+    mrb_define_const(ruby, keys, "F6", mrb_int_value(ruby, RKEY_F6));
+    mrb_define_const(ruby, keys, "F7", mrb_int_value(ruby, RKEY_F7));
+    mrb_define_const(ruby, keys, "F8", mrb_int_value(ruby, RKEY_F8));
+    mrb_define_const(ruby, keys, "F9", mrb_int_value(ruby, RKEY_F9));
+    mrb_define_const(ruby, keys, "F10", mrb_int_value(ruby, RKEY_F10));
+    mrb_define_const(ruby, keys, "F11", mrb_int_value(ruby, RKEY_F11));
+    mrb_define_const(ruby, keys, "F12", mrb_int_value(ruby, RKEY_F12));
 
     rclass = mrb_define_class(ruby, "Input", ruby->object_class);
     MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);

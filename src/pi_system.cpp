@@ -272,40 +272,44 @@ public:
 
 
                     while (rc >= sizeof(struct input_event)) {
-                        fmt::print("TYPE {} CODE {} VALUE {}\n", ptr->type, ptr->code, ptr->value);
+                        //fmt::print("TYPE {} CODE {} VALUE {}\n", ptr->type, ptr->code, ptr->value);
                         if (ptr->type == EV_KEY) {
                             uint32_t k = ptr->code;
+                            int mods = 0;
                             if (k == KEY_LEFTSHIFT || k == KEY_RIGHTSHIFT) {
                                 shift_down = ptr->value != 0;
                             }
                             if (ptr->value) {
 
-                                auto it = mappings.find(k | mods);
+                                mods = 0;
+                                if(shift_down) mods |= 1;
+                                auto it = mappings.find(k | (mods<<24));
                                 if(it != mappings.end()) {
+                                    fmt::print("Converted to {:x} > {:x}\n", k,
+                                            it->second);
                                     k = it->second;
-                                    fmt::print("Converted to {}\n", k);
                                     putEvent(KeyEvent{k, 0});
                                 }
 
-                                if (k >= KEY_1 && k <= KEY_9) {
-                                    k += ('1' - KEY_1);
-                                } else if (k >= KEY_F1 && k <= KEY_F10) {
-                                    fmt::print("F ");
-                                    k = k + RKEY_F1 - KEY_F1;
-                                } else {
-                                    for (auto t : translate) {
-                                        if (t.second == k) {
-                                            k = t.first;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (shift_down) {
-                                    k = toupper(k);
-                                    if(k == '\'') k = '\"';
-                                }
-                                fmt::print("Converted to {}\n", k);
-                                putEvent(KeyEvent{k, 0});
+                                /* if (k >= KEY_1 && k <= KEY_9) { */
+                                /*     k += ('1' - KEY_1); */
+                                /* } else if (k >= KEY_F1 && k <= KEY_F10) { */
+                                /*     fmt::print("F "); */
+                                /*     k = k + RKEY_F1 - KEY_F1; */
+                                /* } else { */
+                                /*     for (auto t : translate) { */
+                                /*         if (t.second == k) { */
+                                /*             k = t.first; */
+                                /*             break; */
+                                /*         } */
+                                /*     } */
+                                /* } */
+                                /* if (shift_down) { */
+                                /*     k = toupper(k); */
+                                /*     if(k == '\'') k = '\"'; */
+                                /* } */
+                                /* fmt::print("Converted to {}\n", k); */
+                                /* putEvent(KeyEvent{k, 0}); */
                             }
                         }
                         ptr++;
