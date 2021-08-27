@@ -62,6 +62,8 @@ public:
     {}
 
     virtual void init_input(Settings const&) {}
+
+    virtual void map_key(uint32_t code, uint32_t target, int mods) {}
 };
 
 std::unique_ptr<System> create_sdl_system();

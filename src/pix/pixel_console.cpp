@@ -35,7 +35,6 @@ std::string PixConsole::fragment_shader{R"gl(
               vec2 uvf = fract(out_uv * console_size);
               vec2 uv = ux + uvf * uv_scale;
               vec4 col = texture2D(in_tex, uv);
-
               gl_FragColor = fg_color * col * col.a + bg_color * (1.0 - col.a);
         })gl"};
 

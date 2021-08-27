@@ -3,6 +3,9 @@ require 'repl.rb'
 require 'editor.rb'
 require 'turtle.rb'
 
+require 'linux.rb'
+require 'keymap.rb'
+
 OS.reset_handlers()
 Display.default.clear()
 

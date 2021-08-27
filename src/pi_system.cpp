@@ -10,6 +10,7 @@
 #include <cctype>
 #include <deque>
 #include <filesystem>
+#include <unordered_map>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -26,8 +27,6 @@ private:
 /*constexpr */ bool test_bit(const std::vector<uint8_t> &v, int n) {
 	return (v[n/8] & (1<<(n%8))) != 0;
 }
-
-
 
 bool initEGL(EGLConfig& eglConfig, EGLContext& eglContext,
     EGLDisplay& eglDisplay, EGLSurface& eglSurface,
@@ -225,6 +224,13 @@ public:
         { RKEY_RCTRL, KEY_RIGHTCTRL }
     };
 
+    std::unordered_map<uint32_t, uint32_t> mappings;
+
+    void map_key(uint32_t code, uint32_t target, int mods) override
+    {
+        mappings[code | (mods<<24)] = target;
+    }
+
     bool shift_down = false;
 
     std::deque<AnyEvent> events;
@@ -273,6 +279,14 @@ public:
                                 shift_down = ptr->value != 0;
                             }
                             if (ptr->value) {
+
+                                auto it = mappings.find(k | mods);
+                                if(it != mappings.end()) {
+                                    k = it->second;
+                                    fmt::print("Converted to {}\n", k);
+                                    putEvent(KeyEvent{k, 0});
+                                }
+
                                 if (k >= KEY_1 && k <= KEY_9) {
                                     k += ('1' - KEY_1);
                                 } else if (k >= KEY_F1 && k <= KEY_F10) {

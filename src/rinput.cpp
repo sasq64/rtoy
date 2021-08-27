@@ -126,6 +126,17 @@ void RInput::reg_class(mrb_state* ruby, System& system)
         },
         MRB_ARGS_NONE());
 
+    mrb_define_method(
+        ruby, rclass, "map",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* input = mrb::self_to<RInput>(self);
+            auto [code, target, mods] = mrb::get_args<int, int, int>(mrb);
+            fmt::print("{:x} => {:x}\n", code, target);
+            input->system.map_key(code, target, mods);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(2));
+
     mrb_define_class_method(
         ruby, rclass, "get_clipboard",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
