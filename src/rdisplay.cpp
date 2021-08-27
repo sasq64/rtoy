@@ -1,5 +1,6 @@
 #include "rdisplay.hpp"
 
+#include "mruby/value.h"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
 #include "rimage.hpp"
@@ -58,9 +59,9 @@ void Display::setup()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //GLuint vao;
-    //glGenVertexArrays(1, &vao);
-    //glBindVertexArray(vao);
+    // GLuint vao;
+    // glGenVertexArrays(1, &vao);
+    // glBindVertexArray(vao);
 }
 
 bool Display::begin_draw()
@@ -80,7 +81,10 @@ void Display::end_draw()
     console->render();
     canvas->render();
     sprites->render();
+}
 
+void Display::swap()
+{
     window->swap();
 }
 
@@ -115,6 +119,17 @@ void Display::reg_class(
             return Display::default_display->disp_obj;
         },
         MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, Display::rclass, "mouse_ptr",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            RImage* image = nullptr;
+            mrb_get_args(mrb, "d", &image, &RImage::dt);
+            display->mouse_cursor = display->sprites->add_sprite(image);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(3));
 
     mrb_define_method(
         ruby, Display::rclass, "width",

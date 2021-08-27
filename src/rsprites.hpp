@@ -47,10 +47,10 @@ struct SpriteBatch
 class RSprites : public RLayer
 {
     std::unordered_map<GLuint, SpriteBatch> batches;
+public:
     RSprite* add_sprite(RImage* image);
     void remove_sprite(RSprite* spr);
 
-public:
     static inline RClass* rclass;
     static mrb_data_type dt;
 

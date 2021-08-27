@@ -15,6 +15,7 @@
 struct RConsole;
 struct RCanvas;
 struct RSprites;
+struct RSprite;
 
 class Display : public RLayer
 {
@@ -37,6 +38,7 @@ class Display : public RLayer
     std::shared_ptr<RSprites> sprites;
 
 public:
+    RSprite* mouse_cursor = nullptr;
     static inline bool full_screen = false;
     std::shared_ptr<RConsole> console;
     static inline RClass* rclass;
@@ -48,6 +50,7 @@ public:
     void reset() override;
     bool begin_draw();
     void end_draw();
+    void swap();
 
     static void reg_class(mrb_state* ruby, System& system, Settings const& settings);
 };

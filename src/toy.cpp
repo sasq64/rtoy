@@ -249,9 +249,17 @@ bool Toy::render_loop()
         mrb_load_string(ruby, source.c_str());
     }
 
+    auto [mx, my] = input->mouse_pos();
+    if(display->mouse_cursor != nullptr) {
+        fmt::print("{} {}\n", mx, my);
+        display->mouse_cursor->trans =  {(float)mx, (float)my };
+        display->mouse_cursor->dirty = true;
+    }
+
     if (RTimer::default_timer != nullptr) { RTimer::default_timer->update(); }
 
     display->end_draw();
+    display->swap();
 
     if (!to_run.empty()) {
         fmt::print("Running\n");
@@ -282,7 +290,7 @@ int Toy::run()
 
     auto con = Display::default_display->console->console;
 
-    if(settings.console_benchmark) {
+    if (settings.console_benchmark) {
         for (int i = 0; i < 500; i++) {
             con->fill(0xff00ff00, 0x00ff00ff);
             con->flush();

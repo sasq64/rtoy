@@ -22,6 +22,8 @@ class RInput
     void poll_events();
 
     int resize = 0;
+    int mouse_x = 0;
+    int mouse_y = 0;
 
     std::unordered_map<uint32_t, int> pressed;
     System& system;
@@ -39,6 +41,8 @@ public:
     void reset();
     bool update();
     bool should_reset();
+
+    std::pair<int, int> mouse_pos() { return { mouse_x, mouse_y }; }
 
     static inline RInput* default_input = nullptr;
     static inline RClass* rclass;

@@ -50,6 +50,8 @@ bool RInput::handle_event(MoveEvent const& me)
         fmt::print("{:x} {} {}\n", me.buttons, me.x, me.y);
         call_proc(ruby, drag_handler, me.x, me.y);
     }
+    mouse_x = me.x;
+    mouse_y = me.y;
     return false;
 }
 bool RInput::handle_event(TextEvent const& me)
