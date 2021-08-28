@@ -297,7 +297,8 @@ public:
             std::array<float, 32768> fa; // NOLINT
             fcb(fa.data(), sz);
             for (int i = 0; i < sz; i++) {
-                data[i] = static_cast<int16_t>(fa[i] * 32767.0);
+                auto f = std::clamp(fa[i], -1.0F, 1.0F);
+                data[i] = static_cast<int16_t>(f * 32767.0);
             }
         });
     }

@@ -47,7 +47,7 @@ void RSprites::clear()
 
 void RSprites::render()
 {
-    if (batches.empty()) { return; }
+    //if (batches.empty()) { return; }
     glEnable(GL_BLEND);
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
@@ -60,7 +60,7 @@ void RSprites::render()
     pos.enable();
     uv.enable();
 
-    for (auto& [_, batch] : batches) {
+    auto draw_batch = [&](SpriteBatch& batch) {
         batch.texture->bind();
         for (auto const& sprite : batch.sprites) {
             if (last_alpha != sprite->alpha) {
@@ -80,16 +80,23 @@ void RSprites::render()
                 uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
             gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
         }
+    };
+
+    for (auto& [_, batch] : batches) {
+        draw_batch(batch);
+    }
+    if(fixed_batch.texture != nullptr) {
+        draw_batch(fixed_batch);
     }
     pos.disable();
     uv.disable();
 }
 
-RSprite* RSprites::add_sprite(RImage* image)
+RSprite* RSprites::add_sprite(RImage* image, int flags)
 {
     image->upload();
 
-    auto& batch = batches[image->texture.tex->tex_id];
+    auto& batch = flags == 1 ? fixed_batch : batches[image->texture.tex->tex_id];
     if (batch.texture == nullptr) {
         batch.texture = image->texture.tex;
         batch.image = image->image;
@@ -121,9 +128,9 @@ void RSprites::remove_sprite(RSprite* spr)
     sprites.erase(
         std::remove(sprites.begin(), sprites.end(), spr), sprites.end());
     if (sprites.empty()) {
-        //batches.erase(spr->parent->texture->tex_id);
-        spr->parent->texture = nullptr;
-        //fmt::print("Removing batch, {} left\n", batches.size());
+        batches.erase(spr->parent->texture->tex_id);
+        //spr->parent->texture = nullptr;
+        fmt::print("Removing batch, {} left\n", batches.size());
     }
 }
 
@@ -141,7 +148,7 @@ void RSprites::reg_class(mrb_state* ruby)
             auto* ptr = mrb::self_to<RSprites>(self);
             RImage* image = nullptr;
             mrb_get_args(mrb, "d", &image, &RImage::dt);
-            auto* spr = ptr->add_sprite(image);
+            auto* spr = ptr->add_sprite(image, 0);
             return mrb::new_data_obj(mrb, spr);
         },
         MRB_ARGS_REQ(3));

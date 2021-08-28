@@ -1,5 +1,5 @@
 #include "system.hpp"
-
+#include "player_linux.h"
 #include "gl/gl.hpp"
 #include <coreutils/utf8.h>
 
@@ -29,6 +29,7 @@ class SDLSystem : public System
     uint32_t dev = 0;
     std::unordered_map<uint32_t, int> pressed;
 
+    std::unique_ptr<LinuxPlayer> player;
 public:
     std::shared_ptr<Screen> init_screen(Settings const& settings) override
     {
@@ -123,7 +124,26 @@ public:
         }
         return NoEvent{};
     }
+#ifdef USE_ASOUND
+    void init_audio(Settings const&) override
+{
+        player = std::make_unique<LinuxPlayer>(44100);
+}
 
+void set_audio_callback(
+    std::function<void(float*, size_t)> const& fcb) override
+    {
+
+        player->play([fcb](int16_t* data, size_t sz) {
+            std::array<float, 32768> fa; // NOLINT
+            fcb(fa.data(), sz);
+            for (int i = 0; i < sz; i++) {
+                auto f = std::clamp(fa[i], -1.0F, 1.0F);
+                data[i] = static_cast<int16_t>(f * 32767.0);
+            }
+        });
+    }
+#else
     std::function<void(float*, size_t)> audio_callback;
 
     void set_audio_callback(
@@ -144,20 +164,21 @@ public:
         want.samples = 4096;
         want.userdata = this;
         want.callback = [](void* userdata, Uint8* stream, int len) {
-            if (stream == nullptr || len < 0) {
-                fmt::print("{}/{}\n", stream, len);
-            };
-            auto* sys = static_cast<SDLSystem*>(userdata);
-            if (sys->audio_callback) {
-                sys->audio_callback(reinterpret_cast<float*>(stream), len / 4);
-            }
+          if (stream == nullptr || len < 0) {
+              fmt::print("{}/{}\n", stream, len);
+          };
+          auto* sys = static_cast<SDLSystem*>(userdata);
+          if (sys->audio_callback) {
+              sys->audio_callback(reinterpret_cast<float*>(stream), len / 4);
+          }
         };
         dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have,
-            SDL_AUDIO_ALLOW_ANY_CHANGE & (~SDL_AUDIO_ALLOW_FORMAT_CHANGE));
+                                  SDL_AUDIO_ALLOW_ANY_CHANGE & (~SDL_AUDIO_ALLOW_FORMAT_CHANGE));
 
         fmt::print("Audio format {} {} vs {}\n", have.format, have.freq, dev);
         SDL_PauseAudioDevice(dev, 0);
-    }
+        }
+#endif
 };
 
 std::unique_ptr<System> create_sdl_system()

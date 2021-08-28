@@ -126,7 +126,7 @@ void Display::reg_class(
             auto* display = mrb::self_to<Display>(self);
             RImage* image = nullptr;
             mrb_get_args(mrb, "d", &image, &RImage::dt);
-            display->mouse_cursor = display->sprites->add_sprite(image);
+            display->mouse_cursor = display->sprites->add_sprite(image, 1);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));

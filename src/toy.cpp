@@ -251,7 +251,6 @@ bool Toy::render_loop()
 
     auto [mx, my] = input->mouse_pos();
     if(display->mouse_cursor != nullptr) {
-        fmt::print("{} {}\n", mx, my);
         display->mouse_cursor->trans =  {(float)mx, (float)my };
         display->mouse_cursor->dirty = true;
     }

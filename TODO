@@ -17,6 +17,10 @@
 [X] Move SDL code to system specific class
 [X] Port to Raspberry PI
 
+[ ] After RSprites::reset, all batches are destroyed while sprites can still
+be referenced from code, so "img" references destroyed batch.
+
+
 # SLIDES
 
 Add font.get_size method
@@ -24,34 +28,27 @@ Render whole paragraph to one image
 Do word wrap
 Background rect on code block
 
+# USABILITY
+
+## Editor
+
+* Undo/Redo
+* Comment/Uncomment
+* Mark text / Copy/Paste
+* Indent/Unindent marked
+
+## Web
+
+* TextEdit -> Paste into R-Toy
+* Upload/Download files
+* Login: Persist files
+
+
+
+# NOTES
 
 kwargs to set state of layer...
 layer has default style
 
 push/pop style ?
 
-NEW CONSOLE
-
-TileRenderer
-
-Renders sequences of quads form indexes. Expects tile texture to
-be already bound. Needs to be told UVs for each index.
-
-TextureFont
-
-Binds together TTFFont and TileRenderer
-
-
-DRAWING A QUAD
-
-Create an array buffer with vertices AND UVs
-
-get the location of pos/uv in the shader
-
-Bind pos/uv to offsets in array buffer
-
-Draw
-
-SHADER DEPENDS ON
-
-Transform
