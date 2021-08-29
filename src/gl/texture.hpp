@@ -1,4 +1,6 @@
 #pragma once
+#include <cmath>
+#include <fmt/core.h>
 #include "functions.hpp"
 #include "gl.hpp"
 
@@ -14,6 +16,7 @@ struct Texture
     GLuint fb_id = 0;
     GLuint width = 0;
     GLuint height = 0;
+    GLint format = GL_RGBA;
 
     Texture() = default;
 
@@ -23,7 +26,7 @@ struct Texture
     Texture(GLuint w, GLuint h, std::array<T, N> const& data,
         GLint target_format = GL_RGBA, GLint source_format = -1,
         GLenum type = GL_UNSIGNED_BYTE)
-        : width(w), height(h)
+        : width(w), height(h), format(target_format)
     {
         if (source_format < 0) {
             constexpr static std::array translate{
@@ -42,7 +45,7 @@ struct Texture
     Texture(GLuint w, GLuint h, std::vector<T> const& data,
         GLint target_format = GL_RGBA, GLint source_format = -1,
         GLenum type = GL_UNSIGNED_BYTE)
-        : width(w), height(h)
+        : width(w), height(h), format(target_format)
     {
         if (source_format < 0) {
             constexpr static std::array translate{
@@ -60,7 +63,7 @@ struct Texture
     template <typename T>
     Texture(GLuint w, GLuint h, T const* data, GLint target_format = GL_RGBA,
         GLint source_format = -1, GLenum type = GL_UNSIGNED_BYTE)
-        : width(w), height(h)
+        : width(w), height(h), format(target_format)
     {
         init();
         if (source_format < 0) {
@@ -125,6 +128,31 @@ struct Texture
         setViewport({width, height});
     }
 
+    void set_source() const
+    {
+    }
+
+    std::vector<std::byte> read_pixels(int x = 0, int y = 0, int w = -1, int h = -1)
+    {
+        if (w < 0) { w = width; }
+        if (h < 0) { h = height; }
+        
+        GLuint fb;
+        fmt::print("Read {},{} {}x{}\n", x, y, w, h);
+        glGenFramebuffers(1, &fb);
+        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0);
+        gl_check("glFrameBufferTexture2d");
+        setViewport({width, height});
+        std::vector<std::byte> data(width * height * 4);
+        auto type = GL_UNSIGNED_BYTE;
+        glReadPixels(x, y, w, h, format, type, data.data());
+        gl_check("glReadPixels");
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        return data;
+    }
+
     template <typename T>
     void update(
         T const* ptr, GLint source_format = -1, GLenum type = GL_UNSIGNED_BYTE)
@@ -139,6 +167,19 @@ struct Texture
             GL_TEXTURE_2D, 0, 0, 0, width, height, source_format, type, ptr);
     }
 
+    template <typename T>
+    void update(int x, int y, int w, int h, T const* ptr,
+        GLint source_format = -1, GLenum type = GL_UNSIGNED_BYTE)
+    {
+        if (source_format < 0) {
+            constexpr static std::array translate{
+                0, GL_ALPHA, 0, GL_RGB, GL_RGBA};
+            source_format = translate[sizeof(T)];
+        }
+        glBindTexture(GL_TEXTURE_2D, tex_id);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, source_format, type, ptr);
+    }
+
     std::pair<float, float> size() const { return {width, height}; }
 };
 
@@ -148,6 +189,14 @@ struct TexRef
     std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     void bind(int unit = 0) { tex->bind(unit); }
     bool operator==(TexRef const& other) const { return tex == other.tex; }
+    std::vector<std::byte> read_pixels() {
+        auto x = std::lround(tex->width * uvs[0]);
+        auto y = std::lround(tex->height * uvs[1]);
+        auto w = std::lround(tex->width * (uvs[4] - uvs[0]));
+        auto h = std::lround(tex->height * (uvs[5] - uvs[1]));
+        return tex->read_pixels(x,y,w,h);
+
+    };
 };
 
 } // namespace gl_wrap

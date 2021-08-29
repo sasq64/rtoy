@@ -21,7 +21,6 @@ class PixConsole
     unsigned texture_height = 256*4;
     unsigned char_width = 13;
     unsigned char_height = 24;
-    bool dirty = false;
 
     static const int gap = 4;
 
@@ -34,7 +33,7 @@ class PixConsole
     gl_wrap::Texture uv_texture;
     gl_wrap::Texture col_texture;
     gl_wrap::Program program;
-    std::vector<uint32_t> data;
+
     std::vector<uint32_t> uvdata;
     std::vector<uint32_t> coldata;
 
@@ -55,7 +54,7 @@ class PixConsole
 
     void add_char(char32_t c);
 
-    uint32_t* alloc_char(char32_t c);
+    std::pair<int, int> alloc_char(char32_t c);
 
 public:
     PixConsole(unsigned w, unsigned h,
@@ -69,6 +68,8 @@ public:
 
     void set_tile_image(char32_t c, pix::Image const& image, int x = 0,
         int y = 0, int w = -1, int h = -1);
+
+    void set_tile_image(char32_t c, gl_wrap::TexRef tex);
 
     std::pair<int, int> text(int x, int y, std::string const& t);
 

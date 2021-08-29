@@ -41,13 +41,16 @@ std::string PixConsole::fragment_shader{R"gl(
 void PixConsole::add_char(char32_t c)
 {
     auto cw = char_width + gap;
+    std::vector<uint32_t> temp(char_width * char_height);
+    font.render_char(c, temp.data(), 0xffffff00, char_width);
+
+    font_texture.update(
+        next_pos.first, next_pos.second, char_width, char_height, temp.data());
+
     auto fx = texture_width / 256;
     auto fy = texture_height / 256;
-    // First render character into texture
-    auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
     int x = next_pos.first / fx;
     int y = next_pos.second / fy;
-    font.render_char(c, ptr, 0xffffff00, texture_width);
     char_uvs[c] = (x) | (y << 8);
 
     next_pos.first += (char_width + gap + 3) & 0xfffffffc;
@@ -57,13 +60,13 @@ void PixConsole::add_char(char32_t c)
     }
 }
 
-uint32_t* PixConsole::alloc_char(char32_t c)
+std::pair<int, int> PixConsole::alloc_char(char32_t c)
 {
     auto cw = char_width + gap;
     auto fx = texture_width / 256;
     auto fy = texture_height / 256;
     // First render character into texture
-    auto* ptr = &data[next_pos.first + next_pos.second * texture_width];
+    auto res = next_pos;
     int x = next_pos.first / fx;
     int y = next_pos.second / fy;
     char_uvs[c] = (x) | (y << 8);
@@ -73,7 +76,7 @@ uint32_t* PixConsole::alloc_char(char32_t c)
         next_pos.first = 0;
         next_pos.second += (char_height + gap);
     }
-    return ptr;
+    return res;
 }
 
 PixConsole::PixConsole(
@@ -81,15 +84,17 @@ PixConsole::PixConsole(
     : font{font_file.c_str(), size}, width(w), height(h)
 {
     // font.set_pixel_size(32);
+    std::vector<uint32_t> data;
     data.resize(texture_width * texture_height);
     std::tie(char_width, char_height) = font.get_size();
 
     std::fill(data.begin(), data.end(), 0);
 
+    font_texture = gl_wrap::Texture{texture_width, texture_height, data};
     for (char32_t c = 0x20; c <= 0x7f; c++) {
         add_char(c);
     }
-    font_texture = gl_wrap::Texture{texture_width, texture_height, data};
+    std::fill(data.begin(), data.end(), 0xff);
 
     uvdata.resize(w * h);
     std::fill(uvdata.begin(), uvdata.end(), 0);
@@ -141,11 +146,9 @@ void PixConsole::set_tile_size(int w, int h)
             static_cast<float>(char_width) / static_cast<float>(texture_width),
             static_cast<float>(char_height) /
                 static_cast<float>(texture_height)));
-    std::fill(data.begin(), data.end(), 0);
     for (char32_t c = 0x20; c <= 0x7f; c++) {
         add_char(c);
     }
-    dirty = true;
 }
 
 void PixConsole::reset()
@@ -154,42 +157,64 @@ void PixConsole::reset()
     set_tile_size(cw, ch);
 }
 
-void PixConsole::set_tile_image(
-    char32_t c, pix::Image const& image, int x, int y, int w, int h)
+void PixConsole::set_tile_image(char32_t c, gl_wrap::TexRef tex)
 {
-    /* w = 64; */
-    /* h = 64; */
-    /* x = (x + 63) & (~63); */
-    /* y = (y + 63) & (~63); */
-    if (w < 0) w = image.width;
-    if (h < 0) h = image.height;
-    fmt::print("{} {}\n", w, h);
+    //if (w < 0) w = image.width;
+    //if (h < 0) h = image.height;
     auto fx = texture_width / 256;
     auto fy = texture_height / 256;
 
-    uint32_t* ptr = nullptr;
+    std::pair<int, int> pos{0, 0};
     auto it = char_uvs.find(c);
     if (it == char_uvs.end()) {
-        ptr = alloc_char(c);
+        pos = alloc_char(c);
     } else {
         auto cx = (it->second & 0xff) * fx;
         auto cy = (it->second >> 8) * fy;
-        ptr = &data[cx + cy * texture_width];
+        pos = {cx, cy};
     }
 
+    auto pixels = tex.read_pixels();
+
+    auto* ptr = reinterpret_cast<uint32_t*>(pixels.data());
+    font_texture.update(pos.first, pos.second, char_width, char_height, ptr);
+}
+
+void PixConsole::set_tile_image(
+    char32_t c, pix::Image const& image, int x, int y, int w, int h)
+{
+    if (w < 0) w = image.width;
+    if (h < 0) h = image.height;
+    auto fx = texture_width / 256;
+    auto fy = texture_height / 256;
+
+    std::pair<int, int> pos{0, 0};
+    auto it = char_uvs.find(c);
+    if (it == char_uvs.end()) {
+        pos = alloc_char(c);
+    } else {
+        auto cx = (it->second & 0xff) * fx;
+        auto cy = (it->second >> 8) * fy;
+        pos = {cx, cy};
+    }
+
+    std::vector<uint32_t> temp(w * h);
+    std::fill(temp.begin(), temp.end(), 0xffffffff);
+    auto* ptr = temp.data();
     uint32_t* src =
         reinterpret_cast<uint32_t*>(image.ptr) + x + y * image.width;
-    while (h > 0) {
+    int height = h;
+    while (height > 0) {
         auto width = w;
         while (width > 0) {
             *ptr++ = *src++;
             width--;
         }
-        ptr += (texture_width - w);
         src += (image.width - w);
-        h--;
+        height--;
     }
-    dirty = true;
+
+    font_texture.update(pos.first, pos.second, w, h, temp.data());
 }
 
 std::pair<int, int> PixConsole::text(int x, int y, std::string const& t)
@@ -214,7 +239,6 @@ std::pair<int, int> PixConsole::text(
         if (it == char_uvs.end()) {
             add_char(c);
             it = char_uvs.find(c);
-            dirty = true;
         }
 
         uvdata[x + width * y] = it->second | w0;
@@ -230,10 +254,6 @@ std::pair<int, int> PixConsole::text(
 
 void PixConsole::flush()
 {
-    if (dirty) {
-        font_texture.update(data.data());
-        dirty = false;
-    }
     uv_texture.update(uvdata.data());
     col_texture.update(coldata.data());
 }

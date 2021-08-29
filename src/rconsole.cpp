@@ -300,7 +300,9 @@ void RConsole::reg_class(mrb_state* ruby)
             auto h = std::lround(image->height());
             fmt::print("{} {} {} {}\n", image->x(), image->y(), image->width(),
                 image->height());
-            rconsole->console->set_tile_image(index, img, x, y, w, h);
+            image->upload();
+            rconsole->console->set_tile_image(index, image->texture);
+            //rconsole->console->set_tile_image(index, img, x, y, w, h);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
