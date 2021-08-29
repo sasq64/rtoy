@@ -13,29 +13,17 @@ struct RImage
 {
     static inline RClass* rclass = nullptr;
     static mrb_data_type dt;
-    pix::Image image;
-    float width() const
-    {
-        return static_cast<float>(image.width) *
-               (texture.uvs[4] - texture.uvs[0]);
-    }
-    float height() const
-    {
-        return static_cast<float>(image.height) *
-               (texture.uvs[5] - texture.uvs[1]);
-    }
-
-    float x() const { return static_cast<float>(image.width) * texture.uvs[0]; }
-
-    float y() const
-    {
-        return static_cast<float>(image.height) * texture.uvs[1];
-    }
-
-    explicit RImage(pix::Image const& img) : image{img} {}
-    void upload();
-
     gl::TexRef texture;
+
+    int width() const { return texture.width(); }
+    int height() const { return texture.height(); }
+    int x() const { return texture.x(); }
+    int y() const { return texture.y(); }
+
+    explicit RImage(pix::Image const& img) { upload(img); }
+    explicit RImage(gl::TexRef const& tex) : texture(tex) {}
+
+    void upload(pix::Image const& img);
 
     void draw(float x, float y, float scale = 1.0F);
 

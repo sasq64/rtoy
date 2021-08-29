@@ -41,14 +41,14 @@ void RImage::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RImage::rclass, "width",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            return mrb::to_value(mrb::self_to<RImage>(self)->image.width, mrb);
+            return mrb::to_value(mrb::self_to<RImage>(self)->width(), mrb);
         },
         MRB_ARGS_NONE());
 
     mrb_define_method(
         ruby, RImage::rclass, "height",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            return mrb::to_value(mrb::self_to<RImage>(self)->image.height, mrb);
+            return mrb::to_value(mrb::self_to<RImage>(self)->height(), mrb);
         },
         MRB_ARGS_NONE());
     mrb_define_method(
@@ -56,7 +56,7 @@ void RImage::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [w, h] = mrb::get_args<int, int>(mrb);
             auto* thiz = mrb::self_to<RImage>(self);
-            thiz->upload();
+            //thiz->upload();
 
             float u0 = thiz->texture.uvs[0];
             float v0 = thiz->texture.uvs[1];
@@ -81,7 +81,7 @@ void RImage::reg_class(mrb_state* ruby)
                     y++;
                 }
                 if (y == h) { break; }
-                auto* rimage = new RImage(thiz->image);
+                auto* rimage = new RImage(thiz->texture);
                 rimage->texture.tex = thiz->texture.tex;
                 rimage->texture.uvs = {
                     u, v, u + du, v, u + du, v + dv, u, v + dv};
@@ -95,7 +95,7 @@ void RImage::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(2));
 }
 
-void RImage::upload()
+void RImage::upload(pix::Image const& image)
 {
     if (texture.tex == nullptr) {
         texture.tex = std::make_shared<gl::Texture>(
@@ -105,8 +105,8 @@ void RImage::upload()
 
 void RImage::draw(float x, float y, float scale)
 {
-    fmt::print("Draw {}x{} at {},{}\n", image.width, image.height, x, y);
-    upload();
+    //fmt::print("Draw {}x{} at {},{}\n", img_width, img_height, x, y);
+    //upload();
     texture.bind();
     gl_wrap::ProgramCache::get_instance().textured.use();
     pix::draw_quad_uvs(x, y, width() * scale, height() * scale, texture.uvs);

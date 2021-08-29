@@ -14,9 +14,9 @@ RImage* RFont::render(std::string const& txt, uint32_t color, int n)
     font.set_pixel_size(n);
     auto [w, h] = font.text_size(txt);
     pix::Image img(w, h);
-    auto* image = new RImage(img);
     font.render_text(txt, reinterpret_cast<uint32_t*>(img.ptr), color,
         img.width, img.width, img.height);
+    auto* image = new RImage(img);
     return image;
 }
 

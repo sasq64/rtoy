@@ -94,12 +94,12 @@ void RSprites::render()
 
 RSprite* RSprites::add_sprite(RImage* image, int flags)
 {
-    image->upload();
+    //image->upload();
 
     auto& batch = flags == 1 ? fixed_batch : batches[image->texture.tex->tex_id];
     if (batch.texture == nullptr) {
         batch.texture = image->texture.tex;
-        batch.image = image->image;
+        //batch.image = image->image;
     }
     auto& uvs = image->texture.uvs;
     std::array vertexData{-1.F, -1.F, 1.F, -1.F, 1.F, 1.F, -1.F, 1.F, 0.F, 0.F,
@@ -206,9 +206,10 @@ void RSprites::reg_class(mrb_state* ruby)
         ruby, RSprite::rclass, "img",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rspr = mrb::self_to<RSprite>(self);
-            auto* rimage = new RImage(rspr->parent->image);
-            rimage->texture.tex = rspr->parent->texture;
-            rimage->texture.uvs = rspr->uvs;
+            gl_wrap::TexRef tex{ rspr->parent->texture, rspr->uvs};
+            auto* rimage = new RImage(tex);
+            //rimage->texture.tex = rspr->parent->texture;
+            //rimage->texture.uvs = rspr->uvs;
             return mrb::new_data_obj(mrb, rimage);
         },
         MRB_ARGS_NONE());

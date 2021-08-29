@@ -293,14 +293,14 @@ void RConsole::reg_class(mrb_state* ruby)
             RImage* image = nullptr;
             mrb_get_args(mrb, "id", &index, &image, &RImage::dt);
             auto* rconsole = mrb::self_to<RConsole>(self);
-            auto& img = image->image;
-            auto x = std::lround(image->x());
-            auto y = std::lround(image->y());
-            auto w = std::lround(image->width());
-            auto h = std::lround(image->height());
-            fmt::print("{} {} {} {}\n", image->x(), image->y(), image->width(),
-                image->height());
-            image->upload();
+            //auto& img = image->image;
+            /* auto x = std::lround(image->x()); */
+            /* auto y = std::lround(image->y()); */
+            /* auto w = std::lround(image->width()); */
+            /* auto h = std::lround(image->height()); */
+            /* fmt::print("{} {} {} {}\n", image->x(), image->y(), image->width(), */
+            /*     image->height()); */
+            /* image->upload(); */
             rconsole->console->set_tile_image(index, image->texture);
             //rconsole->console->set_tile_image(index, img, x, y, w, h);
             return mrb_nil_value();

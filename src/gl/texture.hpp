@@ -1,8 +1,8 @@
 #pragma once
-#include <cmath>
-#include <fmt/core.h>
 #include "functions.hpp"
 #include "gl.hpp"
+#include <cmath>
+#include <fmt/core.h>
 
 #include <array>
 #include <memory>
@@ -128,15 +128,14 @@ struct Texture
         setViewport({width, height});
     }
 
-    void set_source() const
-    {
-    }
+    void set_source() const {}
 
-    std::vector<std::byte> read_pixels(int x = 0, int y = 0, int w = -1, int h = -1)
+    std::vector<std::byte> read_pixels(
+        int x = 0, int y = 0, int w = -1, int h = -1)
     {
         if (w < 0) { w = width; }
         if (h < 0) { h = height; }
-        
+
         GLuint fb;
         fmt::print("Read {},{} {}x{}\n", x, y, w, h);
         glGenFramebuffers(1, &fb);
@@ -189,14 +188,15 @@ struct TexRef
     std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     void bind(int unit = 0) { tex->bind(unit); }
     bool operator==(TexRef const& other) const { return tex == other.tex; }
-    std::vector<std::byte> read_pixels() {
-        auto x = std::lround(tex->width * uvs[0]);
-        auto y = std::lround(tex->height * uvs[1]);
-        auto w = std::lround(tex->width * (uvs[4] - uvs[0]));
-        auto h = std::lround(tex->height * (uvs[5] - uvs[1]));
-        return tex->read_pixels(x,y,w,h);
-
+    std::vector<std::byte> read_pixels()
+    {
+        return tex->read_pixels(x(), y(), width(), height());
     };
+
+    int width() const { return std::lround(tex->width * (uvs[4] - uvs[0])); }
+    int height() const { return std::lround(tex->height * (uvs[5] - uvs[1])); }
+    int x() const { return std::lround(tex->width * uvs[0]); }
+    int y() const { return std::lround(tex->height * uvs[1]); }
 };
 
 } // namespace gl_wrap

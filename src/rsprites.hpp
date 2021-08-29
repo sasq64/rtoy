@@ -39,7 +39,7 @@ struct RSprite
 
 struct SpriteBatch
 {
-    pix::Image image;
+    //pix::Image image;
     std::shared_ptr<gl_wrap::Texture> texture;
     std::vector<RSprite*> sprites;
 };
