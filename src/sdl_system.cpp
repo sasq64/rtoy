@@ -1,5 +1,7 @@
 #include "gl/gl.hpp"
+#ifdef USE_ASOUND
 #include "player_linux.h"
+#endif
 #include "system.hpp"
 #include <coreutils/utf8.h>
 
@@ -29,7 +31,9 @@ class SDLSystem : public System
     uint32_t dev = 0;
     std::unordered_map<uint32_t, int> pressed;
 
+#ifdef USE_ASOUND
     std::unique_ptr<LinuxPlayer> player;
+#endif
 
 public:
     std::shared_ptr<Screen> init_screen(Settings const& settings) override

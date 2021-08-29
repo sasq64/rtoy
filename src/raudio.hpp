@@ -62,7 +62,6 @@ class RAudio
     };
 
     mrb::RubyPtr audio_handler;
-    static inline RAudio* default_audio = nullptr;
     uint32_t dev = 0;
     mrb_state* ruby;
     System& system;
@@ -74,6 +73,7 @@ class RAudio
     void mix(size_t samples_len);
 
 public:
+    static inline RAudio* default_audio = nullptr;
     static inline RClass* rclass;
     static inline mrb_data_type dt{"Audio", [](mrb_state*, void* data) {}};
 
@@ -82,6 +82,8 @@ public:
     void set_frequency(int channel, int hz);
 
     size_t available() const;
+
+    void update();
 
     explicit RAudio(mrb_state* ruby, System& _system, Settings const& settings);
     void reset();

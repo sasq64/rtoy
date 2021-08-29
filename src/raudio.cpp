@@ -18,6 +18,13 @@ RAudio::RAudio(mrb_state* _ruby, System& _system, Settings const& settings)
     });
 }
 
+void RAudio::update()
+{
+    while (out_buffer.available() < 2048) {
+        mix(2048 / 2);
+    }
+}
+
 // Pull 'count' samples from all channels into out buffer
 void RAudio::mix(size_t samples_len)
 {

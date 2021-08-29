@@ -215,6 +215,8 @@ void Toy::destroy()
 
 bool Toy::render_loop()
 {
+    RAudio::default_audio->update();
+
     auto* display = Display::default_display;
     // auto seconds = get_seconds();
     auto* input = RInput::default_input;
