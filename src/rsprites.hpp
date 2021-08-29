@@ -1,6 +1,7 @@
 
 #pragma once
 #include "gl/buffer.hpp"
+#include "gl/program.hpp"
 #include "rlayer.hpp"
 
 #include <mruby.h>
@@ -43,6 +44,7 @@ class RSprites : public RLayer
 {
     std::unordered_map<GLuint, SpriteBatch> batches;
     SpriteBatch fixed_batch;
+    gl_wrap::Program program;
 public:
     RSprite* add_sprite(RImage* image, int flags);
     void remove_sprite(RSprite* spr);

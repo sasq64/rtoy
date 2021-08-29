@@ -28,6 +28,7 @@ void RAudio::update()
 // Pull 'count' samples from all channels into out buffer
 void RAudio::mix(size_t samples_len)
 {
+    //fmt::print("Mix {}\n", samples_len);
     std::array<float, 8192> temp[2]{{}, {}}; // NOLINT
     int ear = 0;
     for (auto& chan : channels) {

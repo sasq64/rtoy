@@ -15,9 +15,33 @@
 
 #include <algorithm>
 
+static std::string vertex_shader{R"gl(
+    #ifdef GL_ES
+        precision mediump float;
+    #endif
+        attribute vec2 in_pos;
+        uniform mat4 in_transform;
+        attribute vec2 in_uv;
+        varying vec2 out_uv;
+        void main() {
+            vec4 v = in_transform * vec4(in_pos, 0, 1);
+            gl_Position = vec4( v.x, v.y, 0, 1 );
+            out_uv = in_uv;
+    })gl"};
+
+static std::string fragment_shader{R"gl(
+    #ifdef GL_ES
+        precision mediump float;
+    #endif
+        uniform vec4 in_color;
+        uniform sampler2D in_tex;
+        varying vec2 out_uv;
+        void main() {
+            gl_FragColor = texture2D(in_tex, out_uv) * in_color;
+        })gl"};
+
 mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {
                               auto* spr = static_cast<RSprite*>(data);
-                              fmt::print("Sprite freed\n");
                               spr->texture = {};
                           }};
 mrb_data_type RSprites::dt{"Sprites", [](mrb_state*, void* data) {}};
@@ -28,9 +52,9 @@ void RSprite::update_tx(float screen_width, float screen_height)
     m = glm::scale(m, glm::vec3(2.0 / screen_width, 2.0 / screen_height, 1.0));
     m = glm::translate(m, glm::vec3(-screen_width / 2.0 + trans[0],
                               screen_height / 2.0 - trans[1], 0));
-    m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
     m = glm::translate(m, glm::vec3(texture.width() / 2.0 * scale[0],
                               -texture.height() / 2.0 * scale[1], 0));
+    m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
 
     m = glm::scale(
         m, glm::vec3(static_cast<float>(texture.width()) * scale[0] / 2,
@@ -38,7 +62,9 @@ void RSprite::update_tx(float screen_width, float screen_height)
     memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
 }
 
-RSprites::RSprites(int w, int h) : RLayer{w, h} {}
+RSprites::RSprites(int w, int h) : RLayer{w, h} {
+    program = gl_wrap::Program({vertex_shader}, {fragment_shader});
+}
 
 void RSprites::reset()
 {
@@ -57,8 +83,7 @@ void RSprites::render()
     glEnable(GL_BLEND);
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
-    // pix::set_transform(transform);
-    auto& textured = gl::ProgramCache::get_instance().textured;
+    auto& textured = program;//gl::ProgramCache::get_instance().textured;
     textured.use();
     float last_alpha = -1;
     auto pos = textured.getAttribute("in_pos");
@@ -74,7 +99,6 @@ void RSprites::render()
             auto& sprite = *it;
             if (sprite->texture.tex == nullptr) {
                 it = batch.sprites.erase(it);
-                fmt::print("Sprite erased");
                 continue;
             }
             if (last_alpha != sprite->alpha) {
@@ -101,8 +125,11 @@ void RSprites::render()
     auto it = batches.begin();
     while (it != batches.end()) {
         if (it->second.sprites.empty()) {
-            fmt::print("Batch erased");
+            fmt::print("Batch erased\n");
             it = batches.erase(it);
+            if (batches.empty()) {
+                fmt::print("No more batches\n");
+            }
             continue;
         }
         draw_batch(it->second);
