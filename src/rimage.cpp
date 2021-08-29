@@ -56,7 +56,6 @@ void RImage::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [w, h] = mrb::get_args<int, int>(mrb);
             auto* thiz = mrb::self_to<RImage>(self);
-            //thiz->upload();
 
             float u0 = thiz->texture.uvs[0];
             float v0 = thiz->texture.uvs[1];
@@ -69,11 +68,11 @@ void RImage::reg_class(mrb_state* ruby)
 
             float u = u0;
             float v = v0;
-            fmt::print("{} -> {}\n", u0, u1);
+            //fmt::print("{} -> {}\n", u0, u1);
             int x = 0;
             int y = 0;
             while (true) {
-                fmt::print("{} + {} =  {}\n", u, du, u + du);
+                //fmt::print("{} + {} =  {}\n", u, du, u + du);
                 if (x ==w) {
                     u = u0;
                     v += dv;

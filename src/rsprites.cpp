@@ -15,7 +15,11 @@
 
 #include <algorithm>
 
-mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {}};
+mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {
+                              auto* spr = static_cast<RSprite*>(data);
+                              fmt::print("Sprite freed\n");
+                              spr->texture = {};
+                          }};
 mrb_data_type RSprites::dt{"Sprites", [](mrb_state*, void* data) {}};
 
 void RSprite::update_tx(float screen_width, float screen_height)
@@ -25,10 +29,12 @@ void RSprite::update_tx(float screen_width, float screen_height)
     m = glm::translate(m, glm::vec3(-screen_width / 2.0 + trans[0],
                               screen_height / 2.0 - trans[1], 0));
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
-    m = glm::translate(
-        m, glm::vec3(width / 2 * scale[0], -height / 2 * scale[1], 0));
-    m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
-                          static_cast<float>(height) * scale[1] / -2, 1.0));
+    m = glm::translate(m, glm::vec3(texture.width() / 2.0 * scale[0],
+                              -texture.height() / 2.0 * scale[1], 0));
+
+    m = glm::scale(
+        m, glm::vec3(static_cast<float>(texture.width()) * scale[0] / 2,
+               static_cast<float>(texture.height()) * scale[1] / -2, 1.0));
     memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
 }
 
@@ -47,7 +53,7 @@ void RSprites::clear()
 
 void RSprites::render()
 {
-    //if (batches.empty()) { return; }
+    // if (batches.empty()) { return; }
     glEnable(GL_BLEND);
     glLineWidth(style.line_width);
     pix::set_colors(style.fg, style.bg);
@@ -60,9 +66,17 @@ void RSprites::render()
     pos.enable();
     uv.enable();
 
+    bool used = false;
     auto draw_batch = [&](SpriteBatch& batch) {
         batch.texture->bind();
-        for (auto const& sprite : batch.sprites) {
+        auto it = batch.sprites.begin();
+        while (it != batch.sprites.end()) {
+            auto& sprite = *it;
+            if (sprite->texture.tex == nullptr) {
+                it = batch.sprites.erase(it);
+                fmt::print("Sprite erased");
+                continue;
+            }
             if (last_alpha != sprite->alpha) {
                 gl::Color fg = style.fg;
                 fg.alpha = sprite->alpha;
@@ -79,27 +93,36 @@ void RSprites::render()
             gl::vertexAttrib(
                 uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
             gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
+            it++;
         }
+        return batch.sprites.empty();
     };
 
-    for (auto& [_, batch] : batches) {
-        draw_batch(batch);
+    auto it = batches.begin();
+    while (it != batches.end()) {
+        if (it->second.sprites.empty()) {
+            fmt::print("Batch erased");
+            it = batches.erase(it);
+            continue;
+        }
+        draw_batch(it->second);
+        it++;
     }
-    if(fixed_batch.texture != nullptr) {
-        draw_batch(fixed_batch);
-    }
+
+    if (fixed_batch.texture != nullptr) { draw_batch(fixed_batch); }
     pos.disable();
     uv.disable();
 }
 
 RSprite* RSprites::add_sprite(RImage* image, int flags)
 {
-    //image->upload();
+    // image->upload();
 
-    auto& batch = flags == 1 ? fixed_batch : batches[image->texture.tex->tex_id];
+    auto& batch =
+        flags == 1 ? fixed_batch : batches[image->texture.tex->tex_id];
     if (batch.texture == nullptr) {
         batch.texture = image->texture.tex;
-        //batch.image = image->image;
+        // batch.image = image->image;
     }
     auto& uvs = image->texture.uvs;
     std::array vertexData{-1.F, -1.F, 1.F, -1.F, 1.F, 1.F, -1.F, 1.F, 0.F, 0.F,
@@ -107,15 +130,11 @@ RSprite* RSprites::add_sprite(RImage* image, int flags)
     std::copy(uvs.begin(), uvs.end(), vertexData.begin() + 8);
 
     batch.sprites.push_back(
-        new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData},
-            static_cast<float>(width), static_cast<float>(height)});
+        new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}});
     auto* spr = batch.sprites.back();
-    spr->parent = &batch;
-    spr->uvs = image->texture.uvs;
-    spr->width = image->width();
-    spr->height = image->height();
-    spr->trans[0] = image->x();
-    spr->trans[1] = image->y();
+    spr->texture = image->texture;
+    spr->trans[0] = spr->texture.x();
+    spr->trans[1] = spr->texture.y();
 
     spr->update_tx(width, height);
     return spr;
@@ -124,14 +143,7 @@ RSprite* RSprites::add_sprite(RImage* image, int flags)
 void RSprites::remove_sprite(RSprite* spr)
 {
     // TODO: Optimize
-    auto& sprites = spr->parent->sprites;
-    sprites.erase(
-        std::remove(sprites.begin(), sprites.end(), spr), sprites.end());
-    if (sprites.empty()) {
-        batches.erase(spr->parent->texture->tex_id);
-        //spr->parent->texture = nullptr;
-        fmt::print("Removing batch, {} left\n", batches.size());
-    }
+    spr->texture = {};
 }
 
 void RSprites::reg_class(mrb_state* ruby)
@@ -206,10 +218,7 @@ void RSprites::reg_class(mrb_state* ruby)
         ruby, RSprite::rclass, "img",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rspr = mrb::self_to<RSprite>(self);
-            gl_wrap::TexRef tex{ rspr->parent->texture, rspr->uvs};
-            auto* rimage = new RImage(tex);
-            //rimage->texture.tex = rspr->parent->texture;
-            //rimage->texture.uvs = rspr->uvs;
+            auto* rimage = new RImage(rspr->texture);
             return mrb::new_data_obj(mrb, rimage);
         },
         MRB_ARGS_NONE());

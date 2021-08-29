@@ -17,20 +17,16 @@ struct SpriteBatch;
 struct RSprite
 {
     gl_wrap::ArrayBuffer<GL_STATIC_DRAW> vbo;
-    float width{};
-    float height{};
     float alpha = 1.0F;
     bool dirty = false;
-    SpriteBatch* parent = nullptr;
 
-    std::array<float, 8> uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
+    gl_wrap::TexRef texture;
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     std::array<float, 2> trans = {0.0F, 0.0F};
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0;
 
-    mrb_value obj{};
     static inline RClass* rclass;
     static mrb_data_type dt;
 
@@ -39,7 +35,6 @@ struct RSprite
 
 struct SpriteBatch
 {
-    //pix::Image image;
     std::shared_ptr<gl_wrap::Texture> texture;
     std::vector<RSprite*> sprites;
 };

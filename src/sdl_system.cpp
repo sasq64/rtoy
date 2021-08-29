@@ -1,6 +1,6 @@
-#include "system.hpp"
-#include "player_linux.h"
 #include "gl/gl.hpp"
+#include "player_linux.h"
+#include "system.hpp"
 #include <coreutils/utf8.h>
 
 #include <SDL.h>
@@ -30,6 +30,7 @@ class SDLSystem : public System
     std::unordered_map<uint32_t, int> pressed;
 
     std::unique_ptr<LinuxPlayer> player;
+
 public:
     std::shared_ptr<Screen> init_screen(Settings const& settings) override
     {
@@ -126,12 +127,12 @@ public:
     }
 #ifdef USE_ASOUND
     void init_audio(Settings const&) override
-{
+    {
         player = std::make_unique<LinuxPlayer>(44100);
-}
+    }
 
-void set_audio_callback(
-    std::function<void(float*, size_t)> const& fcb) override
+    void set_audio_callback(
+        std::function<void(float*, size_t)> const& fcb) override
     {
 
         player->play([fcb](int16_t* data, size_t sz) {
@@ -164,20 +165,20 @@ void set_audio_callback(
         want.samples = 4096;
         want.userdata = this;
         want.callback = [](void* userdata, Uint8* stream, int len) {
-          if (stream == nullptr || len < 0) {
-              fmt::print("{}/{}\n", stream, len);
-          };
-          auto* sys = static_cast<SDLSystem*>(userdata);
-          if (sys->audio_callback) {
-              sys->audio_callback(reinterpret_cast<float*>(stream), len / 4);
-          }
+            if (stream == nullptr || len < 0) {
+                fmt::print("{}/{}\n", stream, len);
+            };
+            auto* sys = static_cast<SDLSystem*>(userdata);
+            if (sys->audio_callback) {
+                sys->audio_callback(reinterpret_cast<float*>(stream), len / 4);
+            }
         };
         dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have,
-                                  SDL_AUDIO_ALLOW_ANY_CHANGE & (~SDL_AUDIO_ALLOW_FORMAT_CHANGE));
+            SDL_AUDIO_ALLOW_ANY_CHANGE & (~SDL_AUDIO_ALLOW_FORMAT_CHANGE));
 
         fmt::print("Audio format {} {} vs {}\n", have.format, have.freq, dev);
         SDL_PauseAudioDevice(dev, 0);
-        }
+    }
 #endif
 };
 
@@ -185,4 +186,3 @@ std::unique_ptr<System> create_sdl_system()
 {
     return std::make_unique<SDLSystem>();
 }
-
