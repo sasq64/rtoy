@@ -84,6 +84,7 @@ void RCanvas::draw_image(float x, float y, RImage* image, float scale)
 
 void RCanvas::render()
 {
+    if(!enabled) return;
     canvas.bind();
     glEnable(GL_BLEND);
     pix::set_transform(transform);

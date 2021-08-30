@@ -179,8 +179,6 @@ target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)
 target_link_options(${TARGET} PRIVATE -L${FLITE_LIB}/lib)
 target_link_libraries(${TARGET} PRIVATE
     pix
-    asound
-    #music
     flite_cmu_us_kal
     flite_usenglish
     flite_cmulex
@@ -191,7 +189,9 @@ target_link_libraries(${TARGET} PRIVATE
     ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
     ${CMAKE_DL_LIBS}
     fmt::fmt)
-
+if(RASPBERRY_PI)
+    target_llink_libraries(${TARGET} PRIVATE asound)
+endif()
 
 if(NOT EMSCRIPTEN)
     if (RASPBERRY_PI)

@@ -1,4 +1,4 @@
-
+console.enabled = false
 # Sprite split and tween example
 img = Image.from_file("data/face.png")
 sprites = img.split(20, 40).map { |img| add_sprite(img) }

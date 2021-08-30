@@ -98,6 +98,7 @@ void RConsole::scroll(int dy, int dx)
 
 void RConsole::render()
 {
+    if(!enabled) return;
     console->flush();
     console->render();
     /* auto& program = gl_wrap::ProgramCache::get_instance().textured; */

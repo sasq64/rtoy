@@ -66,6 +66,24 @@ void RLayer::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
+        ruby, RLayer::rclass, "enabled=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [e] = mrb::get_args<bool>(mrb);
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            rlayer->enabled = e;
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RLayer::rclass, "enabled",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            return mrb::to_value(rlayer->enabled, mrb);
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
         ruby, RLayer::rclass, "bg=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [av] = mrb::get_args<mrb_value>(mrb);
@@ -208,6 +226,7 @@ void RLayer::reg_class(mrb_state* ruby)
 
 void RLayer::reset()
 {
+    enabled = true;
     transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     trans = {0.0F, 0.0F};
     scale = {1.0F, 1.0F};

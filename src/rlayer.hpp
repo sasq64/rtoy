@@ -32,6 +32,7 @@ protected:
     int width = -1;
     int height = -1;
 
+    bool enabled = true;
 
 public:
     virtual void reset();
@@ -44,5 +45,7 @@ public:
     RStyle style{{1,1,1,1}, {0,0,0,0}, 2.0F};
     virtual void render() {}
     virtual void update_tx();
+
+    virtual void enable(bool en = true) { enabled = en; }
 };
 
