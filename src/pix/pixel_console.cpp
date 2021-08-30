@@ -1,4 +1,5 @@
 #include "pixel_console.hpp"
+#include "gl/program_cache.hpp"
 #include <algorithm>
 
 std::string PixConsole::vertex_shader{R"gl( 
@@ -159,8 +160,6 @@ void PixConsole::reset()
 
 void PixConsole::set_tile_image(char32_t c, gl_wrap::TexRef tex)
 {
-    //if (w < 0) w = image.width;
-    //if (h < 0) h = image.height;
     auto fx = texture_width / 256;
     auto fy = texture_height / 256;
 
@@ -173,48 +172,14 @@ void PixConsole::set_tile_image(char32_t c, gl_wrap::TexRef tex)
         auto cy = (it->second >> 8) * fy;
         pos = {cx, cy};
     }
-
-    auto pixels = tex.read_pixels();
-
-    auto* ptr = reinterpret_cast<uint32_t*>(pixels.data());
-    font_texture.update(pos.first, pos.second, char_width, char_height, ptr);
-}
-
-void PixConsole::set_tile_image(
-    char32_t c, pix::Image const& image, int x, int y, int w, int h)
-{
-    if (w < 0) w = image.width;
-    if (h < 0) h = image.height;
-    auto fx = texture_width / 256;
-    auto fy = texture_height / 256;
-
-    std::pair<int, int> pos{0, 0};
-    auto it = char_uvs.find(c);
-    if (it == char_uvs.end()) {
-        pos = alloc_char(c);
-    } else {
-        auto cx = (it->second & 0xff) * fx;
-        auto cy = (it->second >> 8) * fy;
-        pos = {cx, cy};
-    }
-
-    std::vector<uint32_t> temp(w * h);
-    std::fill(temp.begin(), temp.end(), 0xffffffff);
-    auto* ptr = temp.data();
-    uint32_t* src =
-        reinterpret_cast<uint32_t*>(image.ptr) + x + y * image.width;
-    int height = h;
-    while (height > 0) {
-        auto width = w;
-        while (width > 0) {
-            *ptr++ = *src++;
-            width--;
-        }
-        src += (image.width - w);
-        height--;
-    }
-
-    font_texture.update(pos.first, pos.second, w, h, temp.data());
+    pix::set_colors(
+        std::array{1.0F, 1.0F, 1.0F, 1.0F}, std::array{0.0F, 0.0F, 0.0F, 0.0F});
+    font_texture.set_target();
+    gl_wrap::ProgramCache::get_instance().textured.use();
+    tex.bind();
+    pix::draw_quad_uvs(pos.first, texture_height - char_height - pos.second,
+        char_width, char_height, tex.uvs);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 std::pair<int, int> PixConsole::text(int x, int y, std::string const& t)

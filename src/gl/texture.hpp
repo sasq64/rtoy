@@ -122,13 +122,20 @@ struct Texture
         glBindTexture(GL_TEXTURE_2D, tex_id);
     }
 
-    void set_target() const
+    void set_target()
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+        if (fb_id == 0) {
+            //glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex_id);
+            glGenFramebuffers(1, &fb_id);
+            glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+            glFramebufferTexture2D(
+                GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0);
+        } else {
+            glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+        }
         setViewport({width, height});
     }
-
-    void set_source() const {}
 
     std::vector<std::byte> read_pixels(
         int x = 0, int y = 0, int w = -1, int h = -1)

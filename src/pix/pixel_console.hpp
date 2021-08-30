@@ -66,9 +66,6 @@ public:
 
     void set_tile_size(int w, int h);
 
-    void set_tile_image(char32_t c, pix::Image const& image, int x = 0,
-        int y = 0, int w = -1, int h = -1);
-
     void set_tile_image(char32_t c, gl_wrap::TexRef tex);
 
     std::pair<int, int> text(int x, int y, std::string const& t);
