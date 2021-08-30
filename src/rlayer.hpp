@@ -3,6 +3,8 @@
 #include <array>
 #include <cstdint>
 
+#include "mrb_tools.hpp"
+
 struct RClass;
 struct mrb_state;
 
@@ -14,10 +16,16 @@ enum BlendMode
 
 struct RStyle
 {
-    std::array<float, 4> fg{};
-    std::array<float, 4> bg{};
-    float line_width = 1;
+    std::array<float, 4> fg{1, 1, 1, 1};
+    std::array<float, 4> bg{0, 0, 0, 0};
+    float line_width = 2;
     BlendMode blend_mode = BlendMode::Blend;
+
+    static inline RClass* rclass = nullptr;
+    static mrb_data_type dt;
+    static void reg_class(mrb_state* ruby);
+
+    static inline mrb_state* ruby = nullptr;
 };
 
 class RLayer
@@ -34,15 +42,23 @@ protected:
 
     bool enabled = true;
 
+    mrb::RubyPtr stylep;
+    RStyle& style;
+
 public:
     virtual void reset();
 
     static inline RClass* rclass = nullptr;
     static void reg_class(mrb_state* ruby);
 
-    RLayer(int w, int h) : width(w), height(h) {}
+    RLayer(int w, int h)
+        : width(w),
+          height(h),
+          stylep{mrb::RubyPtr{RStyle::ruby,
+              mrb_obj_new(RStyle::ruby, RStyle::rclass, 0, nullptr)}},
+          style{*stylep.as<RStyle>()}
+    {}
 
-    RStyle style{{1,1,1,1}, {0,0,0,0}, 2.0F};
     virtual void render() {}
     virtual void update_tx();
 

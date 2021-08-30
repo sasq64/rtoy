@@ -60,6 +60,14 @@ void RCanvas::draw_circle(float x, float y, float r)
     pix::draw_circle({x, y}, r);
 }
 
+void RCanvas::draw_circle(float x, float y, float r, RStyle const& style)
+{
+    canvas.set_target();
+    glLineWidth(style.line_width);
+    pix::set_colors(style.fg, style.bg);
+    pix::draw_circle({x, y}, r);
+}
+
 void RCanvas::clear()
 {
     canvas.set_target();
@@ -106,17 +114,6 @@ void RCanvas::reg_class(mrb_state* ruby)
     rclass = mrb_define_class(ruby, "Canvas", RLayer::rclass);
     MRB_SET_INSTANCE_TT(RCanvas::rclass, MRB_TT_DATA);
 
-    /* mrb_define_method( */
-    /*     ruby, RCanvas::rclass, "initialize", */
-    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
-    /*         auto* rcanvas = mrb::self_to<RCanvas>(self); */
-    /*         auto* font = new RFont("data/Ubuntu-B.ttf"); */
-    /*         rcanvas->current_font = */
-    /*             mrb::RubyPtr{mrb, mrb::new_data_obj(mrb, font)}; */
-    /*         return mrb_nil_value(); */
-    /*     }, */
-    /*     MRB_ARGS_NONE()); */
-
     mrb_define_method(
         ruby, RCanvas::rclass, "copy",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -162,12 +159,25 @@ void RCanvas::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RCanvas::rclass, "circle",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x, y, r] = mrb::get_args<float, float, float>(mrb);
+            
+
+            auto n = mrb_get_argc(mrb);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
             if (rcanvas->style.blend_mode == BlendMode::Add) {
                 glBlendFunc(GL_ONE, GL_ONE);
             }
-            rcanvas->draw_circle(x, y, r);
+            if (n == 4) {
+                RImage* image = nullptr;
+                mrb_float x;
+                mrb_float y;
+                mrb_float r;
+                RStyle* style = nullptr;
+                mrb_get_args(mrb, "fffd", &x, &y, &r, &style, &RStyle::dt);
+                rcanvas->draw_circle(x, y, r, *style);
+            } else {
+                auto [x, y, r] = mrb::get_args<float, float, float>(mrb);
+                rcanvas->draw_circle(x, y, r);
+            }
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             return mrb_nil_value();
         },

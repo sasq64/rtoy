@@ -1,4 +1,5 @@
 require 'os.rb'
+require 'tween.rb'
 require 'repl.rb'
 require 'editor.rb'
 require 'turtle.rb'

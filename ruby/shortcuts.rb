@@ -50,7 +50,9 @@ module Shortcuts
     def load_image(*args) Image.from_file(*args) end
 
     doc! "Draw text at specific location with specific colors"
-    def text(*args) @@display.console.text(*args) end
+    def text(*args, **kwargs) 
+        @@display.console.text(*args)
+    end
     doc! "Get the character at x,y in the console"
     def get_char(x, y) @@display.console.get_char(x, y) end
     def scale(x, y = x) @@display.console.scale = [x,y] end
@@ -59,7 +61,15 @@ module Shortcuts
     doc! "Draw a line in the canvas from x,y to x2,y2"
     def line(x, y, x2, y2) @@display.canvas.line(x, y, x2, y2) end
     doc! "Draw a circle in the canvas at x,y with radius r"
-    def circle(x, y, r) @@display.canvas.circle(x, y, r) end
+    def circle(x, y, r, **kwargs)
+        if kwargs.size
+            style = Style.new
+            kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
+            @@display.canvas.circle(x, y, r, style)
+        else
+            @@display.canvas.circle(x, y, r)
+        end
+    end
 
     returns! Sprite
     doc! "Add a sprite to the screen"

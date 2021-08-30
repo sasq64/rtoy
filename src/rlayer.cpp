@@ -10,6 +10,9 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
+mrb_data_type RStyle::dt{
+    "RStyle", [](mrb_state*, void* data) { delete (RStyle*)data; }};
+
 void RLayer::update_tx()
 {
     glm::mat4x4 m(1.0F);
@@ -27,7 +30,8 @@ void RLayer::update_tx()
     // 3. Translate
     m = glm::translate(m, glm::vec3(trans[0], -trans[1], 0));
 
-    // 2. Scale to screen space and apply scale (origin is now to top left corner).
+    // 2. Scale to screen space and apply scale (origin is now to top left
+    // corner).
     m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
                           static_cast<float>(height) * scale[1] / 2, 1.0));
 
@@ -39,7 +43,7 @@ void RLayer::update_tx()
     //  |
     //  |    0
     //  |
-    //  +-------->1 
+    //  +-------->1
     // -1
     //
     std::copy(glm::value_ptr(m), glm::value_ptr(m) + 16, transform.begin());
@@ -47,8 +51,40 @@ void RLayer::update_tx()
 
 void RLayer::reg_class(mrb_state* ruby)
 {
+    RStyle::ruby = ruby;
+    RStyle::rclass = mrb_define_class(ruby, "Style", ruby->object_class);
+    MRB_SET_INSTANCE_TT(RStyle::rclass, MRB_TT_DATA);
+
     rclass = mrb_define_class(ruby, "Layer", ruby->object_class);
     MRB_SET_INSTANCE_TT(RLayer::rclass, MRB_TT_DATA);
+
+    mrb_define_method(
+        ruby, RStyle::rclass, "initialize",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            DATA_PTR(self) = new RStyle();
+            DATA_TYPE(self) = mrb::get_data_type<RStyle>();
+            auto* rstyle = mrb::self_to<RStyle>(self);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, RStyle::rclass, "fg=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [av] = mrb::get_args<mrb_value>(mrb);
+            auto* rstyle = mrb::self_to<RStyle>(self);
+            rstyle->fg = mrb::to_array<float, 4>(av, mrb);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RStyle::rclass, "fg",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rstyle = mrb::self_to<RStyle>(self);
+            return mrb::to_value(rstyle->fg, mrb);
+        },
+        MRB_ARGS_NONE());
 
     mrb_define_method(
         ruby, RLayer::rclass, "width",

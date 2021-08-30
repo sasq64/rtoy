@@ -9,10 +9,16 @@ class TweenError < StandardError
 end
 
 class TweenFunc
-    def self.ease_out_back(t)
+
+    def self.in_back(t)
+        s = 1.70158
+        (s+1)*t*t*t - s*t*t
+    end
+
+    def self.out_back(t)
         s = 1.70158
         t -= 1
-        (t*t*((s+1)*t + s) + 1);
+        (t*t*((s+1)*t + s) + 1)
     end
 
     def self.smooth_step(t)
@@ -32,7 +38,7 @@ class TweenFunc
     end
 
     def self.in_out_sine(t)
-        -0.5 * (Math::cos(Math::PI*t) - 1);
+        -0.5 * (Math::cos(Math::PI*t) - 1)
     end
 
     def self.out_bounce(t)
@@ -58,27 +64,54 @@ class TweenFunc
         1 - out_bounce(1-t)
     end
 
+    def self.in_cubic(t)
+        t*t*t
+    end
+
+    def self.out_cubic(t)
+        1 - (1-t)**3
+    end
+
+    def self.in_out_cubic(t)
+        t < 0.5 ? 4*t*t*t : 1 - ((-2*t+2)**3)/2
+    end
+
+    def self.in_circ(t)
+        1 - Math::sqrt(1 - t*t)
+    end
+
+    def self.out_circ(t)
+        Math::sqrt(1 - (t-1)*(t-1))
+    end
+
+    def self.in_out_circ(t)
+        t < 0.5 ? (1 - Math::sqrt(1 - (2*t)**2)) / 2 :
+            (Math::sqrt(1 - (-2 * t + 2)**2) + 1) / 2
+    end
+
     def self.sine(t)
-        (Math::sin(t * (Math::PI*2) - Math::PI/2) + 1.0)/2.0;
+        (Math::sin(t * (Math::PI*2) - Math::PI/2) + 1.0)/2.0
     end
 
     def self.in_elastic(t)
-        c4 = (2 * Math::PI) / 3;
-        t == 0 ? 0 : t == 1 ? 1
-        : -2**(10 * t - 10) * Math::sin((t * 10 - 10.75) * c4);
+        c4 = (2 * Math::PI) / 3
+        return t if t == 0 || t == 1
+        -2**(10 * t - 10) * Math::sin((t * 10 - 10.75) * c4)
     end
 
     def self.out_elastic(t)
-        c4 = (2 * Math::PI) / 3;
-        t == 0 ? 0 : t == 1 ? 1
-        : -2**(-10 * t) * Math::sin((t * 10 - 10.75) * c4) + 1;
+        c4 = (2 * Math::PI) / 3
+        p t
+        t = 2**(-10 * t) * Math::sin((t * 10 - 0.75) * c4) + 1
+        p t
+        t
     end
 
     def self.in_out_elastic(t)
         c5 = (2 * Math::PI) / 4.5
         t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ?
         -(2**(20 * t - 10) * Math::sin((20 * t - 11.125) * c5)) / 2
-        : (2**(-20 * t + 10) * Math::sin((20 * t - 11.125) * c5)) / 2 + 1;
+        : (2**(-20 * t + 10) * Math::sin((20 * t - 11.125) * c5)) / 2 + 1
     end
 end
 
@@ -259,8 +292,33 @@ class Tween
         self
     end
 
-    def self.mape(*args, &block)
+    def self.make(*args, &block)
         Tween.new(*args, &block)
+    end
+
+    def self.show_all
+        w,h = 150,150
+        gap = 20
+        x,y = gap,gap
+        OS.display.clear
+        TweenFunc.public_methods(false).each do | fn |
+            OS.canvas.fg = Color::BLACK
+            OS.canvas.rect(x,y,w,h)
+            OS.canvas.fg = Color::GREEN
+            (0..w).each do |fx|
+                fy = TweenFunc.send(fn, fx.to_f/w)
+                fy = ((1 - fy)*0.5 + 0.25) * h
+                OS.circle(fx + x,fy + y, 2)
+            end
+            OS.canvas.fg = Color::WHITE
+            OS.canvas.text(x,y, fn.to_s, 20)
+            x += w+gap
+            if(x + w+gap > OS.display.width)
+                x = gap
+                y += h+gap
+            end
+        end
+        loop { OS.vsync }
     end
 
 end
