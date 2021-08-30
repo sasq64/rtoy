@@ -312,6 +312,7 @@ class Tween
             end
             OS.canvas.fg = Color::WHITE
             OS.canvas.text(x,y, fn.to_s, 20)
+            Fiber.yield
             x += w+gap
             if(x + w+gap > OS.display.width)
                 x = gap
