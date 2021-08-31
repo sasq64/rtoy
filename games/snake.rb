@@ -43,6 +43,15 @@ end
  
 on_key { |key| $keys.append(key) }
 
+on_click do |x,y|
+    if $mx != 0
+        $keys.append(y/32 > $y ? Key::DOWN : Key::UP)
+    else
+        $keys.append(x/32 > $x ? Key::RIGHT : Key::LEFT)
+    end
+end
+
+
 def step_worm
 
     $x += $mx

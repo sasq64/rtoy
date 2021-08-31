@@ -128,15 +128,17 @@
     <h2> Things to try </h2>
     <pre>
 
-    print "What is your name ? " ; name = readln) ; println "Hello #{name}"
-
-    display.bg = Color::BLUE
     <a onclick="to_rtoy('canvas.fg = Color::RED\n')" href="#">canvas.fg = Color::RED</a>
     <a onclick="to_rtoy('circle(500,500,50)\n')" href="#">circle(500,500,50)</a>
 
-    say "Hello people"
-
-    vsync { display.console.rotation += 0.01 }
+    <a onclick="to_rtoy('run \'games/snake.rb\'\n')" href="#">run "games/snake.rb"</a>
+    <a onclick="to_rtoy('run \'games/sokoban.rb\'\n')" href="#">run "games/sokoban.rb"</a>
+    <a onclick="to_rtoy('x,y = 0,0 ; on_click { |a,b| x,y = a,b } ; on_drag { |a,b| line(a,b,x,y) ; x,y = a,b }\n')" href="#">x,y = 0,0 ; on_click { |a,b| x,y = a,b } ; on_drag { |a,b| line(a,b,x,y) ; x,y = a,b }</a>
+    <a onclick="to_rtoy('vsync { display.console.rotation += 0.01 }\n')" href="#">vsync { display.console.rotation += 0.01 }</a>
+    <a onclick="to_rtoy('print \'What is your name ? \' ; name = readln() ; println \'Hello #{name}\'\n')" href="#">print "What is your name ? " ; name = readln) ; println "Hello #{name}"</a>
+    <a onclick="to_rtoy('say \'Hello people\'\n')" href="#">say "Hello people"</a>
+    
+    display.bg = Color::BLUE
 
     sound = Audio.load_wav("data/piano.wav")
     play(sound)
@@ -149,11 +151,6 @@
 
     edit "games/snake.rb"
 
-    
-    <a onclick="to_rtoy('run \'games/sokoban.rb\'\n')" href="#">run "games/sokoban.rb"</a>
-    <a onclick="to_rtoy('x,y = 0,0 ; on_click { |a,b| x,y = a,b } ; on_drag { |a,b| line(a,b,x,y) ; x,y = a,b }\n')" href="#">x,y = 0,0 ; on_click { |a,b| x,y = a,b } ; on_drag { |a,b| line(a,b,x,y) ; x,y = a,b }</a>
-    <a onclick="to_rtoy('vsync { display.console.rotation += 0.01 }\n')" href="#">vsync { display.console.rotation += 0.01 }</a>
-    <a onclick="to_rtoy('\n')" href="#"></a>
 
     on_click { |x,y| circle(x,y,10) }
 
