@@ -1,19 +1,18 @@
 #include "rinput.hpp"
-#include "settings.hpp"
 #include "error.hpp"
 #include "keycodes.h"
 #include "mrb_tools.hpp"
+#include "settings.hpp"
 
 #include <coreutils/utf8.h>
 #include <mruby/class.h>
 
 #include <fmt/format.h>
 
-    RInput::RInput(mrb_state* _ruby, System& _system)
-        : ruby{_ruby}, system{_system}
-    {
-        system.init_input(Settings{});
-    }
+RInput::RInput(mrb_state* _ruby, System& _system) : ruby{_ruby}, system{_system}
+{
+    system.init_input(Settings{});
+}
 
 bool RInput::handle_event(KeyEvent const& e)
 {
@@ -64,6 +63,11 @@ bool RInput::handle_event(TextEvent const& me)
     return false;
 }
 
+void RInput::put_char(char32_t c)
+{
+    call_proc(ruby, key_handler, c, 0);
+}
+
 void RInput::poll_events()
 {
     bool done = false;
@@ -101,10 +105,12 @@ void RInput::reg_class(mrb_state* ruby, System& system)
     mrb_define_const(ruby, keys, "LEFT", mrb_int_value(ruby, RKEY_LEFT));
     mrb_define_const(ruby, keys, "RIGHT", mrb_int_value(ruby, RKEY_RIGHT));
     mrb_define_const(ruby, keys, "PAGE_UP", mrb_int_value(ruby, RKEY_PAGEUP));
-    mrb_define_const(ruby, keys, "PAGE_DOWN", mrb_int_value(ruby, RKEY_PAGEDOWN));
+    mrb_define_const(
+        ruby, keys, "PAGE_DOWN", mrb_int_value(ruby, RKEY_PAGEDOWN));
     mrb_define_const(ruby, keys, "UP", mrb_int_value(ruby, RKEY_UP));
     mrb_define_const(ruby, keys, "DOWN", mrb_int_value(ruby, RKEY_DOWN));
-    mrb_define_const(ruby, keys, "BACKSPACE", mrb_int_value(ruby, RKEY_BACKSPACE));
+    mrb_define_const(
+        ruby, keys, "BACKSPACE", mrb_int_value(ruby, RKEY_BACKSPACE));
     mrb_define_const(ruby, keys, "ENTER", mrb_int_value(ruby, RKEY_ENTER));
     mrb_define_const(ruby, keys, "HOME", mrb_int_value(ruby, RKEY_HOME));
     mrb_define_const(ruby, keys, "END", mrb_int_value(ruby, RKEY_END));
@@ -113,7 +119,8 @@ void RInput::reg_class(mrb_state* ruby, System& system)
     mrb_define_const(ruby, keys, "DEL", mrb_int_value(ruby, RKEY_DELETE));
     mrb_define_const(ruby, keys, "INSERT", mrb_int_value(ruby, RKEY_INSERT));
     mrb_define_const(ruby, keys, "END_", mrb_int_value(ruby, RKEY_END));
-    mrb_define_const(ruby, keys, "LEFT_SHIFT", mrb_int_value(ruby, RKEY_LSHIFT));
+    mrb_define_const(
+        ruby, keys, "LEFT_SHIFT", mrb_int_value(ruby, RKEY_LSHIFT));
     mrb_define_const(ruby, keys, "LEFT_ALT", mrb_int_value(ruby, RKEY_LALT));
     mrb_define_const(ruby, keys, "F1", mrb_int_value(ruby, RKEY_F1));
     mrb_define_const(ruby, keys, "F2", mrb_int_value(ruby, RKEY_F2));

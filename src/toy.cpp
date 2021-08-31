@@ -40,6 +40,14 @@ std::time_t to_time_t(TP tp)
     return system_clock::to_time_t(sctp);
 }
 
+extern "C" void send_to_rtoy(const char* text)
+{
+    auto* inp = RInput::default_input;
+    for(auto c : std::string(text)) {
+        inp->put_char(c);
+    }
+}
+
 void Toy::init()
 {
     ruby = mrb_open();

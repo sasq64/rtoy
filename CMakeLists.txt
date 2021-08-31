@@ -217,6 +217,9 @@ if(EMSCRIPTEN)
     target_link_options(toy.html PRIVATE "-sUSE_SDL=2")
     target_link_options(toy.html PRIVATE "-sFETCH=1")
     target_link_options(toy.html PRIVATE "-sINITIAL_MEMORY=67108864")
-    target_link_options(toy.html PRIVATE -sERROR_ON_UNDEFINED_SYMBOLS=1)
+    target_link_options(toy.html PRIVATE "-sEXPORTED_FUNCTIONS=[_main, _send_to_rtoy]")
+    target_link_options(toy.html PRIVATE "-sEXPORTED_RUNTIME_METHODS=[ccall, cwrap]")
+
+ target_link_options(toy.html PRIVATE -sERROR_ON_UNDEFINED_SYMBOLS=1)
 endif()
 

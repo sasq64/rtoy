@@ -98,9 +98,8 @@ module OS
         @@handlers = h
     end
 
-    module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer, :vec2
+    module_function :on_draw, :on_key, :on_drag, :on_click, :on_timer, :vec2, :remove_handler
 
-    @@key_queue = []
     def self.reset_handlers
         p "HANDLERS"
         @@handlers = Handlers.new
@@ -121,12 +120,7 @@ module OS
         end
         Input.default.on_key do |key,mod|
             @@read_key = key
-            if @@handlers.empty?(:key) 
-                @@key_queue.append(key)
-            else
-                @@handlers.call_all(:key, key, mod)
-                @@key_queue = []
-            end
+            @@handlers.call_all(:key, key, mod)
         end
         Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args) }
         Input.default.on_click { |*args| @@handlers.call_all(:click, *args) }
@@ -229,9 +223,12 @@ module OS
     alias readln gets
 
     def read_key()
+        if !@@read_key
+            Fiber.yield until @@read_key
+        end
+        r = @@read_key
         @@read_key = nil
-        Fiber.yield until @@read_key
-        @@read_key
+        r
     end
 
     def show(fn)
