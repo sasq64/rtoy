@@ -53,6 +53,7 @@ public:
     void copy_char(T* target, uint32_t color, FT_Bitmap const& b, int xoffs, int yoffs,
         int stride, int width = -1, int height = -1)
     {
+         fmt::print("{}x{} {}\n", b.width, b.rows, b.pitch);
         auto* data = b.buffer;
         for (int y = 0; y < b.rows; y++) {
             for (int x = 0; x < b.width; x++) {

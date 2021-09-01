@@ -61,7 +61,6 @@ class TileView < UI::Element
     def extend(x, y)
         @ex += x
         @ey += y
-        tween
         @sel.scalex = @scale * @ex * tile_map.size / 8
         @sel.scaley = @scale * @ey * tile_map.size / 8
     end
@@ -106,6 +105,8 @@ class TileScreen
     end
 
     def click(x,y)
+        p @con.scale.x
+        p @con.scale.y
         w,h = @con.get_tile_size()
         sx,sy = @con.scale.to_a
         ox,oy = @con.offset.to_a
@@ -131,13 +132,13 @@ class TileScreen
         sz = 8*4
         case key
         when Key::LEFT
-            o[0] += sz
+            o.x += sz
         when Key::RIGHT
-            o[0] -= sz
+            o.x -= sz
         when Key::UP
-            o[1] += sz
+            o.y += sz
         when Key::DOWN
-            o[1] -= sz
+            o.y -= sz
         when 'A'.ord
             @tile_view.extend(-1,0)
         when 'W'.ord
@@ -155,9 +156,9 @@ class TileScreen
         when 's'.ord
             @tile_view.tile += (@tile_view.width)
         when '+'.ord
-            @con.scale = [s[0] * 2, s[1] * 2 ]
+            @con.scale = [s.x * 2, s.y * 2 ]
         when '-'.ord
-            @con.scale = [s[0] * 0.5, s[1] * 0.5]
+            @con.scale = [s.x * 0.5, s.y * 0.5]
         end
         @con.offset = o
     end
@@ -167,6 +168,7 @@ Display.default.console.fg = Color::WHITE
 Display.default.clear()
 ui = UI::Frame.new
 pos = Vec2.new(0,0)
+Display.default.console.set_tile_size(8,8)
 
 tm = TileMap.new(Image.from_file("data/cave.png"), 8)
 tile_view = TileView.new(tm, pos)
@@ -178,5 +180,5 @@ ui.input.on_key {| key,mod| tile_screen.key(key, mod) }
 
 sz = tm.size
 Display.default.bg = Color::BLACK
-Display.default.console.set_tile_size(sz, sz)
 
+loop { vsync }
