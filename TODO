@@ -1,5 +1,6 @@
 
 [ ] Wait for key after error in editor
+[ ] Unified exception handling (sometimes you CANT go back to editor)
 [x] Set default colors before showing error
 [ ] Scale issue when returning to editor
 [x] Fix font rendering bgcolor
@@ -17,7 +18,7 @@
 [X] Move SDL code to system specific class
 [X] Port to Raspberry PI
 
-[ ] After RSprites::reset, all batches are destroyed while sprites can still
+[X] After RSprites::reset, all batches are destroyed while sprites can still
 be referenced from code, so "img" references destroyed batch.
 
 
@@ -42,7 +43,6 @@ Background rect on code block
 * TextEdit -> Paste into R-Toy
 * Upload/Download files
 * Login: Persist files
-
 
 
 # NOTES

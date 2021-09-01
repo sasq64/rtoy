@@ -12,7 +12,7 @@ int start_toy(std::string const& script);
 
 int main(int argc, char const** argv)
 {
-    std::string main_script = "ruby/main.rb";
+    std::string main_script = "sys/main.rb";
     bool full_screen = false;
     std::string font_name;
     std::string boot_cmd;

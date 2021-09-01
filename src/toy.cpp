@@ -21,6 +21,7 @@
 #include "rtimer.hpp"
 
 #include <chrono>
+#include <coreutils/split.h>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -123,37 +124,45 @@ void Toy::init()
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [name] = mrb::get_args<std::string>(mrb);
             fmt::print("Require {}\n", name);
-            auto rb_file = ruby_path / name;
-            if (rb_file.extension() == "") { rb_file.replace_extension(".rb"); }
-            if (fs::exists(rb_file)) {
-                rb_file = fs::canonical(rb_file);
-                auto modified = fs::last_write_time(rb_file);
 
-                auto it = already_loaded.find(rb_file.string());
-
-                if (it != already_loaded.end() && it->second == modified) {
-                    fmt::print("{} already loaded\n", rb_file.string());
-                    return mrb_nil_value();
+            auto parts = utils::split(ruby_path, ":"s);
+            std::optional<fs::path> to_load;
+            for(auto const& part : parts) {
+                auto rb_file = fs::path(part) / name;
+                if (rb_file.extension() == "") { rb_file.replace_extension(".rb"); }
+                if(fs::exists(rb_file)) {
+                    to_load = rb_file;
+                    break;
                 }
-                already_loaded[rb_file.string()] = modified;
-
-                FILE* fp = fopen(("ruby/"s + name).c_str(), "rbe");
-                if (fp != nullptr) {
-                    auto* ctx = mrbc_context_new(mrb);
-                    ctx->capture_errors = true;
-                    mrbc_filename(mrb, ctx, name.c_str());
-                    ctx->lineno = 1;
-                    mrb_load_file_cxt(mrb, fp, ctx);
-                    mrbc_context_free(mrb, ctx);
-                    fclose(fp);
-                    if (auto err = mrb::check_exception(mrb)) {
-                        fmt::print("REQUIRE Error: {}\n", *err);
-                        exit(1);
-                    }
-                }
-            } else {
+            }
+            if(!to_load) {
                 mrb_raise(mrb, mrb->object_class,
                     fmt::format("'{}' not found", name).c_str());
+            }
+            auto rb_file = fs::canonical(*to_load);
+            auto modified = fs::last_write_time(rb_file);
+
+            auto it = already_loaded.find(rb_file.string());
+
+            if (it != already_loaded.end() && it->second == modified) {
+                fmt::print("{} already loaded\n", rb_file.string());
+                return mrb_nil_value();
+            }
+            already_loaded[rb_file.string()] = modified;
+
+            FILE* fp = fopen(rb_file.c_str(), "rbe");
+            if (fp != nullptr) {
+                auto* ctx = mrbc_context_new(mrb);
+                ctx->capture_errors = true;
+                mrbc_filename(mrb, ctx, name.c_str());
+                ctx->lineno = 1;
+                mrb_load_file_cxt(mrb, fp, ctx);
+                mrbc_context_free(mrb, ctx);
+                fclose(fp);
+                if (auto err = mrb::check_exception(mrb)) {
+                    fmt::print("REQUIRE Error: {}\n", *err);
+                    exit(1);
+                }
             }
             return mrb_nil_value();
         },
@@ -258,7 +267,7 @@ bool Toy::render_loop()
         input->reset();
         RTimer::default_timer->reset();
         std::ifstream ruby_file;
-        ruby_file.open("ruby/main.rb");
+        ruby_file.open("sys/main.rb");
         auto source = read_all(ruby_file);
         mrb_load_string(ruby, source.c_str());
     }
