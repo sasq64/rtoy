@@ -125,7 +125,7 @@ auto get_args(
     mrb_value* rest{};
     mrb_get_args(mrb, spec.data(), &std::get<A>(input)..., &rest, &n);
     std::tuple<ARGS...> converted{static_cast<ARGS>(std::get<A>(input))...};
-    if (n > 0) {
+    if (n > 0 && restv != nullptr) {
         for (int i = 0; i < n; i++) {
             restv->push_back(rest[i]);
         }

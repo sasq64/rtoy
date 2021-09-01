@@ -102,13 +102,13 @@ class TileScreen
         image = Image.from_file("data/sel.png")
         @sel = Display.default.sprites.add_sprite(image)
         s = Display.default.console.scale
-        @sel.scale = s[0]
+        @sel.scale = s.x
     end
 
     def click(x,y)
         w,h = @con.get_tile_size()
-        sx,sy = @con.scale
-        ox,oy = @con.get_offset()
+        sx,sy = @con.scale.to_a
+        ox,oy = @con.offset.to_a
         x = ((x-ox)/(w*sx)).to_i
         y = ((y-oy)/(h*sy)).to_i
         @sel.move(x*(w*sx)+ox, y*(h*sy)+oy)
@@ -126,8 +126,8 @@ class TileScreen
     end
 
     def key(key, mod)
-        s = @con.scale()
-        o = @con.get_offset()
+        s = @con.scale
+        o = @con.offset
         sz = 8*4
         case key
         when Key::LEFT
@@ -159,7 +159,7 @@ class TileScreen
         when '-'.ord
             @con.scale = [s[0] * 0.5, s[1] * 0.5]
         end
-        @con.set_offset(*o)
+        @con.offset = o
     end
 end
 

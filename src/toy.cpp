@@ -43,7 +43,7 @@ std::time_t to_time_t(TP tp)
 extern "C" void send_to_rtoy(const char* text)
 {
     auto* inp = RInput::default_input;
-    for(auto c : std::string(text)) {
+    for (auto c : std::string(text)) {
         inp->put_char(c);
     }
 }
@@ -70,7 +70,11 @@ void Toy::init()
     RAudio::reg_class(ruby, *system, settings);
     RSpeech::reg_class(ruby);
 
+    fmt::print("SYSTEM: {}\n", settings.system);
     auto* rclass = mrb_define_class(ruby, "Settings", nullptr);
+    auto sym = mrb_intern_cstr(ruby, settings.system.c_str());
+    mrb_define_const(ruby, rclass, "SYSTEM",
+        mrb_check_intern_cstr(ruby, settings.system.c_str()));
     mrb_define_const(
         ruby, rclass, "BOOT_CMD", mrb::to_value(settings.boot_cmd, ruby));
     mrb_define_const(ruby, rclass, "CONSOLE_FONT",
@@ -260,8 +264,8 @@ bool Toy::render_loop()
     }
 
     auto [mx, my] = input->mouse_pos();
-    if(display->mouse_cursor != nullptr) {
-        display->mouse_cursor->trans =  {(float)mx, (float)my };
+    if (display->mouse_cursor != nullptr) {
+        display->mouse_cursor->trans = {(float)mx, (float)my};
         display->mouse_cursor->dirty = true;
     }
 

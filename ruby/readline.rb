@@ -144,13 +144,14 @@ class LineReader
         draw()
         while !res
             OS.vsync
+            next if queue.empty?
             while !res && !queue.empty?
                 key = queue.shift
                 if handle_key(key, 0)
                     res = @line.pack('U*')
                 end
             end
-            draw()
+            draw() unless res
         end
         OS.remove_handler(:key, kh)
         return res

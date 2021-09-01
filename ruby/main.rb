@@ -10,6 +10,10 @@ require 'keymap.rb'
 OS.reset_handlers()
 Display.default.clear()
 
+if Settings::SYSTEM == :raspberry_pi
+    Display.default.mouse_ptr(Image.from_file("data/pointer.png"))
+end
+
 cmd = Settings::BOOT_CMD
 OS.boot {
     if cmd && !cmd.empty?

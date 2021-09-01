@@ -19,5 +19,6 @@ struct Settings
     int display_height = 960;
     std::string boot_cmd;
     bool console_benchmark = false;
+    std::string system;
 };
 

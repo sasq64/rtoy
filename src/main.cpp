@@ -18,6 +18,14 @@ int main(int argc, char const** argv)
     std::string boot_cmd;
     Settings settings;
 
+#ifdef RASPBERRY_PI
+    settings.system = "raspberry_pi";
+#elifdef __EMSCRIPTEN__
+    settings.system = "emscripten";
+#else
+    settings.system = "posix";
+#endif
+
     CLI::App app{"toy"};
     app.set_help_flag();
     auto* help = app.add_flag("-h,--help", "Request help");

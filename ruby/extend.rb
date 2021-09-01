@@ -34,11 +34,21 @@ class Layer
     alias set_scale scale=
     alias get_scale scale
 
+    alias set_offset offset=
+    alias get_offset offset
+
     def scale=(v)
         set_scale(v.to_a)
     end
     def scale()
         Vec2.new(*get_scale())
+    end
+
+    def offset=(v)
+        set_offset(v.to_a)
+    end
+    def offset()
+        Vec2.new(*get_offset())
     end
 end
 
