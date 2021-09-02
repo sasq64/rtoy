@@ -59,6 +59,8 @@ void Toy::init()
     system = create_sdl_system();
 #endif
 
+    fs::copy("sys/help.rb", "ruby/help.rb", fs::copy_options::overwrite_existing);
+
     RLayer::reg_class(ruby);
     RConsole::reg_class(ruby);
     RCanvas::reg_class(ruby);

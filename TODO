@@ -52,3 +52,11 @@ layer has default style
 
 push/pop style ?
 
+
+## WHAT TO FIGURE OUT
+
+* When to use floats vs ints, and how to convert?
+* Move to doubles and rely on int fitting?
+* Access to style object?
+* Key mapping, and wether to get key up events
+* require vs loading, hard rules. Many smaller components ?

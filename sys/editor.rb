@@ -204,10 +204,8 @@ class Editor
         count.times do |y|
             i = y + @scrollpos
             break if i >= @lines.length
-            fg = Color::WHITE
-            bg = Color::BLUE
-            fg = Color::LIGHT_BLUE if @lines[i][0] == '#'.ord
-            @con.text(0, y, @lines[i].pack('U*'), fg, bg) if i < @lines.length
+            fg = @lines[i][0] == '#'.ord ? Color::LIGHT_BLUE : Color::WHITE
+            @con.text(0, y, @lines[i].pack('U*'), fg, Color::BLUE) if i < @lines.length
         end 
 
         if @ypos >= @scrollpos
@@ -215,9 +213,7 @@ class Editor
                       @line[@xpos..@xpos].pack('U'), Color::WHITE, Color::ORANGE)
         end
 
-        @con.bg = Color::RED
-        @con.clear_line(count)
-        @con.bg = Color::BLUE
+        @con.clear_line(count, bg: Color::RED)
         @con.text(0, count, "LINE:#{@ypos+1} - F5 = Run - ESC = Exit",
                   Color::WHITE, Color::RED);
     end
@@ -273,8 +269,8 @@ class Editor
 
         @line = @lines[0]
 
-        @con.clear
-        @con.fill_bg(Color::BLUE)
+        @con.style.bg = Color::BLUE
+        @con.clear()
         @con.goto_xy(0,0)
         @key_i = on_key { |key,mod| editor_key(key, mod) }
         @draw_i = on_draw { |t| editor_draw(t) }

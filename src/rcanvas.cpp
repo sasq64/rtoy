@@ -143,13 +143,11 @@ void RCanvas::reg_class(mrb_state* ruby)
             mrb_float y = 0;
             RStyle* style = &rcanvas->current_style;
             if (n == 5) {
-                mrb_get_args(
-                    mrb, "ffffd", &x, &y, &w, &h, &style, &RStyle::dt);
+                mrb_get_args(mrb, "ffffd", &x, &y, &w, &h, &style, &RStyle::dt);
             } else if (n == 4) {
                 mrb_get_args(mrb, "ffff", &x, &y, &w, &h);
             } else if (n == 2) {
                 mrb_get_args(mrb, "ff", &x, &y);
-
             }
             rcanvas->draw_quad(x, y, w, h, style);
             rcanvas->last_point = {w, h};
@@ -230,14 +228,17 @@ void RCanvas::reg_class(mrb_state* ruby)
             mrb_float y{};
             mrb_float scale = 1.0F;
             RImage* image{};
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            RStyle* style = &rcanvas->current_style;
             auto n = mrb_get_argc(mrb);
 
             if (n == 3) {
                 mrb_get_args(mrb, "ffd", &x, &y, &image, &RImage::dt);
-            } else {
+            } else if (n == 4) {
                 mrb_get_args(mrb, "ffdf", &x, &y, &image, &RImage::dt, &scale);
+            } else if (n == 5) {
+                mrb_get_args(mrb, "ffdfd", &x, &y, &image, &RImage::dt, &scale, &style, &RStyle::dt);
             }
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
             rcanvas->draw_image(
                 static_cast<float>(x), static_cast<float>(y), image, scale);
             return mrb_nil_value();

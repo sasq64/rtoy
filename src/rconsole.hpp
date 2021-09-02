@@ -27,13 +27,10 @@ class RConsole : public RLayer
     std::array<float, 4> default_fg;
     std::array<float, 4> default_bg;
 public:
-    void text(int x, int y, std::string const& t);
-    void text(int x, int y, std::string const& t, uint32_t fg, uint32_t bg);
+    void text(int x, int y, std::string const& t, RStyle const* style = nullptr);
     void fill(uint32_t fg, uint32_t bg);
     void scroll(int dy, int dx);
-    void text(std::string const& t);
-    void text(std::string const& t, uint32_t fg, uint32_t bg);
-    //std::shared_ptr<GLConsole> console;
+    void text(std::string const& t, RStyle const* style = nullptr);
     std::shared_ptr<PixConsole> console;
 
     RConsole(int width, int height, Style style);

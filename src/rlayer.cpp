@@ -11,7 +11,7 @@
 #include <glm/glm.hpp>
 
 mrb_data_type RStyle::dt{
-    "RStyle", [](mrb_state*, void* data) { delete (RStyle*)data; }};
+    "RStyle", [](mrb_state*, void* data) { delete static_cast<RStyle*>(data); }};
 
 void RLayer::update_tx()
 {
@@ -62,7 +62,7 @@ void RLayer::reg_class(mrb_state* ruby)
     //
     mrb_define_method(
         ruby, RStyle::rclass, "initialize",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
             DATA_PTR(self) = new RStyle();
             DATA_TYPE(self) = mrb::get_data_type<RStyle>();
             auto* rstyle = mrb::self_to<RStyle>(self);
@@ -155,7 +155,7 @@ void RLayer::reg_class(mrb_state* ruby)
     //
     mrb_define_method(
         ruby, RLayer::rclass, "style",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
             auto* rlayer = mrb::self_to<RLayer>(self);
             return rlayer->stylep;
         },
