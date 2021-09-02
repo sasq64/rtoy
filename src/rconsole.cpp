@@ -18,8 +18,8 @@ RConsole::RConsole(int w, int h, Style style)
       console(
           std::make_shared<PixConsole>(256, 256, style.font, style.font_size))
 {
-    default_fg = this->style.fg = gl::Color(style.fg).to_array();
-    default_bg = this->style.bg = gl::Color(style.bg).to_array();
+    default_fg = this->current_style.fg = gl::Color(style.fg).to_array();
+    default_bg = this->current_style.bg = gl::Color(style.bg).to_array();
     reset();
     /* trans = {0.0F, 0.0F}; */
     /* scale = {2.0F, 2.0F}; */
@@ -30,8 +30,8 @@ RConsole::RConsole(int w, int h, Style style)
 
 void RConsole::clear()
 {
-    auto fg = gl::Color(style.fg).to_rgba();
-    auto bg = gl::Color(style.bg).to_rgba();
+    auto fg = gl::Color(current_style.fg).to_rgba();
+    auto bg = gl::Color(current_style.bg).to_rgba();
     console->fill(fg, bg);
     // console->flush();
     xpos = ypos = 0;
@@ -60,8 +60,8 @@ void RConsole::update_pos(std::pair<int, int> const& cursor)
 
 void RConsole::text(std::string const& t)
 {
-    auto fg = gl::Color(style.fg).to_rgba();
-    auto bg = gl::Color(style.bg).to_rgba();
+    auto fg = gl::Color(current_style.fg).to_rgba();
+    auto bg = gl::Color(current_style.bg).to_rgba();
     auto cursor = console->text(xpos, ypos, t, fg, bg);
     update_pos(cursor);
 }
@@ -74,8 +74,8 @@ void RConsole::text(std::string const& t, uint32_t fg, uint32_t bg)
 
 void RConsole::text(int x, int y, std::string const& t)
 {
-    auto fg = gl::Color(style.fg).to_rgba();
-    auto bg = gl::Color(style.bg).to_rgba();
+    auto fg = gl::Color(current_style.fg).to_rgba();
+    auto bg = gl::Color(current_style.bg).to_rgba();
     console->text(x, y, t, fg, bg);
 }
 
@@ -143,8 +143,8 @@ void RConsole::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             auto [bg] = mrb::get_args<mrb_value>(mrb);
-            ptr->style.bg = mrb::to_array<float, 4>(bg, mrb);
-            auto bcol = gl::Color(ptr->style.bg);
+            ptr->current_style.bg = mrb::to_array<float, 4>(bg, mrb);
+            auto bcol = gl::Color(ptr->current_style.bg);
             ptr->console->fill(bcol.to_rgba());
             return mrb_nil_value();
         },
@@ -270,8 +270,8 @@ void RConsole::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             auto [y] = mrb::get_args<int>(mrb);
-            auto fg = gl::Color(ptr->style.fg).to_rgba();
-            auto bg = gl::Color(ptr->style.bg).to_rgba();
+            auto fg = gl::Color(ptr->current_style.fg).to_rgba();
+            auto bg = gl::Color(ptr->current_style.bg).to_rgba();
             ptr->console->clear_area(0, y, -1, 1, fg, bg);
             return mrb_nil_value();
         },
@@ -334,8 +334,8 @@ void RConsole::reset()
     scale = {s, s};
     update_tx();
 
-    style.fg = default_fg;
-    style.bg = default_bg;
+    current_style.fg = default_fg;
+    current_style.bg = default_bg;
 
     clear();
 }

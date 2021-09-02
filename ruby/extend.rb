@@ -8,6 +8,30 @@ end
 
 class Canvas
     extend MethAttrs
+
+    alias line_with_style line
+    alias circle_with_style circle
+
+    def line(*args, **kwargs)
+        if kwargs.size > 0
+            style = Style.new
+            kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
+            line_with_style(*args, style)
+        else
+            line_with_style(*args)
+        end
+    end
+
+    def circle(*args, **kwargs)
+        if kwargs.size > 0
+            style = Style.new
+            kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
+            circle_with_style(*args, style)
+        else
+            circle_with_style(*args)
+        end
+    end
+
     returns! Font, :font
 end
 
@@ -40,6 +64,9 @@ class Layer
     def scale()
         Vec2.new(*get_scale())
     end
+
+    def fg() style.fg end
+    def fg=(fg) style.fg  = fg end
 end
 
 class Display

@@ -81,8 +81,8 @@ void RSprites::render()
 {
     // if (batches.empty()) { return; }
     glEnable(GL_BLEND);
-    glLineWidth(style.line_width);
-    pix::set_colors(style.fg, style.bg);
+    glLineWidth(current_style.line_width);
+    pix::set_colors(current_style.fg, current_style.bg);
     auto& textured = program;//gl::ProgramCache::get_instance().textured;
     textured.use();
     float last_alpha = -1;
@@ -102,7 +102,7 @@ void RSprites::render()
                 continue;
             }
             if (last_alpha != sprite->alpha) {
-                gl::Color fg = style.fg;
+                gl::Color fg = current_style.fg;
                 fg.alpha = sprite->alpha;
                 textured.setUniform("in_color", fg);
                 last_alpha = sprite->alpha;

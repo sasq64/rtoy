@@ -59,17 +59,9 @@ module Shortcuts
     def offset(x, y) @@display.console.offset(x,y) end
     
     doc! "Draw a line in the canvas from x,y to x2,y2"
-    def line(x, y, x2, y2) @@display.canvas.line(x, y, x2, y2) end
+    def line(*args) @@display.canvas.line(*args) end
     doc! "Draw a circle in the canvas at x,y with radius r"
-    def circle(x, y, r, **kwargs)
-        if kwargs.size
-            style = Style.new
-            kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
-            @@display.canvas.circle(x, y, r, style)
-        else
-            @@display.canvas.circle(x, y, r)
-        end
-    end
+    def circle(*args) @@display.canvas.circle(*args) end
 
     returns! Sprite
     doc! "Add a sprite to the screen"

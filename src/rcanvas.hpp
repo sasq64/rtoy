@@ -23,11 +23,13 @@ class RCanvas : public RLayer
     std::pair<float, float> last_point;
 
     pix::Image read_image(int x, int y, int w, int h);
-    void draw_line(float x0, float y0, float x1, float y1);
-    void draw_circle(float x, float y, float r);
-    void draw_circle(float x, float y, float r, RStyle const& style);
-    void draw_image(float x, float y, RImage* image, float scale = 1.0F);
-    void draw_quad(float x, float y, float w, float h);
+    void draw_line(
+        float x0, float y0, float x1, float y1, RStyle const* style = nullptr);
+    void draw_circle(float x, float y, float r, RStyle const* style = nullptr);
+    void draw_image(float x, float y, RImage* image, float scale = 1.0F,
+        RStyle const* style = nullptr);
+    void draw_quad(float x, float y, float w, float h, RStyle const* style = nullptr);
+
 public:
     void init(mrb_state* mrb);
     static inline RClass* rclass;

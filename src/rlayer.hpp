@@ -43,7 +43,7 @@ protected:
     bool enabled = true;
 
     mrb::RubyPtr stylep;
-    RStyle& style;
+    RStyle& current_style;
 
 public:
     virtual void reset();
@@ -56,7 +56,7 @@ public:
           height(h),
           stylep{mrb::RubyPtr{RStyle::ruby,
               mrb_obj_new(RStyle::ruby, RStyle::rclass, 0, nullptr)}},
-          style{*stylep.as<RStyle>()}
+          current_style{*stylep.as<RStyle>()}
     {}
 
     virtual void render() {}

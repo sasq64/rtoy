@@ -36,36 +36,40 @@ pix::Image RCanvas::read_image(int x, int y, int w, int h)
     return image;
 }
 
-void RCanvas::draw_quad(float x, float y, float w, float h)
+void RCanvas::draw_quad(float x, float y, float w, float h, RStyle const* style)
 {
+    if (style == nullptr) { style = &current_style; }
     canvas.set_target();
     gl::ProgramCache::get_instance().textured.use();
-    pix::set_colors(style.fg, style.bg);
+    pix::set_colors(style->fg, style->bg);
+    if (style->blend_mode == BlendMode::Add) { glBlendFunc(GL_ONE, GL_ONE); }
     pix::draw_quad_filled(x, y, w, h);
+    if (style->blend_mode == BlendMode::Add) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
 }
 
-void RCanvas::draw_line(float x0, float y0, float x1, float y1)
+void RCanvas::draw_line(
+    float x0, float y0, float x1, float y1, RStyle const* style)
 {
+    if (style == nullptr) { style = &current_style; }
     canvas.set_target();
-    glLineWidth(style.line_width);
-    pix::set_colors(style.fg, style.bg);
+    glLineWidth(style->line_width);
+    pix::set_colors(style->fg, style->bg);
     pix::draw_line({x0, y0}, {x1, y1});
 }
 
-void RCanvas::draw_circle(float x, float y, float r)
+void RCanvas::draw_circle(float x, float y, float r, RStyle const* style)
 {
+    if (style == nullptr) { style = &current_style; }
     canvas.set_target();
-    glLineWidth(style.line_width);
-    pix::set_colors(style.fg, style.bg);
+    glLineWidth(style->line_width);
+    pix::set_colors(style->fg, style->bg);
+    if (style->blend_mode == BlendMode::Add) { glBlendFunc(GL_ONE, GL_ONE); }
     pix::draw_circle({x, y}, r);
-}
-
-void RCanvas::draw_circle(float x, float y, float r, RStyle const& style)
-{
-    canvas.set_target();
-    glLineWidth(style.line_width);
-    pix::set_colors(style.fg, style.bg);
-    pix::draw_circle({x, y}, r);
+    if (style->blend_mode == BlendMode::Add) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
 }
 
 void RCanvas::clear()
@@ -82,17 +86,19 @@ void RCanvas::reset()
     clear();
 }
 
-void RCanvas::draw_image(float x, float y, RImage* image, float scale)
+void RCanvas::draw_image(
+    float x, float y, RImage* image, float scale, RStyle const* style)
 {
+    if (style == nullptr) { style = &current_style; }
     canvas.set_target();
-    glLineWidth(style.line_width);
-    pix::set_colors(style.fg, style.bg);
+    glLineWidth(current_style.line_width);
+    pix::set_colors(style->fg, style->bg);
     image->draw(x, y, scale);
 }
 
 void RCanvas::render()
 {
-    if(!enabled) return;
+    if (!enabled) return;
     canvas.bind();
     glEnable(GL_BLEND);
     pix::set_transform(transform);
@@ -125,63 +131,82 @@ void RCanvas::reg_class(mrb_state* ruby)
             return mrb::new_data_obj(mrb, image);
         },
         MRB_ARGS_REQ(4));
+
     mrb_define_method(
         ruby, RCanvas::rclass, "rect",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto n = mrb_get_argc(mrb);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
-            auto [x, y, w, h] = mrb::get_args<float, float, float, float>(mrb);
-            rcanvas->draw_quad(x, y, w, h);
+            mrb_float w = rcanvas->last_point.first;
+            mrb_float h = rcanvas->last_point.second;
+            mrb_float x = 0;
+            mrb_float y = 0;
+            RStyle* style = &rcanvas->current_style;
+            if (n == 5) {
+                mrb_get_args(
+                    mrb, "ffffd", &x, &y, &w, &h, &style, &RStyle::dt);
+            } else if (n == 4) {
+                mrb_get_args(mrb, "ffff", &x, &y, &w, &h);
+            } else if (n == 2) {
+                mrb_get_args(mrb, "ff", &x, &y);
+
+            }
+            rcanvas->draw_quad(x, y, w, h, style);
+            rcanvas->last_point = {w, h};
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
+
     mrb_define_method(
         ruby, RCanvas::rclass, "line",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto n = mrb_get_argc(mrb);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
-            if (n == 4) {
-                auto [x0, y0, x1, y1] =
-                    mrb::get_args<float, float, float, float>(mrb);
-                if (x0 != x1 || y0 != y1) {
-                    rcanvas->draw_line(x0, y0, x1, y1);
-                }
-                rcanvas->last_point = {x1, y1};
+            mrb_float x0 = rcanvas->last_point.first;
+            mrb_float y0 = rcanvas->last_point.second;
+            mrb_float x1 = 0;
+            mrb_float y1 = 0;
+            RStyle* style = &rcanvas->current_style;
+            if (n == 5) {
+                mrb_get_args(
+                    mrb, "ffffd", &x0, &y0, &x1, &y1, &style, &RStyle::dt);
+            } else if (n == 4) {
+                mrb_get_args(mrb, "ffff", &x0, &y0, &x1, &y1);
             } else if (n == 2) {
-                auto [x1, y1] = mrb::get_args<float, float>(mrb);
-                rcanvas->draw_line(rcanvas->last_point.first,
-                    rcanvas->last_point.second, x1, y1);
-                rcanvas->last_point = {x1, y1};
+                mrb_get_args(mrb, "ff", &x1, &y1);
             }
+            if (x0 != x1 || y0 != y1) {
+                rcanvas->draw_line(x0, y0, x1, y1, style);
+            }
+            rcanvas->last_point = {x1, y1};
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
+
     mrb_define_method(
         ruby, RCanvas::rclass, "circle",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            
-
             auto n = mrb_get_argc(mrb);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
-            if (rcanvas->style.blend_mode == BlendMode::Add) {
-                glBlendFunc(GL_ONE, GL_ONE);
-            }
+
+            mrb_float x = rcanvas->last_point.first;
+            mrb_float y = rcanvas->last_point.second;
+            mrb_float r = 0.0;
+            RStyle* style = &rcanvas->current_style;
+
             if (n == 4) {
-                RImage* image = nullptr;
-                mrb_float x;
-                mrb_float y;
-                mrb_float r;
-                RStyle* style = nullptr;
                 mrb_get_args(mrb, "fffd", &x, &y, &r, &style, &RStyle::dt);
-                rcanvas->draw_circle(x, y, r, *style);
+            } else if (n == 3) {
+                mrb_get_args(mrb, "fff", &x, &y, &r);
             } else {
-                auto [x, y, r] = mrb::get_args<float, float, float>(mrb);
-                rcanvas->draw_circle(x, y, r);
+                mrb_get_args(mrb, "f", &r);
             }
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            rcanvas->last_point = {x, y};
+            rcanvas->draw_circle(x, y, r, style);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(4));
+
     mrb_define_method(
         ruby, RCanvas::rclass, "text",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -189,7 +214,7 @@ void RCanvas::reg_class(mrb_state* ruby)
                 mrb::get_args<float, float, std::string, int>(mrb);
             auto* rcanvas = mrb::self_to<RCanvas>(self);
 
-            auto fg = gl::Color(rcanvas->style.fg).to_rgba();
+            auto fg = gl::Color(rcanvas->current_style.fg).to_rgba();
             auto* rimage =
                 rcanvas->current_font.as<RFont>()->render(text, fg, size);
             rcanvas->draw_image(x, y, rimage);
@@ -197,6 +222,7 @@ void RCanvas::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));
+
     mrb_define_method(
         ruby, RCanvas::rclass, "draw",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
