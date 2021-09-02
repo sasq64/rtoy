@@ -58,6 +58,9 @@ class Layer
     alias set_scale scale=
     alias get_scale scale
 
+    alias set_offset offset=
+    alias get_offset offset
+
     def scale=(v)
         set_scale(v.to_a)
     end
@@ -65,8 +68,17 @@ class Layer
         Vec2.new(*get_scale())
     end
 
+    def offset=(v)
+        set_offset(v.to_a)
+    end
+    def offset()
+        Vec2.new(*get_offset())
+    end
+
     def fg() style.fg end
     def fg=(fg) style.fg  = fg end
+
+
 end
 
 class Display
@@ -74,16 +86,6 @@ class Display
     def size
         Vec2.new(width, height)
     end
-
-    alias set_bg bg=
-    alias get_bg bg
-
-    # def bg=(col)
-    #     set_bg(col.to_i)
-    # end
-    # def bg
-    #     Color.new(get_bg())
-    # end
 
     returns! Canvas, :canvas
     returns! Sprites, :sprites

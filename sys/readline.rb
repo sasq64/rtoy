@@ -49,6 +49,7 @@ class LineReader
 
     def paste()
         text = Input.get_clipboard()
+        return if !text
         text.each_char do |t|
             @line.insert(@pos, *(t.unpack('U')))
             @pos += 1
@@ -137,14 +138,23 @@ class LineReader
         @xpos,@ypos = @con.get_xy()
         @pos = 0
         @line = []
-        loop {
+        queue = []
+        kh = OS.on_key { |k| queue << k }
+        res = nil
+        draw()
+        while !res
             OS.vsync
-            draw()
-            key = OS.read_key
-            if handle_key(key, 0)
-                return @line.pack('U*')
+            next if queue.empty?
+            while !res && !queue.empty?
+                key = queue.shift
+                if handle_key(key, 0)
+                    res = @line.pack('U*')
+                end
             end
-        }
+            draw() unless res
+        end
+        OS.remove_handler(:key, kh)
+        return res
     end
 
     def self.read_line(history = nil)

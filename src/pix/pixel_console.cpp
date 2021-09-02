@@ -42,11 +42,14 @@ std::string PixConsole::fragment_shader{R"gl(
 void PixConsole::add_char(char32_t c)
 {
     auto cw = char_width + gap;
-    std::vector<uint32_t> temp(char_width * char_height);
-    font.render_char(c, temp.data(), 0xffffff00, char_width);
+    auto [fw,fh] = font.get_size();
+
+    fmt::print("FONT {}x{}\n", fw, fh);
+    std::vector<uint32_t> temp(fw * fh*2);
+    font.render_char(c, temp.data(), 0xffffff00, fw);
 
     font_texture.update(
-        next_pos.first, next_pos.second, char_width, char_height, temp.data());
+        next_pos.first, next_pos.second, fw, fh, temp.data());
 
     auto fx = texture_width / 256;
     auto fy = texture_height / 256;
@@ -177,8 +180,15 @@ void PixConsole::set_tile_image(char32_t c, gl_wrap::TexRef tex)
     font_texture.set_target();
     gl_wrap::ProgramCache::get_instance().textured.use();
     tex.bind();
+    // TODO: Better way of rendering mirrored
+    auto uvs = tex.uvs;
+    auto y0 = uvs[1];
+    auto y1 = uvs[5];
+    uvs[1] = uvs[3] = y1;
+    uvs[5] = uvs[7] = y0;
+
     pix::draw_quad_uvs(pos.first, texture_height - char_height - pos.second,
-        char_width, char_height, tex.uvs);
+        char_width, char_height, uvs);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

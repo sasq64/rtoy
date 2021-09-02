@@ -12,11 +12,19 @@ int start_toy(std::string const& script);
 
 int main(int argc, char const** argv)
 {
-    std::string main_script = "ruby/main.rb";
+    std::string main_script = "sys/main.rb";
     bool full_screen = false;
     std::string font_name;
     std::string boot_cmd;
     Settings settings;
+
+#ifdef RASPBERRY_PI
+    settings.system = "raspberry_pi";
+#elifdef __EMSCRIPTEN__
+    settings.system = "emscripten";
+#else
+    settings.system = "posix";
+#endif
 
     CLI::App app{"toy"};
     app.set_help_flag();

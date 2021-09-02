@@ -38,6 +38,8 @@ class RInput
 public:
     explicit RInput(mrb_state* _ruby, System& _system);
 
+    void put_char(char32_t c);
+
     void reset();
     bool update();
     bool should_reset();

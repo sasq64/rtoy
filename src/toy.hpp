@@ -44,7 +44,7 @@ class Toy
     // namespace fs = std::filesystem;
     using path = std::filesystem::path;
 
-    static inline path ruby_path = "ruby";
+    static inline std::string ruby_path = "ruby:sys";
     static inline std::unordered_map<std::string,
         std::filesystem::file_time_type>
         already_loaded;
