@@ -45,12 +45,15 @@ bool RInput::handle_event(ClickEvent const& me)
 }
 bool RInput::handle_event(MoveEvent const& me)
 {
-    if (me.buttons != 0) {
-        fmt::print("{:x} {} {}\n", me.buttons, me.x, me.y);
-        call_proc(ruby, drag_handler, me.x, me.y);
+    if(last_frame != frame_counter) {
+        if (me.buttons != 0) {
+            //fmt::print("{:x} {} {}\n", me.buttons, me.x, me.y);
+            call_proc(ruby, drag_handler, me.x, me.y);
+        }
+        mouse_x = me.x;
+        mouse_y = me.y;
+        last_frame = frame_counter;
     }
-    mouse_x = me.x;
-    mouse_y = me.y;
     return false;
 }
 bool RInput::handle_event(TextEvent const& me)
@@ -68,15 +71,6 @@ void RInput::put_char(char32_t c)
     call_proc(ruby, key_handler, c, 0);
 }
 
-void RInput::poll_events()
-{
-    bool done = false;
-    while (!done) {
-        auto event = system.poll_events();
-        done =
-            std::visit([&](auto const& e) { return handle_event(e); }, event);
-    }
-}
 bool RInput::should_reset()
 {
     auto res = do_reset;
@@ -91,6 +85,7 @@ bool RInput::update()
         resize--;
         if (resize == 0) { do_reset = true; }
     }
+    frame_counter++;
     return do_quit;
 }
 void RInput::reset()

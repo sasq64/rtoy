@@ -90,6 +90,11 @@ void Display::swap()
 void Display::reset()
 {
     bg = {0, 0, 0.8, 1.0};
+
+    if (mouse_cursor != nullptr) {
+        sprites->remove_sprite(mouse_cursor);
+        mouse_cursor = nullptr;
+    }
     console->reset();
     canvas->reset();
     sprites->reset();

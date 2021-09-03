@@ -286,13 +286,14 @@ public:
 
     void init_audio(Settings const&) override
     {
+        return;
         player = std::make_unique<LinuxPlayer>(44100);
     }
 
     void set_audio_callback(
         std::function<void(float*, size_t)> const& fcb) override
     {
-
+        return;
         player->play([fcb](int16_t* data, size_t sz) {
             std::array<float, 32768> fa; // NOLINT
             fcb(fa.data(), sz);
