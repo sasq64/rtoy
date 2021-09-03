@@ -33,7 +33,7 @@ public:
     void text(std::string const& t, RStyle const* style = nullptr);
     std::shared_ptr<PixConsole> console;
 
-    RConsole(int width, int height, Style style);
+    RConsole(int width, int height, Style const& style);
 
     void reset() override;
     void clear();

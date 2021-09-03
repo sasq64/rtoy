@@ -39,12 +39,16 @@ std::string PixConsole::fragment_shader{R"gl(
               gl_FragColor = fg_color * col * col.a + bg_color * (1.0 - col.a);
         })gl"};
 
+
+static constexpr int align(int val, int a) {
+    return (val + (a-1)) & (~(a-1));
+}
+
 void PixConsole::add_char(char32_t c)
 {
     auto cw = char_width + gap;
     auto [fw,fh] = font.get_size();
 
-    fmt::print("FONT {}x{}\n", fw, fh);
     std::vector<uint32_t> temp(fw * fh*2);
     font.render_char(c, temp.data(), 0xffffff00, fw);
 
@@ -57,10 +61,10 @@ void PixConsole::add_char(char32_t c)
     int y = next_pos.second / fy;
     char_uvs[c] = (x) | (y << 8);
 
-    next_pos.first += (char_width + gap + 3) & 0xfffffffc;
+    next_pos.first += align(char_width + gap, 4); 
     if (next_pos.first >= (texture_width - cw)) {
         next_pos.first = 0;
-        next_pos.second += (char_height + gap + 3) & 0xfffffffc;
+        next_pos.second += align(char_height + gap, 4);
     }
 }
 
@@ -84,7 +88,7 @@ std::pair<int, int> PixConsole::alloc_char(char32_t c)
 }
 
 PixConsole::PixConsole(
-    unsigned w, unsigned h, std::string const& font_file, int size)
+    int w, int h, std::string const& font_file, int size)
     : font{font_file.c_str(), size}, width(w), height(h)
 {
     // font.set_pixel_size(32);
@@ -132,7 +136,7 @@ PixConsole::PixConsole(
     col_texture.update(coldata.data());
 }
 
-std::pair<unsigned, unsigned> PixConsole::get_char_size()
+std::pair<int, int> PixConsole::get_char_size()
 {
     return {char_width, char_height};
 }

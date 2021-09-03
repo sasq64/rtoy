@@ -87,18 +87,18 @@ void draw_quad_uvs(std::array<float, 8> const& uvs)
 }
 
 void draw_quad_uvs(
-    float x, float y, float sx, float sy, std::array<float, 8> const& uvs)
+    double x, double y, double sx, double sy, std::array<float, 8> const& uvs)
 {
     auto [w, h] = gl::getViewport<float>();
 
-    auto x0 = x * 2.0F / w - 1.0F;
-    auto y0 = y * -2.0F / h + 1.0F;
+    float x0 = static_cast<float>(x) * 2.0F / w - 1.0F;
+    float y0 = static_cast<float>(y) * -2.0F / h + 1.0F;
 
     x += sx;
     y += sy;
 
-    auto x1 = x * 2.0F / w - 1.0F;
-    auto y1 = y * -2.0F / h + 1.0F;
+    float x1 = static_cast<float>(x) * 2.0F / w - 1.0F;
+    float y1 = static_cast<float>(y) * -2.0F / h + 1.0F;
 
     std::array vertexData{
         x0, y0, x1, y0, x1, y1, x0, y1, 0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};

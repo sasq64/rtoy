@@ -8,8 +8,6 @@
 
 using namespace std::string_literals;
 
-int start_toy(std::string const& script);
-
 int main(int argc, char const** argv)
 {
     std::string main_script = "sys/main.rb";

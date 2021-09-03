@@ -46,7 +46,7 @@ mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {
                           }};
 mrb_data_type RSprites::dt{"Sprites", [](mrb_state*, void* data) {}};
 
-void RSprite::update_tx(float screen_width, float screen_height)
+void RSprite::update_tx(double screen_width, double screen_height)
 {
     glm::mat4x4 m(1.0F);
     m = glm::scale(m, glm::vec3(2.0 / screen_width, 2.0 / screen_height, 1.0));
@@ -59,7 +59,7 @@ void RSprite::update_tx(float screen_width, float screen_height)
     m = glm::scale(
         m, glm::vec3(static_cast<float>(texture.width()) * scale[0] / 2,
                static_cast<float>(texture.height()) * scale[1] / -2, 1.0));
-    memcpy(transform.data(), glm::value_ptr(m), 16 * 4);
+    memcpy(transform.data(), glm::value_ptr(m), sizeof(float) * 16);
 }
 
 RSprites::RSprites(int w, int h) : RLayer{w, h} {
@@ -91,7 +91,6 @@ void RSprites::render()
     pos.enable();
     uv.enable();
 
-    bool used = false;
     auto draw_batch = [&](SpriteBatch& batch) {
         batch.texture->bind();
         auto it = batch.sprites.begin();
@@ -160,8 +159,8 @@ RSprite* RSprites::add_sprite(RImage* image, int flags)
         new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}});
     auto* spr = batch.sprites.back();
     spr->texture = image->texture;
-    spr->trans[0] = spr->texture.x();
-    spr->trans[1] = spr->texture.y();
+    spr->trans[0] = static_cast<float>(spr->texture.x());
+    spr->trans[1] = static_cast<float>(spr->texture.y());
 
     spr->update_tx(width, height);
     return spr;

@@ -33,7 +33,7 @@ Display::Display(mrb_state* state, System& system, Settings const& _settings)
     : ruby(state), settings{_settings}, RLayer(0, 0)
 {
     glm::mat4x4 m(1.0F);
-    memcpy(Id.data(), glm::value_ptr(m), 16 * 4);
+    memcpy(Id.data(), glm::value_ptr(m), sizeof(float) * 16);
 
     window = system.init_screen(settings);
     setup();
@@ -115,7 +115,7 @@ void Display::reg_class(
 
     mrb_define_class_method(
         ruby, Display::rclass, "default",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+        [](mrb_state*  /*mrb*/, mrb_value /*self*/) -> mrb_value {
             return Display::default_display->disp_obj;
         },
         MRB_ARGS_NONE());
@@ -159,8 +159,7 @@ void Display::reg_class(
         ruby, Display::rclass, "console",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            auto* console = display->console.get();
-            return mrb::new_data_obj(mrb, console);
+            return mrb::new_data_obj(mrb, display->console.get());
         },
         MRB_ARGS_NONE());
 
@@ -168,8 +167,7 @@ void Display::reg_class(
         ruby, Display::rclass, "canvas",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            auto* canvas = display->canvas.get();
-            return mrb::new_data_obj(mrb, canvas);
+            return mrb::new_data_obj(mrb, display->canvas.get());
         },
         MRB_ARGS_NONE());
 
@@ -177,8 +175,7 @@ void Display::reg_class(
         ruby, Display::rclass, "sprites",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            auto* sprites = display->sprites.get();
-            return mrb::new_data_obj(mrb, sprites);
+            return mrb::new_data_obj(mrb, display->sprites.get());
         },
         MRB_ARGS_NONE());
 
@@ -208,7 +205,6 @@ void Display::reg_class(
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* display = mrb::self_to<Display>(self);
             display->bg = mrb::to_array<float, 4>(av, mrb);
-            ;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));

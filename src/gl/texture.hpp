@@ -23,7 +23,7 @@ struct Texture
     void init();
 
     template <typename T, size_t N>
-    Texture(GLuint w, GLuint h, std::array<T, N> const& data,
+    Texture(GLint w, GLint h, std::array<T, N> const& data,
         GLint target_format = GL_RGBA, GLint source_format = -1,
         GLenum type = GL_UNSIGNED_BYTE)
         : width(w), height(h), format(target_format)
@@ -42,7 +42,7 @@ struct Texture
     }
 
     template <typename T>
-    Texture(GLuint w, GLuint h, std::vector<T> const& data,
+    Texture(GLint w, GLint h, std::vector<T> const& data,
         GLint target_format = GL_RGBA, GLint source_format = -1,
         GLenum type = GL_UNSIGNED_BYTE)
         : width(w), height(h), format(target_format)
@@ -61,7 +61,7 @@ struct Texture
     }
 
     template <typename T>
-    Texture(GLuint w, GLuint h, T const* data, GLint target_format = GL_RGBA,
+    Texture(GLint w, GLint h, T const* data, GLint target_format = GL_RGBA,
         GLint source_format = -1, GLenum type = GL_UNSIGNED_BYTE)
         : width(w), height(h), format(target_format)
     {
@@ -78,7 +78,7 @@ struct Texture
             type, data);
     }
 
-    Texture(GLuint w, GLuint h) : width(w), height(h)
+    Texture(GLint w, GLint h) : width(w), height(h)
     {
         init();
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,

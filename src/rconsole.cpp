@@ -1,6 +1,5 @@
 #include "rconsole.hpp"
 #include "mrb_tools.hpp"
-#include "pix/texture_font.hpp"
 #include "rimage.hpp"
 
 #include "pix/pixel_console.hpp"
@@ -13,7 +12,7 @@
 #include <pix/gl_console.hpp>
 #include <pix/pix.hpp>
 
-RConsole::RConsole(int w, int h, Style style)
+RConsole::RConsole(int w, int h, Style const& style)
     : RLayer{w, h},
       console(
           std::make_shared<PixConsole>(256, 256, style.font, style.font_size))
@@ -88,7 +87,7 @@ void RConsole::scroll(int dy, int dx)
 
 void RConsole::render()
 {
-    if (!enabled) return;
+    if (!enabled) { return; }
     console->flush();
     console->render();
 }
@@ -239,7 +238,7 @@ void RConsole::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             auto [tw, th] = ptr->console->get_char_size();
-            std::array<unsigned, 2> data{tw, th};
+            std::array<int, 2> data{tw, th};
             return mrb::to_value(data, mrb);
         },
         MRB_ARGS_NONE());
@@ -324,10 +323,10 @@ void RConsole::reset()
     auto [_, tile_height] = console->get_char_size();
 
     int lines = height / tile_height;
-    float s = 1.0;
+    float s = 1.0F;
     int total = lines;
     while (total > 50) {
-        s += 1.0;
+        s += 1.0F;
         total -= lines;
     }
 

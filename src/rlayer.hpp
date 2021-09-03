@@ -18,7 +18,7 @@ struct RStyle
 {
     std::array<float, 4> fg{1, 1, 1, 1};
     std::array<float, 4> bg{0, 0, 0, 0};
-    float line_width = 2;
+    float line_width = 2.0F;
     BlendMode blend_mode = BlendMode::Blend;
 
     static inline RClass* rclass = nullptr;

@@ -57,7 +57,8 @@ inline void draw_line(Point p0, Size p1)
 }
 
 void draw_quad_uvs(
-    float x0, float y0, float w, float h, std::array<float, 8> const& uvs);
+    double x, double y, double sx, double sy, std::array<float, 8> const& uvs);
+
 void draw_quad_uvs(std::array<float, 8> const& uvs);
 
 void draw_circle_impl(float x, float y, float r);

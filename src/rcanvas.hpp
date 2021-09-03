@@ -17,18 +17,18 @@ class RCanvas : public RLayer
 
     mrb::RubyPtr current_font;
 
-    std::array<float, 16> const Id = {
+    std::array<double, 16> const Id = {
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
-    std::pair<float, float> last_point;
+    std::pair<double, double> last_point;
 
     pix::Image read_image(int x, int y, int w, int h);
     void draw_line(
-        float x0, float y0, float x1, float y1, RStyle const* style = nullptr);
-    void draw_circle(float x, float y, float r, RStyle const* style = nullptr);
-    void draw_image(float x, float y, RImage* image, float scale = 1.0F,
+        double x0, double y0, double x1, double y1, RStyle const* style = nullptr);
+    void draw_circle(double x, double y, double r, RStyle const* style = nullptr);
+    void draw_image(double x, double y, RImage* image, double scale = 1.0F,
         RStyle const* style = nullptr);
-    void draw_quad(float x, float y, float w, float h, RStyle const* style = nullptr);
+    void draw_quad(double x, double y, double w, double h, RStyle const* style = nullptr);
 
 public:
     void init(mrb_state* mrb);
