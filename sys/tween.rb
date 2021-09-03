@@ -310,6 +310,7 @@ class Tween
                 fy = ((1 - fy)*0.5 + 0.25) * h
                 OS.circle(fx + x,fy + y, 2)
             end
+            Fiber.yield
             OS.canvas.fg = Color::WHITE
             OS.canvas.text(x,y, fn.to_s, 20)
             Fiber.yield

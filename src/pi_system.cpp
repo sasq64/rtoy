@@ -212,7 +212,7 @@ public:
         tv.tv_usec = 1000;
         int sr = select(maxfd + 1, &readset, nullptr, nullptr, &tv);
         if (sr > 0) {
-            fmt::print("Got signal\n");
+            //fmt::print("Got signal\n");
             // static uint8_t buf[2048];
             for (auto fd : fdv) {
                 if (FD_ISSET(fd, &readset)) {

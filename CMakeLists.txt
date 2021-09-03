@@ -187,7 +187,7 @@ target_link_libraries(${TARGET} PRIVATE
     ${CMAKE_DL_LIBS}
     fmt::fmt)
 if(RASPBERRY_PI)
-    target_llink_libraries(${TARGET} PRIVATE asound)
+    target_link_libraries(${TARGET} PRIVATE asound)
 endif()
 
 if(NOT EMSCRIPTEN)

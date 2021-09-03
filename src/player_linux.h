@@ -69,7 +69,7 @@ public:
             throw sound_exception("");
         }
 
-        std::vector<int16_t> buffer(8192);
+        std::vector<int16_t> buffer(8192*8);
         while (!quit) {
             if (paused) {
                 std::this_thread::sleep_for(10ms);

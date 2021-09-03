@@ -76,6 +76,7 @@ void Toy::init()
 
     fmt::print("SYSTEM: {}\n", settings.system);
     auto* rclass = mrb_define_class(ruby, "Settings", nullptr);
+    mrb_intern_cstr(ruby, settings.system.c_str());
     mrb_define_const(ruby, rclass, "SYSTEM",
         mrb_check_intern_cstr(ruby, settings.system.c_str()));
     mrb_define_const(

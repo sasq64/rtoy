@@ -12,7 +12,7 @@ RAudio::RAudio(mrb_state* _ruby, System& _system, Settings const& settings)
     system.init_audio(settings);
     system.set_audio_callback([this](float* data, size_t size) {
         while (out_buffer.available() < size) {
-            mix(size / 2);
+            mix(2048);
         }
         out_buffer.read(data, size);
     });

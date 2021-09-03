@@ -18,7 +18,7 @@ int main(int argc, char const** argv)
 
 #ifdef RASPBERRY_PI
     settings.system = "raspberry_pi";
-#elifdef __EMSCRIPTEN__
+#elif (defined __EMSCRIPTEN__)
     settings.system = "emscripten";
 #else
     settings.system = "posix";
