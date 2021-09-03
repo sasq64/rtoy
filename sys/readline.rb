@@ -66,10 +66,8 @@ class LineReader
             @line.insert(@pos, key)
             @pos += 1
         when Key::F3
-            p "F3"
             paste()
         when Key::INSERT
-            p "INSERT"
             if mod & 1
                 paste()
             end

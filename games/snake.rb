@@ -72,8 +72,8 @@ end
 
 #tween(console).to(scale: [4,2])
 scale(4.0, 2.0)
-console.fill_bg(Color::BLACK)
-console.fg = Color::GREEN
+console.style.fg = Color::GREEN
+console.style.bg = Color::BLACK
 clear()
 draw_box(0,TOP, WIDTH, HEIGHT-TOP)
 
