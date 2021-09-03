@@ -53,7 +53,7 @@ class Music
                     @channel = 0 if @channel == 32
                 end
             end
-            #OS.sleep @tempo
+            OS.sleep @tempo
         end
     end
 

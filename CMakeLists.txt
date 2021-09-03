@@ -118,8 +118,6 @@ add_library(pix STATIC
     src/gl/texture.cpp
     src/pix/pix.cpp
     src/pix/font.cpp
-    src/pix/texture_font.cpp
-    src/pix/tile_renderer.cpp
     src/pix/pixel_console.cpp
     external/lodepng/lodepng.cpp)
 
@@ -162,8 +160,7 @@ set(SRC_FILES
     src/rtimer.cpp
     src/rfont.cpp
     src/raudio.cpp
-    src/rspeech.cpp
-    src/pix/gl_console.cpp)
+    src/rspeech.cpp)
 
 if(RASPBERRY_PI)
     set(SRC_FILES ${SRC_FILES} src/pi_system.cpp src/eglutil.cpp)

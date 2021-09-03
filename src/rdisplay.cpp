@@ -9,7 +9,6 @@
 #include "error.hpp"
 #include "gl/functions.hpp"
 #include "mrb_tools.hpp"
-#include "pix/gl_console.hpp"
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <mruby/compile.h>

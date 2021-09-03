@@ -6,7 +6,6 @@
 
 #include "mrb_tools.hpp"
 
-#include <pix/gl_console.hpp>
 #include <gl/program_cache.hpp>
 
 #include <mruby.h>

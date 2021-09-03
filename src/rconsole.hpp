@@ -1,8 +1,6 @@
 #pragma once
 #include "rlayer.hpp"
 
-#include "console.hpp"
-
 #include <mruby.h>
 #include <mruby/class.h>
 #include <mruby/data.h>
@@ -12,7 +10,15 @@
 
 class GLConsole;
 class PixConsole;
-struct Style;
+
+struct Style
+{
+    uint32_t fg;
+    uint32_t bg;
+    std::string font;
+    int font_size;
+};
+
 
 class RConsole : public RLayer
 {

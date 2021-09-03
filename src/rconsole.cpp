@@ -2,15 +2,12 @@
 #include "mrb_tools.hpp"
 #include "rimage.hpp"
 
-#include "pix/pixel_console.hpp"
+#include <coreutils/utf8.h>
+#include <gl/program_cache.hpp>
+#include <pix/pix.hpp>
+#include <pix/pixel_console.hpp>
 
 #include <mruby/array.h>
-
-#include <coreutils/utf8.h>
-
-#include <gl/program_cache.hpp>
-#include <pix/gl_console.hpp>
-#include <pix/pix.hpp>
 
 RConsole::RConsole(int w, int h, Style const& style)
     : RLayer{w, h},
