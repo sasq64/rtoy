@@ -146,6 +146,14 @@ void PixConsole::set_tile_size(int w, int h)
     char_uvs.clear();
     next_pos = {0, 0};
 
+    std::vector<uint32_t> data;
+    data.resize(texture_width * texture_height);
+    std::fill(data.begin(), data.end(), 0);
+    font_texture = gl_wrap::Texture{texture_width, texture_height, data};
+
+    for (char32_t c = 0x20; c <= 0x7f; c++) {
+        add_char(c);
+    }
     char_width = w;
     char_height = h;
     program.use();

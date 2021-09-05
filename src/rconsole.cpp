@@ -295,7 +295,7 @@ void RConsole::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(3));
 
     mrb_define_method(
-        ruby, RConsole::rclass, "add_tile",
+        ruby, RConsole::rclass, "set_tile_image",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             uint32_t index = 0;
             RImage* image = nullptr;

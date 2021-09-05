@@ -75,7 +75,7 @@ void TextureFont::add_char(char32_t c)
     }
     needs_update = true;
 }
-void TextureFont::add_tile(char32_t index, gl_wrap::TexRef texture)
+void TextureFont::set_tile_image(char32_t index, gl_wrap::TexRef texture)
 {
     // TODO: Usually multiple tiles are added from the same texture, so
     //       cache last and check it it's the same.

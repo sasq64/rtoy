@@ -24,7 +24,7 @@ RCanvas::RCanvas(int w, int h) : RLayer{w, h}
 pix::Image RCanvas::read_image(int x, int y, int w, int h)
 {
     pix::Image image{w, h};
-    image.ptr = static_cast<std::byte*>(malloc(w * h * 4));
+    image.ptr = static_cast<std::byte*>(malloc(sizeof(uint32_t) * w * h));
     image.sptr = std::shared_ptr<std::byte>(image.ptr, &free);
     image.format = GL_RGBA;
     auto* ptr = static_cast<void*>(image.ptr);

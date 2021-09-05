@@ -15,7 +15,7 @@ class Sokoban
         w,h = img.width / 64, img.height / 64
         @tiles = img.split(w, h)
         @tiles.each_with_index do |tile, i|
-            display.console.add_tile(256 + i, tile)
+            display.console.set_tile_image(256 + i, tile)
         end
     end
 

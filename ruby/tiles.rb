@@ -7,6 +7,6 @@ puts "#{w}x#{h}"
 tiles = img.split(img.width / 8, img.height / 8)
 
 tiles.each_with_index do |tile, i|
-    display.console.add_tile('A'.ord + i, tile)
+    display.console.set_tile_image('A'.ord + i, tile)
 end
 
