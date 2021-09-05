@@ -1,7 +1,8 @@
 display.bg = Color::BLACK
+console.clear(Color::BLACK, Color::BLACK)
 canvas.fg = [0,0,0.2,0.05]
 #0x00005010
-canvas.blend_mode = :add
+canvas.style.blend_mode = :add
 console.clear()
 
 def sinx(i)

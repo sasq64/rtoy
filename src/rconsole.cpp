@@ -116,13 +116,15 @@ void RConsole::reg_class(mrb_state* ruby)
             auto n = mrb_get_argc(mrb);
             RStyle* style = &ptr->current_style;
             if (n == 1) { mrb_get_args(mrb, "d", &style, &RStyle::dt); }
+            ptr->current_style.fg = style->fg;
+            ptr->current_style.bg = style->bg;
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
             ptr->console->fill(fg, bg);
             ptr->xpos = ptr->ypos = 0;
             return mrb_nil_value();
         },
-        MRB_ARGS_NONE());
+        MRB_ARGS_REQ(1));
 
     mrb_define_method(
         ruby, RConsole::rclass, "fill",

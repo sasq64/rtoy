@@ -13,7 +13,7 @@ class RImage;
 
 class RCanvas : public RLayer
 {
-    gl_wrap::Texture canvas;
+    std::shared_ptr<gl_wrap::Texture> canvas;
 
     mrb::RubyPtr current_font;
 

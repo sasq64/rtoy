@@ -38,6 +38,19 @@ void RImage::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(1));
 
     mrb_define_method(
+        ruby, RImage::rclass, "save",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            const char* name{};
+            mrb_get_args(mrb, "z", &name);
+            auto* thiz = mrb::self_to<RImage>(self);
+            auto bytes = thiz->texture.read_pixels();
+            pix::Image img{thiz->width(), thiz->height(), bytes.data()};
+            pix::save_png(img, name);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
         ruby, RImage::rclass, "width",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             return mrb::to_value(mrb::self_to<RImage>(self)->width(), mrb);

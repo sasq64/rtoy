@@ -184,16 +184,13 @@ void PixConsole::set_tile_image(char32_t c, gl_wrap::TexRef tex)
     font_texture.set_target();
     gl_wrap::ProgramCache::get_instance().textured.use();
     tex.bind();
-    // TODO: Better way of rendering mirrored
-    auto uvs = tex.uvs;
-    auto y0 = uvs[1];
-    auto y1 = uvs[5];
-    uvs[1] = uvs[3] = y1;
-    uvs[5] = uvs[7] = y0;
+    tex.yflip();
 
+    glBlendFunc(GL_ONE, GL_ZERO);
     pix::draw_quad_uvs(pos.first, texture_height - char_height - pos.second,
-        char_width, char_height, uvs);
+        char_width, char_height, tex.uvs);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 std::pair<int, int> PixConsole::text(int x, int y, std::string const& t)
