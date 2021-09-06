@@ -5,22 +5,22 @@
 #include <gl/gl.hpp>
 #include <gl/program.hpp>
 #include <gl/texture.hpp>
-#include <pix/font.hpp>
 
+#include <pix/font.hpp>
 #include <pix/pix.hpp>
 
-#include <tuple>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 
 class PixConsole
 {
     static std::string vertex_shader;
     static std::string fragment_shader;
-    unsigned texture_width = 256*4;
-    unsigned texture_height = 256*4;
-    unsigned char_width = 13;
-    unsigned char_height = 24;
+    int texture_width = 256 * 4;
+    int texture_height = 256 * 4;
+    int char_width = 13;
+    int char_height = 24;
 
     static const int gap = 4;
 
@@ -37,8 +37,8 @@ class PixConsole
     std::vector<uint32_t> uvdata;
     std::vector<uint32_t> coldata;
 
-    unsigned width;
-    unsigned height;
+    int width;
+    int height;
 
     std::pair<float, float> scale{2.0, 2.0};
     std::pair<float, float> offset{0, 0};
@@ -57,12 +57,12 @@ class PixConsole
     std::pair<int, int> alloc_char(char32_t c);
 
 public:
-    PixConsole(unsigned w, unsigned h,
-        std::string const& font_file = "data/bedstead.otf", int size = 32);
+    PixConsole(int w, int h, std::string const& font_file = "data/bedstead.otf",
+        int size = 32);
 
     void reset();
 
-    std::pair<unsigned, unsigned> get_char_size();
+    std::pair<int, int> get_char_size();
 
     void set_tile_size(int w, int h);
 

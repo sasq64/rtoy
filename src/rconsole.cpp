@@ -1,19 +1,15 @@
 #include "rconsole.hpp"
 #include "mrb_tools.hpp"
-#include "pix/texture_font.hpp"
 #include "rimage.hpp"
 
-#include "pix/pixel_console.hpp"
+#include <coreutils/utf8.h>
+#include <gl/program_cache.hpp>
+#include <pix/pix.hpp>
+#include <pix/pixel_console.hpp>
 
 #include <mruby/array.h>
 
-#include <coreutils/utf8.h>
-
-#include <gl/program_cache.hpp>
-#include <pix/gl_console.hpp>
-#include <pix/pix.hpp>
-
-RConsole::RConsole(int w, int h, Style style)
+RConsole::RConsole(int w, int h, Style const& style)
     : RLayer{w, h},
       console(
           std::make_shared<PixConsole>(256, 256, style.font, style.font_size))
@@ -88,7 +84,7 @@ void RConsole::scroll(int dy, int dx)
 
 void RConsole::render()
 {
-    if (!enabled) return;
+    if (!enabled) { return; }
     console->flush();
     console->render();
 }
@@ -120,13 +116,15 @@ void RConsole::reg_class(mrb_state* ruby)
             auto n = mrb_get_argc(mrb);
             RStyle* style = &ptr->current_style;
             if (n == 1) { mrb_get_args(mrb, "d", &style, &RStyle::dt); }
+            ptr->current_style.fg = style->fg;
+            ptr->current_style.bg = style->bg;
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
             ptr->console->fill(fg, bg);
             ptr->xpos = ptr->ypos = 0;
             return mrb_nil_value();
         },
-        MRB_ARGS_NONE());
+        MRB_ARGS_REQ(1));
 
     mrb_define_method(
         ruby, RConsole::rclass, "fill",
@@ -239,7 +237,7 @@ void RConsole::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             auto [tw, th] = ptr->console->get_char_size();
-            std::array<unsigned, 2> data{tw, th};
+            std::array<int, 2> data{tw, th};
             return mrb::to_value(data, mrb);
         },
         MRB_ARGS_NONE());
@@ -297,7 +295,7 @@ void RConsole::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(3));
 
     mrb_define_method(
-        ruby, RConsole::rclass, "add_tile",
+        ruby, RConsole::rclass, "set_tile_image",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             uint32_t index = 0;
             RImage* image = nullptr;
@@ -324,10 +322,10 @@ void RConsole::reset()
     auto [_, tile_height] = console->get_char_size();
 
     int lines = height / tile_height;
-    float s = 1.0;
+    float s = 1.0F;
     int total = lines;
     while (total > 50) {
-        s += 1.0;
+        s += 1.0F;
         total -= lines;
     }
 

@@ -31,7 +31,7 @@ struct RSprite
     static inline RClass* rclass;
     static mrb_data_type dt;
 
-    void update_tx(float screen_width, float screen_height);
+    void update_tx(double screen_width, double screen_height);
 };
 
 struct SpriteBatch
@@ -47,7 +47,7 @@ class RSprites : public RLayer
     gl_wrap::Program program;
 public:
     RSprite* add_sprite(RImage* image, int flags);
-    void remove_sprite(RSprite* spr);
+    static void remove_sprite(RSprite* spr);
 
     static inline RClass* rclass;
     static mrb_data_type dt;

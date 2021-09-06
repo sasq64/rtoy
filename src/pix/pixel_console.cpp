@@ -39,12 +39,16 @@ std::string PixConsole::fragment_shader{R"gl(
               gl_FragColor = fg_color * col * col.a + bg_color * (1.0 - col.a);
         })gl"};
 
+
+static constexpr int align(int val, int a) {
+    return (val + (a-1)) & (~(a-1));
+}
+
 void PixConsole::add_char(char32_t c)
 {
     auto cw = char_width + gap;
     auto [fw,fh] = font.get_size();
 
-    fmt::print("FONT {}x{}\n", fw, fh);
     std::vector<uint32_t> temp(fw * fh*2);
     font.render_char(c, temp.data(), 0xffffff00, fw);
 
@@ -57,10 +61,10 @@ void PixConsole::add_char(char32_t c)
     int y = next_pos.second / fy;
     char_uvs[c] = (x) | (y << 8);
 
-    next_pos.first += (char_width + gap + 3) & 0xfffffffc;
+    next_pos.first += align(char_width + gap, 4); 
     if (next_pos.first >= (texture_width - cw)) {
         next_pos.first = 0;
-        next_pos.second += (char_height + gap + 3) & 0xfffffffc;
+        next_pos.second += align(char_height + gap, 4);
     }
 }
 
@@ -84,7 +88,7 @@ std::pair<int, int> PixConsole::alloc_char(char32_t c)
 }
 
 PixConsole::PixConsole(
-    unsigned w, unsigned h, std::string const& font_file, int size)
+    int w, int h, std::string const& font_file, int size)
     : font{font_file.c_str(), size}, width(w), height(h)
 {
     // font.set_pixel_size(32);
@@ -132,7 +136,7 @@ PixConsole::PixConsole(
     col_texture.update(coldata.data());
 }
 
-std::pair<unsigned, unsigned> PixConsole::get_char_size()
+std::pair<int, int> PixConsole::get_char_size()
 {
     return {char_width, char_height};
 }
@@ -142,6 +146,14 @@ void PixConsole::set_tile_size(int w, int h)
     char_uvs.clear();
     next_pos = {0, 0};
 
+    std::vector<uint32_t> data;
+    data.resize(texture_width * texture_height);
+    std::fill(data.begin(), data.end(), 0);
+    font_texture = gl_wrap::Texture{texture_width, texture_height, data};
+
+    for (char32_t c = 0x20; c <= 0x7f; c++) {
+        add_char(c);
+    }
     char_width = w;
     char_height = h;
     program.use();
@@ -180,16 +192,13 @@ void PixConsole::set_tile_image(char32_t c, gl_wrap::TexRef tex)
     font_texture.set_target();
     gl_wrap::ProgramCache::get_instance().textured.use();
     tex.bind();
-    // TODO: Better way of rendering mirrored
-    auto uvs = tex.uvs;
-    auto y0 = uvs[1];
-    auto y1 = uvs[5];
-    uvs[1] = uvs[3] = y1;
-    uvs[5] = uvs[7] = y0;
+    tex.yflip();
 
+    glBlendFunc(GL_ONE, GL_ZERO);
     pix::draw_quad_uvs(pos.first, texture_height - char_height - pos.second,
-        char_width, char_height, uvs);
+        char_width, char_height, tex.uvs);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 std::pair<int, int> PixConsole::text(int x, int y, std::string const& t)

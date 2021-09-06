@@ -7,7 +7,7 @@ module Doc
         end
 
         console.fg = Color::YELLOW
-        puts "class #{cls}"
+        #puts "class #{cls}"
         has_doc = cls.respond_to?(:get_doc) 
         doc = has_doc ? cls.get_doc() : nil
         if doc

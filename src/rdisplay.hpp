@@ -19,18 +19,13 @@ struct RSprite;
 
 class Display : public RLayer
 {
-
     mrb_value draw_handler{};
-
     mrb_value disp_obj{};
-
     mrb_state* ruby = nullptr;
     std::shared_ptr<Screen> window = nullptr;
 
     Settings const& settings;
 
-    //int w = 1440;
-    //int h = 960;
     std::array<float, 4> bg = {0, 0, 0.8, 1.0};
     std::array<float, 16> Id = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
@@ -39,7 +34,6 @@ class Display : public RLayer
 
 public:
     RSprite* mouse_cursor = nullptr;
-    static inline bool full_screen = false;
     std::shared_ptr<RConsole> console;
     static inline RClass* rclass;
     static mrb_data_type dt;

@@ -17,12 +17,12 @@ module MethAttrs
 
     def method_added(name)
         if @doc_string
-            p "#{name}:\n#{@doc_string}\n"
+            #p "#{name}:\n#{@doc_string}\n"
             @doc_strings[name] = @doc_string
             @doc_string = nil
         end
         if @returns
-            p "#{name} returns #{@returns}"
+            #p "#{name} returns #{@returns}"
             @return_types[name] = @returns
             @returns = nil
         end
@@ -64,7 +64,7 @@ module MethAttrs
 
     def get_return_type(method)
         type = @return_types[method]
-        p ">> RET for #{method} is #{type}"
+        #p ">> RET for #{method} is #{type}"
         type
     end
 

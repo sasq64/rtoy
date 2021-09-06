@@ -59,7 +59,8 @@ void Toy::init()
     system = create_sdl_system();
 #endif
 
-    fs::copy("sys/help.rb", "ruby/help.rb", fs::copy_options::overwrite_existing);
+    fs::copy(
+        "sys/help.rb", "ruby/help.rb", fs::copy_options::overwrite_existing);
 
     RLayer::reg_class(ruby);
     RConsole::reg_class(ruby);
@@ -75,7 +76,7 @@ void Toy::init()
 
     fmt::print("SYSTEM: {}\n", settings.system);
     auto* rclass = mrb_define_class(ruby, "Settings", nullptr);
-    auto sym = mrb_intern_cstr(ruby, settings.system.c_str());
+    mrb_intern_cstr(ruby, settings.system.c_str());
     mrb_define_const(ruby, rclass, "SYSTEM",
         mrb_check_intern_cstr(ruby, settings.system.c_str()));
     mrb_define_const(
@@ -129,15 +130,17 @@ void Toy::init()
 
             auto parts = utils::split(ruby_path, ":"s);
             std::optional<fs::path> to_load;
-            for(auto const& part : parts) {
+            for (auto const& part : parts) {
                 auto rb_file = fs::path(part) / name;
-                if (rb_file.extension() == "") { rb_file.replace_extension(".rb"); }
-                if(fs::exists(rb_file)) {
+                if (rb_file.extension() == "") {
+                    rb_file.replace_extension(".rb");
+                }
+                if (fs::exists(rb_file)) {
                     to_load = rb_file;
                     break;
                 }
             }
-            if(!to_load) {
+            if (!to_load) {
                 mrb_raise(mrb, mrb->object_class,
                     fmt::format("'{}' not found", name).c_str());
             }
@@ -276,7 +279,8 @@ bool Toy::render_loop()
 
     auto [mx, my] = input->mouse_pos();
     if (display->mouse_cursor != nullptr) {
-        display->mouse_cursor->trans = {(float)mx, (float)my};
+        display->mouse_cursor->trans = {
+            static_cast<float>(mx), static_cast<float>(my)};
         display->mouse_cursor->dirty = true;
     }
 
@@ -303,10 +307,7 @@ bool Toy::render_loop()
 #    include <emscripten.h>
 #endif
 
-Toy::Toy(Settings const& _settings) : settings{_settings}
-{
-    Display::full_screen = settings.screen == ScreenType::Full;
-}
+Toy::Toy(Settings const& _settings) : settings{_settings} {}
 
 int Toy::run()
 {

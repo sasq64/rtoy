@@ -19,11 +19,11 @@ class RInput
     mrb_value click_handler{};
     mrb_value drag_handler{};
 
-    void poll_events();
-
     int resize = 0;
     int mouse_x = 0;
     int mouse_y = 0;
+    int64_t frame_counter = 0;
+    int64_t last_frame = 0;
 
     std::unordered_map<uint32_t, int> pressed;
     System& system;

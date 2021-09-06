@@ -49,7 +49,7 @@ public:
 
     void set_tile_size(int tw, int th);
 
-    void add_tile(char32_t index, gl_wrap::TexRef texture);
+    void set_tile_image(char32_t index, gl_wrap::TexRef texture);
 
     void clear();
 

@@ -369,4 +369,6 @@ struct RubyPtr
     void clear() { ptr = nullptr; }
 };
 
+using Float = mrb_float;
+
 } // namespace mrb

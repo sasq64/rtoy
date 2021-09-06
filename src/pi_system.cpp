@@ -212,7 +212,7 @@ public:
         tv.tv_usec = 1000;
         int sr = select(maxfd + 1, &readset, nullptr, nullptr, &tv);
         if (sr > 0) {
-            fmt::print("Got signal\n");
+            //fmt::print("Got signal\n");
             // static uint8_t buf[2048];
             for (auto fd : fdv) {
                 if (FD_ISSET(fd, &readset)) {
@@ -286,13 +286,14 @@ public:
 
     void init_audio(Settings const&) override
     {
+        return;
         player = std::make_unique<LinuxPlayer>(44100);
     }
 
     void set_audio_callback(
         std::function<void(float*, size_t)> const& fcb) override
     {
-
+        return;
         player->play([fcb](int16_t* data, size_t sz) {
             std::array<float, 32768> fa; // NOLINT
             fcb(fa.data(), sz);

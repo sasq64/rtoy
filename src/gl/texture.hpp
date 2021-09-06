@@ -23,7 +23,7 @@ struct Texture
     void init();
 
     template <typename T, size_t N>
-    Texture(GLuint w, GLuint h, std::array<T, N> const& data,
+    Texture(GLint w, GLint h, std::array<T, N> const& data,
         GLint target_format = GL_RGBA, GLint source_format = -1,
         GLenum type = GL_UNSIGNED_BYTE)
         : width(w), height(h), format(target_format)
@@ -42,7 +42,7 @@ struct Texture
     }
 
     template <typename T>
-    Texture(GLuint w, GLuint h, std::vector<T> const& data,
+    Texture(GLint w, GLint h, std::vector<T> const& data,
         GLint target_format = GL_RGBA, GLint source_format = -1,
         GLenum type = GL_UNSIGNED_BYTE)
         : width(w), height(h), format(target_format)
@@ -61,7 +61,7 @@ struct Texture
     }
 
     template <typename T>
-    Texture(GLuint w, GLuint h, T const* data, GLint target_format = GL_RGBA,
+    Texture(GLint w, GLint h, T const* data, GLint target_format = GL_RGBA,
         GLint source_format = -1, GLenum type = GL_UNSIGNED_BYTE)
         : width(w), height(h), format(target_format)
     {
@@ -78,7 +78,7 @@ struct Texture
             type, data);
     }
 
-    Texture(GLuint w, GLuint h) : width(w), height(h)
+    Texture(GLint w, GLint h) : width(w), height(h)
     {
         init();
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
@@ -125,7 +125,7 @@ struct Texture
     void set_target()
     {
         if (fb_id == 0) {
-            //glActiveTexture(GL_TEXTURE0);
+            // glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, tex_id);
             glGenFramebuffers(1, &fb_id);
             glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
@@ -143,14 +143,18 @@ struct Texture
         if (w < 0) { w = width; }
         if (h < 0) { h = height; }
 
-        GLuint fb;
+        GLuint fb = 0;
         fmt::print("Read {},{} {}x{}\n", x, y, w, h);
-        glGenFramebuffers(1, &fb);
-        glBindFramebuffer(GL_FRAMEBUFFER, fb);
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0);
-        gl_check("glFrameBufferTexture2d");
-        setViewport({width, height});
+        if (fb_id == 0) {
+            glGenFramebuffers(1, &fb);
+            glBindFramebuffer(GL_FRAMEBUFFER, fb);
+            glFramebufferTexture2D(
+                GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0);
+            gl_check("glFrameBufferTexture2d");
+            setViewport({width, height});
+        } else {
+            set_target();
+        }
         std::vector<std::byte> data(width * height * 4);
         auto type = GL_UNSIGNED_BYTE;
         glReadPixels(x, y, w, h, format, type, data.data());
@@ -200,10 +204,30 @@ struct TexRef
         return tex->read_pixels(x(), y(), width(), height());
     };
 
-    int width() const { return std::lround(tex->width * (uvs[4] - uvs[0])); }
-    int height() const { return std::lround(tex->height * (uvs[5] - uvs[1])); }
+    void yflip()
+    {
+        auto y0 = uvs[1];
+        auto y1 = uvs[5];
+        uvs[1] = uvs[3] = y1;
+        uvs[5] = uvs[7] = y0;
+    }
+
+    int width() const
+    {
+        return std::lround(static_cast<double>(tex->width) * (uvs[4] - uvs[0]));
+    }
+    int height() const
+    {
+        return std::abs(
+            std::lround(static_cast<float>(tex->height) * (uvs[5] - uvs[1])));
+    }
     int x() const { return std::lround(tex->width * uvs[0]); }
-    int y() const { return std::lround(tex->height * uvs[1]); }
+    int y() const
+    {
+        auto uy = uvs[1];
+        if ((uvs[5] - uy) < 0) { uy = 1.0F - uy; }
+        return std::lround(tex->height * uy);
+    }
 };
 
 } // namespace gl_wrap

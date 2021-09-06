@@ -63,8 +63,8 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RStyle::rclass, "initialize",
         [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
-            DATA_PTR(self) = new RStyle();
-            DATA_TYPE(self) = mrb::get_data_type<RStyle>();
+            DATA_PTR(self) = new RStyle(); // NOLINT
+            DATA_TYPE(self) = mrb::get_data_type<RStyle>(); // NOLINT
             auto* rstyle = mrb::self_to<RStyle>(self);
             return mrb_nil_value();
         },

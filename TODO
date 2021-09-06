@@ -1,6 +1,7 @@
 
 [ ] Wait for key after error in editor
 [ ] Unified exception handling (sometimes you CANT go back to editor)
+    Sometimes stack only in terminal
 [x] Set default colors before showing error
 [ ] Scale issue when returning to editor
 [x] Fix font rendering bgcolor
@@ -13,7 +14,7 @@
 [x] Reset changes tile size to 16
 [ ] Investigate RGB ordering strangeness
 [X] Change prompt
-[ ] Style keyword args to drawing methods
+[X] Style keyword args to drawing methods
 [X] Box charater snake bug
 [X] Move SDL code to system specific class
 [X] Port to Raspberry PI

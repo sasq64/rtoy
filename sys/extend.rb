@@ -146,6 +146,18 @@ class Console
         end
     end
 
+    alias _clear clear
+
+    def clear(**kwargs)
+        if kwargs.size > 0
+            style = Style.new
+            kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
+            _clear(style)
+        else
+            _clear()
+        end
+    end
+
     def [](index)
         get_char(index&0xff, index>>8)
     end

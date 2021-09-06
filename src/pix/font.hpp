@@ -43,8 +43,8 @@ public:
 
         auto m = face->glyph->metrics;
         size = {m.width >> 6, m.height >> 6};
-        fmt::print(
-            "{}x{}, {}\n", m.width >> 6, m.height >> 6, m.horiAdvance >> 6);
+        //fmt::print(
+        //    "{}x{}, {}\n", m.width >> 6, m.height >> 6, m.horiAdvance >> 6);
         auto height =
             (face->size->metrics.ascender - face->size->metrics.descender) / 64;
     }
@@ -53,7 +53,7 @@ public:
     void copy_char(T* target, uint32_t color, FT_Bitmap const& b, int xoffs, int yoffs,
         int stride, int width = -1, int height = -1)
     {
-         fmt::print("{}x{} {}\n", b.width, b.rows, b.pitch);
+        //fmt::print("{}x{} {}\n", b.width, b.rows, b.pitch);
         auto* data = b.buffer;
         for (int y = 0; y < b.rows; y++) {
             for (int x = 0; x < b.width; x++) {

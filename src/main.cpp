@@ -8,8 +8,6 @@
 
 using namespace std::string_literals;
 
-int start_toy(std::string const& script);
-
 int main(int argc, char const** argv)
 {
     std::string main_script = "sys/main.rb";
@@ -20,7 +18,7 @@ int main(int argc, char const** argv)
 
 #ifdef RASPBERRY_PI
     settings.system = "raspberry_pi";
-#elifdef __EMSCRIPTEN__
+#elif (defined __EMSCRIPTEN__)
     settings.system = "emscripten";
 #else
     settings.system = "posix";

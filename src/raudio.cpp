@@ -12,7 +12,7 @@ RAudio::RAudio(mrb_state* _ruby, System& _system, Settings const& settings)
     system.init_audio(settings);
     system.set_audio_callback([this](float* data, size_t size) {
         while (out_buffer.available() < size) {
-            mix(size / 2);
+            mix(2048);
         }
         out_buffer.read(data, size);
     });
@@ -39,16 +39,6 @@ void RAudio::mix(size_t samples_len)
         }
     }
     out_buffer.interleave(temp[0].data(), temp[1].data(), samples_len);
-}
-
-// Called from audio system to read samples
-void RAudio::fill_audio(uint8_t* data, int bytes_len)
-{
-    auto floats_len = bytes_len / 4;
-    while (out_buffer.available() < floats_len) {
-        mix(bytes_len / 8);
-    }
-    out_buffer.read(reinterpret_cast<float*>(data), floats_len);
 }
 
 void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)

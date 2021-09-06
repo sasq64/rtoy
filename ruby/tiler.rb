@@ -14,7 +14,7 @@ class TileMap
         p "Split into #{@tiles.size}"
         @con = Display.default.console
         @tiles.each_with_index do |tile, i|
-            @con.add_tile(1024+i, tile)
+            @con.set_tile_image(1024+i, tile)
         end
     end
 
