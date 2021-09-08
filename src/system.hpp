@@ -62,6 +62,7 @@ public:
     {}
 
     virtual void init_input(Settings const&) {}
+    virtual bool is_pressed(uint32_t code) { return false; }
 
     virtual void map_key(uint32_t code, uint32_t target, int mods) {}
 };

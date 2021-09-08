@@ -6,13 +6,10 @@ module Doc
             cls = cls.class
         end
 
-        console.fg = Color::YELLOW
-        #puts "class #{cls}"
         has_doc = cls.respond_to?(:get_doc) 
         doc = has_doc ? cls.get_doc() : nil
         if doc
-            console.fg = Color::GREY
-            puts doc
+            puts(doc, fg: Color::GREY)
         end
         methods = cls.instance_methods(false)
         if cls.respond_to?(:superclass) && cls.superclass == Layer
@@ -34,7 +31,7 @@ module Doc
         p setters
 
         console.fg = Color::YELLOW
-        puts "METHODS"
+        print("METHODS", fg: Color::YELLOW)
         methods.each do |m|
             console.fg = Color::WHITE
             params = cls.instance_method(m).parameters

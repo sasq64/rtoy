@@ -369,6 +369,18 @@ struct RubyPtr
     void clear() { ptr = nullptr; }
 };
 
-using Float = mrb_float;
+using FNP = void(*)();
+
+template <typename CLASS, FNP FN>
+void make_attribute(mrb_state* mrb, std::string const& name)
+{
+    mrb_define_method(
+        mrb, CLASS::rclass, name.c_str(),
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* ptr = mrb::self_to<CLASS>(self);
+            FN();
+            return mrb_nil_value();
+        });
+}
 
 } // namespace mrb

@@ -1,4 +1,13 @@
-
+#
+# This module extends (and documents) the native classes
+# 
+# * Methods that takes a 'style' argument are extended to handle
+#   keyword arguments.
+#
+# * Methods that deals with points and sizes will be wrapped to
+#   use the Vec2 class instead
+#
+#
 class Sprites
     extend MethAttrs
     class_doc! "Sprite layer"
@@ -98,7 +107,7 @@ class Layer
     end
 
     def fg() style.fg end
-    def fg=(fg) style.fg  = fg end
+    def fg=(fg) style.fg = fg end
 
 
 end
@@ -114,14 +123,25 @@ class Display
     returns! Console, :console
 end
 
+def mkstyle(ostyle = nil, **kwargs)
+    if kwargs.size > 0
+        style = Style.new
+        if ostyle
+            style.fg = ostyle.fg
+            style.bg = ostyle.bg
+        end
+        kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
+        return style
+    end
+    nil
+end
+
 class Console
 
     alias clear_line_style clear_line
 
     def clear_line(*args, **kwargs)
-        if kwargs.size > 0
-            style = Style.new
-            kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
+        if style = mkstyle(**kwargs)
             clear_line_style(*args, style)
         else
             clear_line_style(*args)
@@ -146,8 +166,16 @@ class Console
         end
     end
 
-    alias _clear clear
+    alias _print print
+    def print(*args, **kwargs)
+        if style = mkstyle(self.style, **kwargs)
+            _print(*args, style)
+        else
+            _print(*args)
+        end
+    end
 
+    alias _clear clear
     def clear(**kwargs)
         if kwargs.size > 0
             style = Style.new

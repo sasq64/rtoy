@@ -18,6 +18,10 @@ module OS
     @@display = Display.default
     @@boot_fiber = nil
 
+    Color.constants.each do |c|
+        const_set(c, Color.const_get(c))
+    end
+
     class Handlers
         def initialize()
             @callbacks = { key:[], draw:[], drag:[], click:[], timer:[] }
@@ -128,16 +132,17 @@ module OS
     end
 
     doc! "Print text to screen without linefeed"
-    def print(text)
+    def print(text, **kwargs)
         x,y = @@display.console.get_xy
-        @@display.console.print(text)
+        @@display.console.print(text, **kwargs)
         x2,y2 = @@display.console.get_xy
+        # Yield if we line wrapped
         Fiber.yield if !@@handlers.in_callbacks && (y != y2 || x2 < x)
     end
 
     doc! "Print text to screen with linefeed"
-    def println(text)
-        @@display.console.print(text + "\n")
+    def println(text, **kwargs)
+        @@display.console.print(text + "\n", **kwargs)
         Fiber.yield if !@@handlers.in_callbacks
     end
 

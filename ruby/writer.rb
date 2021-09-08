@@ -1,5 +1,5 @@
 
-display.bg = Color::BLACK
+display.bg = BLACK
 console.enabled = false
 canvas.fg = Color::WHITE
 clear()

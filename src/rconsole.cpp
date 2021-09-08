@@ -104,7 +104,15 @@ void RConsole::reg_class(mrb_state* ruby)
         ruby, RConsole::rclass, "print",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
-            ptr->text(std::get<0>(mrb::get_args<std::string>(mrb)));
+            auto n = mrb_get_argc(mrb);
+            RStyle* style = &ptr->current_style;
+            const char* text;
+            if (n == 1) {
+                mrb_get_args(mrb, "z", &text);
+            } else {
+                mrb_get_args(mrb, "zd", &text, &style, &RStyle::dt);
+            }
+            ptr->text(text);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));

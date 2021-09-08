@@ -85,7 +85,7 @@ public:
         }
     }
 
-    bool is_pressed(uint32_t code) { return pressed[code] != 0; }
+    bool is_pressed(uint32_t code) override { return pressed[code] != 0; }
 
     AnyEvent poll_events() override
     {

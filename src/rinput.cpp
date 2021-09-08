@@ -168,7 +168,7 @@ void RInput::reg_class(mrb_state* ruby, System& system)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* input = mrb::self_to<RInput>(self);
             auto [code] = mrb::get_args<int>(mrb);
-            return mrb::to_value(input->pressed[code] == 1, mrb);
+            return mrb::to_value(input->system.is_pressed(code), mrb);
         },
         MRB_ARGS_BLOCK());
 
