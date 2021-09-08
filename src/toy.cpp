@@ -187,7 +187,7 @@ void Toy::init()
                     auto real_path = dir == "." ? p.path().filename()
                                                 : dir / p.path().filename();
                     fmt::print("{}\n", real_path.string());
-                    files.emplace_back(real_path);
+                    files.emplace_back(real_path.string());
                 }
             }
             return mrb::to_value(files, mrb);

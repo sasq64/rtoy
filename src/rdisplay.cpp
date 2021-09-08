@@ -9,6 +9,10 @@
 #include "error.hpp"
 #include "gl/functions.hpp"
 #include "mrb_tools.hpp"
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_video.h>
+
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <mruby/compile.h>

@@ -26,8 +26,8 @@ endif()
 
 if(WIN32)
   add_compile_options(/utf-8)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES
-                  -D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
+  add_definitions(/D_CRT_SECURE_NO_WARNINGS /D_USE_MATH_DEFINES
+                  /D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
   set(WARN_EXT /W2)
 endif()
 
@@ -93,25 +93,35 @@ add_subdirectory(external/doctest)
 #option(SKIP_PERFORMANCE_COMPARISON "" ON)
 #add_subdirectory(external/cpp-httplib)
 
+set(WINDIR ${PROJECT_SOURCE_DIR}/win)
+
+set(CMAKE_PREFIX_PATH ${WINDIR} ${WINDIR}/glew)
+
+add_library(SDL2 INTERFACE)
+target_include_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/include)
+target_link_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/lib)
+target_link_libraries(SDL2 INTERFACE ${WINDIR}/SDL2/lib/x64/SDL2.lib)
+
+add_library(mruby INTERFACE)
+target_link_libraries(mruby INTERFACE ${WINDIR}/mruby/libmruby.lib ${WINDIR}/mruby/libmruby_core.lib)
+target_include_directories(mruby INTERFACE ${MRB}/include)
+target_compile_definitions(mruby INTERFACE MRB_INT32)
+
 if(RASPBERRY_PI)
     include(FindFreetype)
     find_package(Freetype REQUIRED)
     find_package(OpenGL)
     set(GL ${OPENGL_LIBRARIES} stdc++fs EGL GLESv2 vcos vchiq_arm bcm_host)
     add_compile_definitions(USE_GLES)
-elseif(NOT EMSCRIPTEN)
+elseif(NOT EMSCRIPTEN AND NOT WIN32)
     find_package(SDL2 REQUIRED)
-    include(FindFreetype)
-    find_package(Freetype REQUIRED)
-    find_package(OpenGL)
     set(GL ${OPENGL_LIBRARIES} GLEW)
 endif()
+    find_package(OpenGL)
+    find_package(GLEW)
+    include(FindFreetype)
+    find_package(Freetype REQUIRED)
 
-
-# set(MUS_LIB ${PROJECT_SOURCE_DIR}/../musicplayer)
-# add_library(music INTERFACE)
-# target_link_libraries(music INTERFACE ${MUS_LIB}/build/libmusix.a)
-# target_include_directories(music INTERFACE ${MUS_LIB})
 
 # Graphics
 add_library(pix STATIC
@@ -123,16 +133,20 @@ add_library(pix STATIC
 
 if(EMSCRIPTEN)
     target_compile_options(pix PUBLIC -sUSE_FREETYPE=1)
-    target_compile_options(pix PUBLIC -sUSE_SDL=2)
 endif()
 
 target_include_directories(pix
-  PUBLIC ${SDL2_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} /usr/local/include/SDL2
+  PUBLIC ${SDL2_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} /usr/local/include/SDL2
   PRIVATE external/lodepng)
+target_link_directories(pix PUBLIC ${SDL2_LIBRARY_DIRS} ${GLEW_LIBRARY_DIRS})
 target_include_directories(pix PUBLIC src)
 
 target_link_libraries( pix PUBLIC
-    ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES} freetype)
+    ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES}
+    SDL2
+    opengl32
+    GLEW::glew
+    Freetype::Freetype)
 
 ############## MAIN TARGET ###################################################
 
@@ -172,35 +186,23 @@ add_executable(${TARGET} ${SRC_FILES})
 
 target_include_directories(${TARGET} PUBLIC
     ${MRB_INC} external external/flite/include)
-target_compile_definitions(${TARGET} PUBLIC -DMRB_INT32)
 target_link_options(${TARGET} PRIVATE -L${FLITE_LIB}/lib)
 target_link_libraries(${TARGET} PRIVATE
     pix
-    flite_cmu_us_kal
-    flite_usenglish
-    flite_cmulex
-    flite
+    #flite_cmu_us_kal
+    #flite_usenglish
+    #flite_cmulex
+    #flite
     glm::glm
     Threads::Threads
     CLI11::CLI11
-    ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
+    mruby
+    ws2_32
     ${CMAKE_DL_LIBS}
     fmt::fmt)
 if(RASPBERRY_PI)
     target_link_libraries(${TARGET} PRIVATE asound)
 endif()
-
-if(NOT EMSCRIPTEN)
-    if (RASPBERRY_PI)
-        add_executable(con contest.cpp src/pi_system.cpp src/eglutil.cpp)
-    else ()
-        add_executable(con contest.cpp src/sdl_system.cpp)
-    endif()
-    target_link_libraries(con PRIVATE pix fmt::fmt)
-endif()
-
-#add_executable(toytest src/tests/testmain.cpp src/tests/resample_test.cpp)
-#target_link_libraries(toytest PRIVATE fmt::fmt doctest::doctest resample)
 
 if(EMSCRIPTEN)
     target_link_options(toy.html PRIVATE "SHELL:-s MAX_WEBGL_VERSION=2")
