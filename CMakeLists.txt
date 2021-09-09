@@ -97,7 +97,7 @@ elseif(EMSSCRIPTEN)
 elseif(WIN32)
     set(EXTRA_LIBRARIES ws2_32)
     set(WINDIR ${PROJECT_SOURCE_DIR}/win)
-    set(CMAKE_PREFIX_PATH ${WINDIR} ${WINDIR}/glew)
+    set(CMAKE_PREFIX_PATH ${WINDIR} ${WINDIR}/freetype ${WINDIR}/glew)
 
     add_library(SDL2 INTERFACE)
     target_include_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/include)
@@ -117,7 +117,7 @@ else()
 endif()
 
 find_package(OpenGL)
-find_package(GLEW)
+find_package(GLEW REQUIRED)
 include(FindFreetype)
 find_package(Freetype REQUIRED)
 set(GL ${OPENGL_LIBRARIES})
@@ -146,7 +146,7 @@ target_link_libraries(pix PUBLIC
     coreutils
     SDL2
     OpenGL::GL
-    GLEW::glew
+    GLEW::GLEW
     Freetype::Freetype)
 
 ############## MAIN TARGET ###################################################
@@ -220,3 +220,6 @@ if(EMSCRIPTEN)
  target_link_options(toy.html PRIVATE -sERROR_ON_UNDEFINED_SYMBOLS=1)
 endif()
 
+add_custom_command(TARGET ${TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${WINDIR}/SDL2/lib/SDL2.dll $<TARGET_FILE_DIR:${TARGET}>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${WINDIR}/glew/lib/glew32.dll $<TARGET_FILE_DIR:${TARGET}>)
