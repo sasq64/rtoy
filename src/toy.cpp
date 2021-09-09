@@ -155,7 +155,7 @@ void Toy::init()
             }
             already_loaded[rb_file.string()] = modified;
 
-            FILE* fp = fopen(rb_file.c_str(), "rbe");
+            FILE* fp = fopen(rb_file.string().c_str(), "rb");
             if (fp != nullptr) {
                 auto* ctx = mrbc_context_new(mrb);
                 ctx->capture_errors = true;
@@ -184,8 +184,9 @@ void Toy::init()
             std::vector<std::string> files;
             if (fs::is_directory(parent)) {
                 for (auto&& p : fs::directory_iterator(parent)) {
-                    auto real_path = dir == "." ? p.path().filename()
-                                                : dir / p.path().filename();
+                    auto real_path = p.path().filename();//
+                    //dir == "." ? p.path().filename()
+                      //                          : dir / p.path().filename();
                     fmt::print("{}\n", real_path.string());
                     files.emplace_back(real_path.string());
                 }

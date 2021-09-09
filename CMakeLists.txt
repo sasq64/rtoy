@@ -45,6 +45,7 @@ else()
   message(" * ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
+
 find_package(Threads REQUIRED)
 
 # Warning level setup #######################################################
@@ -78,34 +79,13 @@ set(MRB ${PROJECT_SOURCE_DIR}/external/mruby)
 set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/mruby/lib)
 set(MRB_INC ${MRB}/include)
 
-# add_custom_command(
-#  OUTPUT ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a
-#  COMMAND
-#  MRUBY_CONFIG=${PROJECT_SOURCE_DIR}/mruby.cfg rake -f ${MRB}/Rakefile -j8)
-# add_custom_target(mruby ALL
-#     DEPENDS ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a mruby.cfg)
 
 add_subdirectory(external/fmt)
 add_subdirectory(external/CLI11)
 add_subdirectory(external/coreutils)
 add_subdirectory(external/glm)
 add_subdirectory(external/doctest)
-#option(SKIP_PERFORMANCE_COMPARISON "" ON)
-#add_subdirectory(external/cpp-httplib)
 
-set(WINDIR ${PROJECT_SOURCE_DIR}/win)
-
-set(CMAKE_PREFIX_PATH ${WINDIR} ${WINDIR}/glew)
-
-add_library(SDL2 INTERFACE)
-target_include_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/include)
-target_link_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/lib)
-target_link_libraries(SDL2 INTERFACE ${WINDIR}/SDL2/lib/x64/SDL2.lib)
-
-add_library(mruby INTERFACE)
-target_link_libraries(mruby INTERFACE ${WINDIR}/mruby/libmruby.lib ${WINDIR}/mruby/libmruby_core.lib)
-target_include_directories(mruby INTERFACE ${MRB}/include)
-target_compile_definitions(mruby INTERFACE MRB_INT32)
 
 if(RASPBERRY_PI)
     include(FindFreetype)
@@ -113,17 +93,36 @@ if(RASPBERRY_PI)
     find_package(OpenGL)
     set(GL ${OPENGL_LIBRARIES} stdc++fs EGL GLESv2 vcos vchiq_arm bcm_host)
     add_compile_definitions(USE_GLES)
-elseif(NOT EMSCRIPTEN AND NOT WIN32)
+elseif(EMSSCRIPTEN)
+elseif(WIN32)
+    set(WINDIR ${PROJECT_SOURCE_DIR}/win)
+    set(CMAKE_PREFIX_PATH ${WINDIR} ${WINDIR}/glew)
+
+    add_library(SDL2 INTERFACE)
+    target_include_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/include)
+    target_link_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/lib)
+    target_link_libraries(SDL2 INTERFACE ${WINDIR}/SDL2/lib/x64/SDL2.lib)
+
+    add_library(mruby INTERFACE)
+    target_link_libraries(mruby INTERFACE ${WINDIR}/mruby/libmruby.lib ${WINDIR}/mruby/libmruby_core.lib)
+    target_include_directories(mruby INTERFACE ${MRB}/include)
+    target_compile_definitions(mruby INTERFACE MRB_INT32)
+else()
     find_package(SDL2 REQUIRED)
-    set(GL ${OPENGL_LIBRARIES} GLEW)
+    add_library(mruby INTERFACE)
+    target_link_libraries(mruby INTERFACE ${MRBLIB}/libmruby.a ${MRBLIB}/libmruby_core.a)
+    target_include_directories(mruby INTERFACE ${MRB}/include)
+    target_compile_definitions(mruby INTERFACE MRB_INT32)
 endif()
-    find_package(OpenGL)
-    find_package(GLEW)
-    include(FindFreetype)
-    find_package(Freetype REQUIRED)
 
+find_package(OpenGL)
+find_package(GLEW)
+include(FindFreetype)
+find_package(Freetype REQUIRED)
+set(GL ${OPENGL_LIBRARIES})
 
-# Graphics
+# PIX ########
+
 add_library(pix STATIC
     src/gl/texture.cpp
     src/pix/pix.cpp

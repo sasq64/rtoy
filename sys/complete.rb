@@ -46,15 +46,22 @@ end
 
 def complete_file(fn)
     fn.delete!('"')
-    p fn
     parts = fn.split('/')
     last = parts.pop
-    p last
     d = parts.empty? ? '.' : parts.join('/')
+    # last = filename to complete 
+    # d = Directory to complete include?
+    p "DIR " + d
     files = list_files(d).select do |f|
-        f.start_with?(fn)
+        p "#{f} startswith #{last}"
+        f.start_with?(last)
     end
     n = longest_common_prefix(files)
+
+    p n
+
+    n = d + '/' + n
+
     p "GOT " + n
     return n if n.empty?
     File.exist?(n) ? '"' + n + '"' : n
