@@ -139,10 +139,15 @@ inline void drawArrays(Primitive p, GLint offset, int count)
     gl_check("glDrawArrays");
 }
 
+template <typename T>
+void* to_ptr(T t) {
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(t));
+}
+
 inline void drawElements(Primitive p, int count, Type t, uintptr_t offset)
 {
     glDrawElements(
-        to_glenum(p), count, to_glenum(t), reinterpret_cast<void*>(offset));
+        to_glenum(p), count, to_glenum(t), to_ptr(offset));
     gl_check("glDrawElements");
 }
 
@@ -153,7 +158,7 @@ inline void vertexAttrib(GLuint index, GLint size, GLenum type, GLboolean norm,
     assert(size > 0 && size <= 4);
 
     glVertexAttribPointer(
-        index, size, type, norm, stride, reinterpret_cast<void*>(offset));
+        index, size, type, norm, stride, to_ptr(offset));
     gl_check("glVertexAttribPointer");
 }
 
