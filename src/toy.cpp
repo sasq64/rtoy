@@ -49,6 +49,19 @@ extern "C" void send_to_rtoy(const char* text)
     }
 }
 
+fs::path find_data_root()
+{
+    fs::path d = fs::current_path();
+    while (true) {
+        if (fs::exists(d / "data") && fs::exists(d / "sys")) { return d; }
+        d = d.parent_path();
+        if (d.empty()) {
+            break;
+        }
+    }
+    return {};
+}
+
 void Toy::init()
 {
     ruby = mrb_open();
@@ -58,6 +71,13 @@ void Toy::init()
 #else
     system = create_sdl_system();
 #endif
+
+    data_root = find_data_root();
+    if(data_root.empty()) {
+        exit(1);
+    }
+
+    fs::current_path(data_root);
 
     fs::copy(
         "sys/help.rb", "ruby/help.rb", fs::copy_options::overwrite_existing);

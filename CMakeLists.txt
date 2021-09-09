@@ -91,10 +91,11 @@ if(RASPBERRY_PI)
     include(FindFreetype)
     find_package(Freetype REQUIRED)
     find_package(OpenGL)
-    set(GL ${OPENGL_LIBRARIES} stdc++fs EGL GLESv2 vcos vchiq_arm bcm_host)
+    set(EXTRA_LIBRARIES stdc++fs EGL GLESv2 vcos vchiq_arm bcm_host asound)
     add_compile_definitions(USE_GLES)
 elseif(EMSSCRIPTEN)
 elseif(WIN32)
+    set(EXTRA_LIBRARIES ws2_32)
     set(WINDIR ${PROJECT_SOURCE_DIR}/win)
     set(CMAKE_PREFIX_PATH ${WINDIR} ${WINDIR}/glew)
 
@@ -110,7 +111,7 @@ elseif(WIN32)
 else()
     find_package(SDL2 REQUIRED)
     add_library(mruby INTERFACE)
-    target_link_libraries(mruby INTERFACE ${MRBLIB}/libmruby.a ${MRBLIB}/libmruby_core.a)
+    target_link_libraries(mruby INTERFACE ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a)
     target_include_directories(mruby INTERFACE ${MRB}/include)
     target_compile_definitions(mruby INTERFACE MRB_INT32)
 endif()
@@ -140,10 +141,11 @@ target_include_directories(pix
 target_link_directories(pix PUBLIC ${SDL2_LIBRARY_DIRS} ${GLEW_LIBRARY_DIRS})
 target_include_directories(pix PUBLIC src)
 
-target_link_libraries( pix PUBLIC
-    ${GL} Threads::Threads coreutils ${SDL2_LIBRARIES}
+target_link_libraries(pix PUBLIC
+    Threads::Threads
+    coreutils
     SDL2
-    opengl32
+    OpenGL::GL
     GLEW::glew
     Freetype::Freetype)
 
@@ -196,12 +198,9 @@ target_link_libraries(${TARGET} PRIVATE
     Threads::Threads
     CLI11::CLI11
     mruby
-    ws2_32
     ${CMAKE_DL_LIBS}
-    fmt::fmt)
-if(RASPBERRY_PI)
-    target_link_libraries(${TARGET} PRIVATE asound)
-endif()
+    fmt::fmt
+    ${EXTRA_LIBRARIES})
 
 if(EMSCRIPTEN)
     target_link_options(toy.html PRIVATE "SHELL:-s MAX_WEBGL_VERSION=2")

@@ -38,6 +38,8 @@ class Toy
     Settings const& settings;
     std::unique_ptr<System> system;
 
+    std::filesystem::path data_root;
+
     mrb_state* ruby = nullptr;
     static inline int stack_keep = 0;
 
