@@ -220,6 +220,8 @@ if(EMSCRIPTEN)
  target_link_options(toy.html PRIVATE -sERROR_ON_UNDEFINED_SYMBOLS=1)
 endif()
 
-add_custom_command(TARGET ${TARGET} POST_BUILD
+if(WIN32)
+    add_custom_command(TARGET ${TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${WINDIR}/SDL2/lib/SDL2.dll $<TARGET_FILE_DIR:${TARGET}>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${WINDIR}/glew/lib/glew32.dll $<TARGET_FILE_DIR:${TARGET}>)
+endif()
