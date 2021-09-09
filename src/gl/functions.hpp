@@ -133,13 +133,13 @@ enum class Type
     Float = GL_FLOAT,
 };
 
-inline void drawArrays(Primitive p, GLint offset, size_t count)
+inline void drawArrays(Primitive p, GLint offset, int count)
 {
     glDrawArrays(to_glenum(p), offset, count);
     gl_check("glDrawArrays");
 }
 
-inline void drawElements(Primitive p, size_t count, Type t, GLint offset)
+inline void drawElements(Primitive p, int count, Type t, uintptr_t offset)
 {
     glDrawElements(
         to_glenum(p), count, to_glenum(t), reinterpret_cast<void*>(offset));
@@ -147,7 +147,7 @@ inline void drawElements(Primitive p, size_t count, Type t, GLint offset)
 }
 
 inline void vertexAttrib(GLuint index, GLint size, GLenum type, GLboolean norm,
-    GLsizei stride, GLuint offset)
+    GLsizei stride, uintptr_t offset)
 {
     assert(index < GL_MAX_VERTEX_ATTRIBS);
     assert(size > 0 && size <= 4);
