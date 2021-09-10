@@ -101,6 +101,7 @@ if(RASPBERRY_PI)
 elseif(EMSCRIPTEN)
     add_library(_freetype INTERFACE)
     target_compile_options(_freetype INTERFACE -sUSE_FREETYPE=1)
+    target_link_options(_freetype INTERFACE -sUSE_FREETYPE=1)
     add_library(Freetype::Freetype ALIAS _freetype)
 
     add_library(Graphics INTERFACE)
