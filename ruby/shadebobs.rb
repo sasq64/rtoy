@@ -1,5 +1,5 @@
 display.bg = Color::BLACK
-console.clear(Color::BLACK, Color::BLACK)
+console.clear(fg: Color::WHITE, bg: Color::BLACK)
 canvas.fg = [0,0,0.2,0.05]
 #0x00005010
 canvas.style.blend_mode = :add

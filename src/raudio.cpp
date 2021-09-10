@@ -43,6 +43,9 @@ void RAudio::mix(size_t samples_len)
 
 void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)
 {
+    if (sound.data.empty()) {
+        return;
+    }
     // Assume sample is C4 = 261.63 Hz
     if (freq == 0) { freq = 261.63F; }
     freq = sound.freq * (freq / 261.63F);

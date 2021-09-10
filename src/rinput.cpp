@@ -1,4 +1,5 @@
 #include "rinput.hpp"
+
 #include "error.hpp"
 #include "keycodes.h"
 #include "mrb_tools.hpp"
@@ -6,6 +7,12 @@
 
 #include <coreutils/utf8.h>
 #include <mruby/class.h>
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_video.h>
 
 #include <fmt/format.h>
 
@@ -151,7 +158,7 @@ void RInput::reg_class(mrb_state* ruby, System& system)
             input->system.map_key(code, target, mods);
             return mrb_nil_value();
         },
-        MRB_ARGS_REQ(2));
+        MRB_ARGS_REQ(3));
 
     mrb_define_class_method(
         ruby, rclass, "get_clipboard",
