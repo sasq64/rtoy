@@ -85,7 +85,7 @@ add_subdirectory(external/CLI11)
 add_subdirectory(external/coreutils)
 add_subdirectory(external/glm)
 add_subdirectory(external/doctest)
-
+add_subdirectory(external/flite)
 
 if(RASPBERRY_PI)
     include(FindFreetype)
@@ -154,12 +154,8 @@ target_link_libraries(pix PUBLIC
 if(EMSCRIPTEN)
     set(TARGET toy.html)
     set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/embuild/lib)
-    set(FLITE_LIB
-        ${PROJECT_SOURCE_DIR}/external/flite/build/x86_64-emscripten)
 else()
     set(TARGET toy)
-    set(FLITE_LIB
-        ${PROJECT_SOURCE_DIR}/external/flite/build/x86_64-linux-gnu)
 endif()
 
 set(SRC_FILES
@@ -186,14 +182,10 @@ endif()
 add_executable(${TARGET} ${SRC_FILES})
 
 target_include_directories(${TARGET} PUBLIC
-    ${MRB_INC} external external/flite/include)
-target_link_options(${TARGET} PRIVATE -L${FLITE_LIB}/lib)
+    ${MRB_INC} external)
 target_link_libraries(${TARGET} PRIVATE
     pix
-    #flite_cmu_us_kal
-    #flite_usenglish
-    #flite_cmulex
-    #flite
+    flite
     glm::glm
     Threads::Threads
     CLI11::CLI11

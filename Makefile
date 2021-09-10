@@ -4,13 +4,13 @@ ifeq (, $(shell which cmake))
   $(error "`cmake` required; 'brew install cmake' or 'apt install cmake'")
 endif
 
-toy : mruby debug flite
+toy : mruby debug 
 	cmake --build builds/debug -- -j8 toy
 
-release: mruby builds/release/cmake_install.cmake flite
+release: mruby builds/release/cmake_install.cmake
 	cmake --build builds/release -- -j8 toy
 
-emtoy : emruby embuild emflite
+emtoy : emruby embuild
 	cmake --build builds/em -- -j8
 
 test : debug
@@ -43,18 +43,3 @@ mruby :
 emruby :
 	MRUBY_CONFIG=emruby.cfg rake -f external/mruby/Rakefile -j8 -v
 
-emflite : external/flite/build/x86_64-emscripten/lib/libflite.a
-
-external/flite/build/x86_64-emscripten/lib/libflite.a :
-	#cd external/flite ; CC=emcc AR=emar RANLIB=emranlib ./configure --with-audio=none --disable-sockets
-	cp flite.emconf external/flite/config/config
-	#make -C external/flite clean
-	make -C external/flite -j
-
-flite : external/flite/build/x86_64-linux-gnu/lib/libflite.a
-
-external/flite/build/x86_64-linux-gnu/lib/libflite.a :
-	#cd external/flite ; ./configure --with-audio=none --disable-sockets
-	cp flite.conf external/flite/config/config
-	#make -C external/flite clean
-	make -C external/flite -j

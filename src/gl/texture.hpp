@@ -212,21 +212,20 @@ struct TexRef
         uvs[5] = uvs[7] = y0;
     }
 
-    int width() const
+    double width() const
     {
-        return std::lround(static_cast<double>(tex->width) * (uvs[4] - uvs[0]));
+        return static_cast<double>(tex->width) * (uvs[4] - uvs[0]);
     }
-    int height() const
+    double height() const
     {
-        return std::abs(
-            std::lround(static_cast<float>(tex->height) * (uvs[5] - uvs[1])));
+        return std::abs(static_cast<float>(tex->height) * (uvs[5] - uvs[1]));
     }
-    int x() const { return std::lround(tex->width * uvs[0]); }
-    int y() const
+    double x() const { return tex->width * uvs[0]; }
+    double y() const
     {
         auto uy = uvs[1];
         if ((uvs[5] - uy) < 0) { uy = 1.0F - uy; }
-        return std::lround(tex->height * uy);
+        return tex->height * uy;
     }
 };
 
