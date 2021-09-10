@@ -1,17 +1,22 @@
 cmake_minimum_required(VERSION 3.10)
 project(flite VERSION 1.0)
 
+if(WIN32)
+    set(MMAP_FILE cst_mmap_win32.c)
+else()
+    set(MMAP_FILE cst_mmap_posix.c)
+endif()
+
 add_library(flite STATIC
     src/audio/audio.c
     src/audio/au_none.c
     src/audio/auserver.c
     src/audio/au_streaming.c
-    src/audio/auclient.c
+    #src/audio/auclient.c
     src/utils/cst_string.c
     src/utils/cst_file_stdio.c
     src/utils/cst_val.c
-    #src/utils/cst_mmap_posix.c
-    src/utils/cst_mmap_win32.c
+    src/utils/${MMAP_FILE}
     src/utils/cst_url.c
     src/utils/cst_args.c
     src/utils/cst_wchar.c

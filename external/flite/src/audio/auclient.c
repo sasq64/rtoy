@@ -51,7 +51,7 @@
 
 #ifndef CST_NO_SOCKETS
 
-//#include <unistd.h>
+#include <unistd.h>
 
 int play_wave_client(cst_wave *w,const char *servername,int port,
 		     const char *encoding)
