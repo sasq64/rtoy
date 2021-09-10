@@ -146,6 +146,7 @@ add_library(flite STATIC
     lang/cmu_us_slt/cmu_us_slt_cg_f0_trees.c)
 
 target_compile_definitions(flite PRIVATE CST_AUDIO_NONE)
-target_compile_options(flite PRIVATE -g -O2 -Wall -no-cpp-precomp)
+target_compile_options(flite PRIVATE -g -O2 -Wall)
+#-no-cpp-precomp)
 target_include_directories(flite PRIVATE lang/usenglish lang/cmulex)
 target_include_directories(flite PUBLIC include)

@@ -14,6 +14,8 @@ if(EXISTS /opt/vc)
     set(RASPBERRY_PI 1)
 endif()
 
+# System wide directories and flags
+
 if(RASPBERRY_PI)
     set(VC /opt/vc)
     include_directories(
@@ -46,7 +48,6 @@ else()
 endif()
 
 
-find_package(Threads REQUIRED)
 
 # Warning level setup #######################################################
 
@@ -91,9 +92,27 @@ if(RASPBERRY_PI)
     include(FindFreetype)
     find_package(Freetype REQUIRED)
     find_package(OpenGL)
-    set(EXTRA_LIBRARIES stdc++fs EGL GLESv2 vcos vchiq_arm bcm_host asound)
-    add_compile_definitions(USE_GLES)
-elseif(EMSSCRIPTEN)
+    set(EXTRA_LIBRARIES stdc++fs vcos vchiq_arm bcm_host asound)
+
+    add_library(Graphics INTERFACE)
+    target_link_libraries(Graphics INTERFACE GLESv2 EGL)
+    target_compile_definitions(Graphics INTERFACE USE_GLES)
+
+elseif(EMSCRIPTEN)
+    add_library(_freetype INTERFACE)
+    target_compile_options(_freetype INTERFACE -sUSE_FREETYPE=1)
+    add_library(Freetype::Freetype ALIAS _freetype)
+
+    add_library(Graphics INTERFACE)
+    target_link_options(Graphics INTERFACE "-sUSE_SDL=2")
+    target_compile_options(Graphics INTERFACE "-sUSE_SDL=2")
+    target_compile_definitions(Graphics INTERFACE USE_GLES)
+
+    add_library(mruby INTERFACE)
+    set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/embuild/lib)
+    target_link_libraries(mruby INTERFACE ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a)
+    target_include_directories(mruby INTERFACE ${MRB}/include)
+    target_compile_definitions(mruby INTERFACE MRB_INT32)
 elseif(WIN32)
     set(EXTRA_LIBRARIES ws2_32)
     set(WINDIR ${PROJECT_SOURCE_DIR}/win)
@@ -104,23 +123,37 @@ elseif(WIN32)
     target_link_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/lib)
     target_link_libraries(SDL2 INTERFACE ${WINDIR}/SDL2/lib/x64/SDL2.lib)
 
+    add_library(Graphics INTERFACE)
+    target_link_libraries(Graphics INTERFACE OpenGL:GL GLEW::GLEW SDL2)
+
     add_library(mruby INTERFACE)
     target_link_libraries(mruby INTERFACE ${WINDIR}/mruby/libmruby.lib ${WINDIR}/mruby/libmruby_core.lib)
     target_include_directories(mruby INTERFACE ${MRB}/include)
     target_compile_definitions(mruby INTERFACE MRB_INT32)
+
+    include(FindFreetype)
+    find_package(Freetype REQUIRED)
 else()
     find_package(SDL2 REQUIRED)
+
     add_library(mruby INTERFACE)
     target_link_libraries(mruby INTERFACE ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a)
     target_include_directories(mruby INTERFACE ${MRB}/include)
     target_compile_definitions(mruby INTERFACE MRB_INT32)
+
+    find_package(OpenGL)
+    find_package(GLEW REQUIRED)
+    add_library(Graphics INTERFACE)
+    target_link_libraries(Graphics INTERFACE OpenGL::GL GLEW::GLEW SDL2)
+
+    include(FindFreetype)
+    find_package(Freetype REQUIRED)
 endif()
 
-find_package(OpenGL)
-find_package(GLEW REQUIRED)
-include(FindFreetype)
-find_package(Freetype REQUIRED)
-set(GL ${OPENGL_LIBRARIES})
+find_package(Threads REQUIRED)
+
+# Expected libraries at this point;
+# Graphics Freetype::Freetype flite
 
 # PIX ########
 
@@ -131,22 +164,16 @@ add_library(pix STATIC
     src/pix/pixel_console.cpp
     external/lodepng/lodepng.cpp)
 
-if(EMSCRIPTEN)
-    target_compile_options(pix PUBLIC -sUSE_FREETYPE=1)
-endif()
+#if(EMSCRIPTEN)
+#    target_compile_options(pix PUBLIC -sUSE_FREETYPE=1)
+#endif()
 
-target_include_directories(pix
-  PUBLIC ${SDL2_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} /usr/local/include/SDL2
-  PRIVATE external/lodepng)
-target_link_directories(pix PUBLIC ${SDL2_LIBRARY_DIRS} ${GLEW_LIBRARY_DIRS})
-target_include_directories(pix PUBLIC src)
+target_include_directories(pix PRIVATE external/lodepng PUBLIC src)
 
 target_link_libraries(pix PUBLIC
     Threads::Threads
     coreutils
-    SDL2
-    OpenGL::GL
-    GLEW::GLEW
+    Graphics
     Freetype::Freetype)
 
 ############## MAIN TARGET ###################################################
@@ -181,8 +208,7 @@ endif()
 
 add_executable(${TARGET} ${SRC_FILES})
 
-target_include_directories(${TARGET} PUBLIC
-    ${MRB_INC} external)
+target_include_directories(${TARGET} PUBLIC ${MRB_INC} external)
 target_link_libraries(${TARGET} PRIVATE
     pix
     flite
@@ -192,7 +218,8 @@ target_link_libraries(${TARGET} PRIVATE
     mruby
     ${CMAKE_DL_LIBS}
     fmt::fmt
-    ${EXTRA_LIBRARIES})
+    ${EXTRA_LIBRARIES}
+    )
 
 if(EMSCRIPTEN)
     target_link_options(toy.html PRIVATE "SHELL:-s MAX_WEBGL_VERSION=2")
