@@ -8,7 +8,8 @@ add_library(flite STATIC
     src/utils/cst_string.c
     src/utils/cst_file_stdio.c
     src/utils/cst_val.c
-    src/utils/cst_mmap_posix.c
+    #src/utils/cst_mmap_posix.c
+    src/utils/cst_mmap_win32.c
     src/utils/cst_url.c
     src/utils/cst_args.c
     src/utils/cst_wchar.c

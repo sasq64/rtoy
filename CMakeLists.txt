@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.10/)
 project(rtoy VERSION 1.0)
 
 include(ExternalProject)
@@ -123,8 +123,11 @@ elseif(WIN32)
     target_link_directories(SDL2 INTERFACE  ${WINDIR}/SDL2/lib)
     target_link_libraries(SDL2 INTERFACE ${WINDIR}/SDL2/lib/x64/SDL2.lib)
 
+    find_package(OpenGL)
+    find_package(GLEW REQUIRED)
+
     add_library(Graphics INTERFACE)
-    target_link_libraries(Graphics INTERFACE OpenGL:GL GLEW::GLEW SDL2)
+    target_link_libraries(Graphics INTERFACE OpenGL::GL GLEW::GLEW SDL2)
 
     add_library(mruby INTERFACE)
     target_link_libraries(mruby INTERFACE ${WINDIR}/mruby/libmruby.lib ${WINDIR}/mruby/libmruby_core.lib)
