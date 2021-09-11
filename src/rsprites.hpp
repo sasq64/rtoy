@@ -53,7 +53,6 @@ public:
     static mrb_data_type dt;
 
     RSprites(int w, int h);
-    virtual ~RSprites() = default;
     void render() override;
     void reset() override;
     void clear();

@@ -39,7 +39,6 @@ public:
 
     void clear();
     RCanvas(int w, int h);
-    virtual ~RCanvas() = default;
     void render() override;
     void reset() override;
 

@@ -63,9 +63,7 @@ set(GCC_CLANG_WARNINGS
     -Wall
     -Wextra
     -Wnon-virtual-dtor
-    #-pedantic
-    -Wno-non-virtual-dtor
-    #-Wno-duplicated-branches
+    -pedantic
     -Wno-unused-variable
     -Wno-unused-parameter
     -Wno-unused-function)
@@ -73,7 +71,7 @@ set(GCC_CLANG_WARNINGS
 set(MSVC_WARNINGS /W2  /wd4244)
 
 # GCC specific warnings
-set(GCC_WARNINGS -Wduplicated-cond -Wlogical-op
+set(GCC_WARNINGS -Wno-duplicated-branches -Wduplicated-cond -Wlogical-op
                  -Wcast-align -Wno-missing-field-initializers)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -184,8 +182,7 @@ add_library(pix STATIC
     src/pix/pixel_console.cpp
     external/lodepng/lodepng.cpp)
 target_include_directories(pix PRIVATE external/lodepng PUBLIC src)
-target_link_libraries(pix PUBLIC
-    Warnings
+target_link_libraries(pix PRIVATE Warnings PUBLIC
     Threads::Threads
     coreutils
     Graphics
@@ -225,6 +222,7 @@ add_executable(${TARGET} ${SRC_FILES})
 
 target_include_directories(${TARGET} PUBLIC external)
 target_link_libraries(${TARGET} PRIVATE
+    Warnings
     pix
     flite
     glm::glm

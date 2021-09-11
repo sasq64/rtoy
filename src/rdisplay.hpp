@@ -40,7 +40,6 @@ public:
     static inline Display* default_display = nullptr;
     explicit Display(mrb_state* state, System& system, Settings const& _settings);
 
-    inline virtual ~Display() = default;
     void setup();
     void reset() override;
     bool begin_draw();
