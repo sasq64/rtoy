@@ -121,6 +121,11 @@ void Toy::init()
         MRB_ARGS_REQ(1));
 
     mrb_define_module_function(
+        ruby, ruby->kernel_module, "exit",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value { exit(0); },
+        MRB_ARGS_NONE());
+    
+    mrb_define_module_function(
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [what] = mrb::get_args<bool>(mrb);
