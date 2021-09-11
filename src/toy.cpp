@@ -49,6 +49,19 @@ extern "C" void send_to_rtoy(const char* text)
     }
 }
 
+fs::path find_data_root()
+{
+    fs::path d = fs::current_path();
+    while (true) {
+        if (fs::exists(d / "data") && fs::exists(d / "sys")) { return d; }
+        d = d.parent_path();
+        if (d.empty()) {
+            break;
+        }
+    }
+    return {};
+}
+
 void Toy::init()
 {
     ruby = mrb_open();
@@ -59,6 +72,11 @@ void Toy::init()
     system = create_sdl_system();
 #endif
 
+    data_root = find_data_root();
+    if(data_root.empty()) {
+        exit(1);
+    }
+    fs::current_path(data_root);
     fs::copy(
         "sys/help.rb", "ruby/help.rb", fs::copy_options::overwrite_existing);
 
@@ -102,6 +120,11 @@ void Toy::init()
         },
         MRB_ARGS_REQ(1));
 
+    mrb_define_module_function(
+        ruby, ruby->kernel_module, "exit",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value { exit(0); },
+        MRB_ARGS_NONE());
+    
     mrb_define_module_function(
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
@@ -155,7 +178,7 @@ void Toy::init()
             }
             already_loaded[rb_file.string()] = modified;
 
-            FILE* fp = fopen(rb_file.c_str(), "rbe");
+            FILE* fp = fopen(rb_file.string().c_str(), "rb");
             if (fp != nullptr) {
                 auto* ctx = mrbc_context_new(mrb);
                 ctx->capture_errors = true;
@@ -184,10 +207,11 @@ void Toy::init()
             std::vector<std::string> files;
             if (fs::is_directory(parent)) {
                 for (auto&& p : fs::directory_iterator(parent)) {
-                    auto real_path = dir == "." ? p.path().filename()
-                                                : dir / p.path().filename();
+                    auto real_path = p.path().filename();//
+                    //dir == "." ? p.path().filename()
+                      //                          : dir / p.path().filename();
                     fmt::print("{}\n", real_path.string());
-                    files.emplace_back(real_path);
+                    files.emplace_back(real_path.string());
                 }
             }
             return mrb::to_value(files, mrb);
@@ -228,7 +252,7 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     if (proc == nullptr) { throw toy_exception("Can't generate code"); }
     // struct RClass* target = mrb->object_class;
     // MRB_PROC_SET_TARGET_CLASS(proc, target);
-    auto result = mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
+    /* auto result = */ mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
     // stack_keep = proc->body.irep->nlocals;
     // mrb_gc_arena_restore(ruby, ai);
 }

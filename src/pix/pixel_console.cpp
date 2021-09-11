@@ -116,7 +116,8 @@ PixConsole::PixConsole(
     uv_texture.bind(1);
     font_texture.bind(0);
 
-    program = gl_wrap::Program({vertex_shader}, {fragment_shader});
+    program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
+        gl_wrap::FragmentShader{fragment_shader});
 
     program.setUniform("in_tex", 0);
     program.setUniform("uv_tex", 1);
@@ -276,7 +277,7 @@ void PixConsole::fill(uint32_t fg, uint32_t bg)
 {
     auto [w0, w1] = make_col(fg, bg);
     w0 |= char_uvs[' '];
-    for (int i = 0; i < uvdata.size(); i++) {
+    for (size_t i = 0; i < uvdata.size(); i++) {
         uvdata[i] = w0;
         coldata[i] = w1;
     }

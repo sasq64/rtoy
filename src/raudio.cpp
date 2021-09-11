@@ -7,7 +7,7 @@ mrb_data_type Sound::dt{
     "Sound", [](mrb_state*, void* ptr) { delete static_cast<Sound*>(ptr); }};
 
 RAudio::RAudio(mrb_state* _ruby, System& _system, Settings const& settings)
-    : ruby{_ruby}, system{_system}
+    : system{_system}
 {
     system.init_audio(settings);
     system.set_audio_callback([this](float* data, size_t size) {
@@ -43,10 +43,13 @@ void RAudio::mix(size_t samples_len)
 
 void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)
 {
+    if (sound.data.empty()) {
+        return;
+    }
     // Assume sample is C4 = 261.63 Hz
     if (freq == 0) { freq = 261.63F; }
     freq = sound.freq * (freq / 261.63F);
-    for (int i = 0; i < sound.channels; i++) {
+    for (size_t i = 0; i < sound.channels; i++) {
         auto& chan = channels[(channel + i) % 32];
         chan.set(freq, sound.channel(i), sound.frames());
         chan.loop = loop;

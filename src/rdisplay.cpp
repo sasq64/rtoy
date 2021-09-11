@@ -9,6 +9,7 @@
 #include "error.hpp"
 #include "gl/functions.hpp"
 #include "mrb_tools.hpp"
+
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <mruby/compile.h>
@@ -29,7 +30,7 @@ mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
                           }};
 
 Display::Display(mrb_state* state, System& system, Settings const& _settings)
-    : ruby(state), settings{_settings}, RLayer(0, 0)
+    : RLayer(0, 0), ruby(state), settings{_settings}
 {
     glm::mat4x4 m(1.0F);
     memcpy(Id.data(), glm::value_ptr(m), sizeof(float) * 16);
@@ -89,7 +90,7 @@ void Display::swap()
 
 void Display::reset()
 {
-    bg = {0, 0, 0.8, 1.0};
+    bg = {0.0F, 0.0F, 0.8F, 1.0F};
 
     if (mouse_cursor != nullptr) {
         sprites->remove_sprite(mouse_cursor);

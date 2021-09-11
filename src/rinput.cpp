@@ -1,4 +1,5 @@
 #include "rinput.hpp"
+
 #include "error.hpp"
 #include "keycodes.h"
 #include "mrb_tools.hpp"
@@ -151,7 +152,7 @@ void RInput::reg_class(mrb_state* ruby, System& system)
             input->system.map_key(code, target, mods);
             return mrb_nil_value();
         },
-        MRB_ARGS_REQ(2));
+        MRB_ARGS_REQ(3));
 
     mrb_define_class_method(
         ruby, rclass, "get_clipboard",

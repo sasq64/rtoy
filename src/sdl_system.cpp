@@ -5,7 +5,7 @@
 #include "system.hpp"
 #include <coreutils/utf8.h>
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
 #include <SDL2/SDL_video.h>
 #include <fmt/format.h>
@@ -55,7 +55,9 @@ public:
         // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDL_GL_CreateContext(window);
+#ifndef USE_GLES
         GLenum err = glewInit();
+#endif
         return std::make_shared<SDLWindow>(window);
     }
 

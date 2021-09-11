@@ -63,7 +63,7 @@ void RSprite::update_tx(double screen_width, double screen_height)
 }
 
 RSprites::RSprites(int w, int h) : RLayer{w, h} {
-    program = gl_wrap::Program({vertex_shader}, {fragment_shader});
+    program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader}, gl_wrap::FragmentShader{fragment_shader});
 }
 
 void RSprites::reset()

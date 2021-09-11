@@ -1,7 +1,7 @@
 #pragma once
 #include <filesystem>
 
-enum ScreenType
+enum class ScreenType
 {
     Full,
     Window,

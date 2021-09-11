@@ -53,7 +53,8 @@ class Music
                     @channel = 0 if @channel == 32
                 end
             end
-            OS.sleep @tempo
+            # TODO: Queue up notes instead
+            # OS.sleep @tempo
         end
     end
 

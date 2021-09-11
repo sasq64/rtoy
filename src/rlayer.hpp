@@ -59,6 +59,8 @@ public:
           current_style{*stylep.as<RStyle>()}
     {}
 
+    virtual ~RLayer() = default;
+
     virtual void render() {}
     virtual void update_tx();
 

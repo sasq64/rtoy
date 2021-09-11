@@ -22,23 +22,30 @@ Mostly it can be used for fun!
 I am looking for help. If you want to help out, send me a
 mail: sasq64@gmail.com
 
-## Build for Linux/OSX
+## Building
+
+_Always_ remember to fetch the git submodules first:
+
+```
+git submodule update --init
+```
+
+### Linux/OSX
 
 #### Prerequisites
 make, cmake, ruby/rake, SDL2, OpenGL, glew, freetype
 
-#### Update submodules and build
+#### Build & Run
 ```
-git submodule update --init
 make
-```
-
-#### Run
-```
 bulds/debug/toy
 ```
+### Windows
 
-## Build for Web (Emscripten)
+* Open up the folder in _Visual Studio_ or _Visual Studio Code_.
+* Build & Run
+
+### Web (Emscripten)
 
 * Set up emscripten (https://emscripten.org/docs/getting_started/downloads.html)
 ```
@@ -51,3 +58,16 @@ cd builds/em
 python3 -m http.server
 ```
 Goto http://localhost:8000/toy.html to test
+
+### Raspberry PI
+
+#### Prerequisites
+make, cmake, clang-9 ruby/rake, asound, freetype
+
+#### Build & Run
+```
+make release
+bulds/release/toy
+```
+NOTE: The Makefile uses "-j8" for builds which may be too
+much for your PI. Change to -j4 or -j2 as needed.

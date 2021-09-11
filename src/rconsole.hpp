@@ -25,7 +25,7 @@ class RConsole : public RLayer
     int xpos = 0;
     int ypos = 0;
 
-    int current_buf = 0;
+    //int current_buf = 0;
 
     void update_pos(std::pair<int, int> const& cursor);
 

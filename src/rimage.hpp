@@ -9,8 +9,9 @@ struct RClass;
 
 namespace gl = gl_wrap;
 
-struct RImage
+class RImage
 {
+public:
     static inline RClass* rclass = nullptr;
     static mrb_data_type dt;
     gl::TexRef texture;

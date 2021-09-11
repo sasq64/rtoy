@@ -15,7 +15,7 @@
 #include <array>
 #include <memory>
 
-#include <jpeg_decoder.h>
+//#include <jpeg_decoder.h>
 
 mrb_data_type RImage::dt{
     "Image", [](mrb_state*, void* data) { delete static_cast<RImage*>(data); }};
