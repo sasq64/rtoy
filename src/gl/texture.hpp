@@ -83,10 +83,21 @@ struct Texture
         init();
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
             GL_UNSIGNED_BYTE, nullptr);
-        glGenFramebuffers(1, &fb_id);
-        glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_id, 0);
+    }
+
+    void fill(uint32_t col)
+    {
+        auto old = fb_id;
+        set_target();
+        clearColor({col});
+        glClear(GL_COLOR_BUFFER_BIT);
+        if (old == 0) { untarget(); }
+    }
+
+    void untarget()
+    {
+        glDeleteFramebuffers(1, &fb_id);
+        fb_id = 0;
     }
 
     void move_from(Texture&& other) noexcept
@@ -204,6 +215,46 @@ struct TexRef
         return tex->read_pixels(x(), y(), width(), height());
     };
 
+    TexRef() = default;
+
+    TexRef(int w, int h) : tex{std::make_shared<Texture>(w, h)} {}
+
+    explicit TexRef(std::shared_ptr<Texture> const& t) : tex(t) {}
+    TexRef(std::shared_ptr<Texture> const& t, std::array<float, 8> const& u) :
+        tex(t), uvs(u) {}
+
+    std::vector<TexRef> split(int w, int h)
+    {
+        float u0 = uvs[0];
+        float v0 = uvs[1];
+        float u1 = uvs[4];
+        float v1 = uvs[5];
+        auto du = (u1 - u0) / static_cast<float>(w);
+        auto dv = (v1 - v0) / static_cast<float>(h);
+
+        std::vector<TexRef> images;
+
+        float u = u0;
+        float v = v0;
+        int x = 0;
+        int y = 0;
+        while (true) {
+            if (x == w) {
+                u = u0;
+                v += dv;
+                x = 0;
+                y++;
+            }
+            if (y == h) { break; }
+            images.emplace_back(
+                tex, std::array{u, v, u + du, v, u + du, v + dv, u, v + dv});
+
+            u += du;
+            x++;
+        }
+        return images;
+    }
+
     void yflip()
     {
         auto y0 = uvs[1];
@@ -216,9 +267,10 @@ struct TexRef
     {
         return static_cast<double>(tex->width) * (uvs[4] - uvs[0]);
     }
+
     double height() const
     {
-        return std::abs(static_cast<float>(tex->height) * (uvs[5] - uvs[1]));
+        return std::abs(static_cast<double>(tex->height) * (uvs[5] - uvs[1]));
     }
     double x() const { return tex->width * uvs[0]; }
     double y() const

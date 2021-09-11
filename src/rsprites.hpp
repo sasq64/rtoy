@@ -14,6 +14,13 @@
 
 class RImage;
 struct SpriteBatch;
+
+enum class Collide
+{
+    None,
+    Point
+};
+
 class RSprite
 {
 public:
@@ -21,12 +28,17 @@ public:
     float alpha = 1.0F;
     bool dirty = false;
 
+    Collide collide = Collide::None;
+
     gl_wrap::TexRef texture{};
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     std::array<float, 2> trans = {0.0F, 0.0F};
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0;
+
+    int width = 0;
+    int height = 0;
 
     static inline RClass* rclass;
     static mrb_data_type dt;
@@ -42,6 +54,7 @@ struct SpriteBatch
 
 class RSprites : public RLayer
 {
+    std::vector<RSprite*> colliders;
     std::unordered_map<GLuint, SpriteBatch> batches;
     SpriteBatch fixed_batch;
     gl_wrap::Program program;

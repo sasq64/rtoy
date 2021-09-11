@@ -16,11 +16,9 @@ RCanvas::RCanvas(int w, int h) : RLayer{w, h}
 {
     canvas = std::make_shared<gl::Texture>(w, h);
     canvas->set_target();
-    gl::clearColor({0x00ff0000});
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    canvas->set_target();
+    canvas->fill(0x00ff0000);
 }
+
 pix::Image RCanvas::read_image(int x, int y, int w, int h)
 {
     pix::Image image{w, h};

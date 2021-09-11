@@ -2,7 +2,6 @@
 #include "rimage.hpp"
 
 #include "mruby/value.h"
-#include "rlayer.hpp"
 
 #include "mrb_tools.hpp"
 
@@ -36,6 +35,22 @@ void RImage::reg_class(mrb_state* ruby)
             return mrb::new_data_obj(mrb, rimage);
         },
         MRB_ARGS_REQ(1));
+
+    mrb_define_class_method(
+        ruby, RImage::rclass, "solid",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            mrb_value color;
+            int w{};
+            int h{};
+            mrb_get_args(mrb, "iio", &w, &h, &color);
+            auto col32 =
+                gl::Color(mrb::to_array<float, 4>(color, mrb)).to_rgba();
+            auto texref = gl_wrap::TexRef(w, h);
+            texref.tex->fill(col32);
+            auto* rimage = new RImage(texref);
+            return mrb::new_data_obj(mrb, rimage);
+        },
+        MRB_ARGS_REQ(3));
 
     mrb_define_method(
         ruby, RImage::rclass, "save",
@@ -80,12 +95,12 @@ void RImage::reg_class(mrb_state* ruby)
 
             float u = u0;
             float v = v0;
-            //fmt::print("{} -> {}\n", u0, u1);
+            // fmt::print("{} -> {}\n", u0, u1);
             int x = 0;
             int y = 0;
             while (true) {
-                //fmt::print("{} + {} =  {}\n", u, du, u + du);
-                if (x ==w) {
+                // fmt::print("{} + {} =  {}\n", u, du, u + du);
+                if (x == w) {
                     u = u0;
                     v += dv;
                     x = 0;
@@ -114,10 +129,12 @@ void RImage::upload(pix::Image const& image)
     }
 }
 
-void RImage::draw(float x, float y, float scale)
+void RImage::crop() {}
+
+void RImage::draw(double x, double y, double scale)
 {
-    //fmt::print("Draw {}x{} at {},{}\n", img_width, img_height, x, y);
-    //upload();
+    // fmt::print("Draw {}x{} at {},{}\n", img_width, img_height, x, y);
+    // upload();
     texture.bind();
     gl_wrap::ProgramCache::get_instance().textured.use();
     pix::draw_quad_uvs(x, y, width() * scale, height() * scale, texture.uvs);

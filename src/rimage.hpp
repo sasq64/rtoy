@@ -26,7 +26,9 @@ public:
 
     void upload(pix::Image const& img);
 
-    void draw(float x, float y, float scale = 1.0F);
+    void draw(double x, double y, double scale = 1.0);
+
+    void crop();
 
     static void reg_class(mrb_state* ruby);
 };

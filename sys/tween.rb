@@ -101,9 +101,7 @@ class TweenFunc
 
     def self.out_elastic(t)
         c4 = (2 * Math::PI) / 3
-        p t
         t = 2**(-10 * t) * Math::sin((t * 10 - 0.75) * c4) + 1
-        p t
         t
     end
 
@@ -126,11 +124,18 @@ class TweenTarget
         @value = from.clone
         @func = func
         @callback = nil
+        @every_t = 2.0
     end
 
     def set_callback(cb)
         @callback = cb
-   end
+    end
+
+    def set_every_cb(dt, cb)
+        @every_cb = cb
+        @every_t = 0
+        @every_dt = dt
+    end
 
     def update(delta)
         if @steps > 0
@@ -138,6 +143,12 @@ class TweenTarget
         end
         delta = 1.0 if delta > 1.0
         if delta >= 0
+
+            if delta > @every_t
+                @every_cb.call(self)
+                @every_t += @every_dt 
+            end
+
             d = TweenFunc.send @func, delta
             if @from.nil?
                 @obj.send @method,d
@@ -242,6 +253,11 @@ class Tween
 
     def when_done(&block)
         @targets.last.set_callback(block)
+        self
+    end
+
+    def every(d, &block)
+        @targets.last.set_every_cb(d, block)
         self
     end
 

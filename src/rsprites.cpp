@@ -138,6 +138,26 @@ void RSprites::render()
     if (fixed_batch.texture != nullptr) { draw_batch(fixed_batch); }
     pos.disable();
     uv.disable();
+
+    for(size_t i=0; i<colliders.size(); i++) {
+        auto* c0 = colliders[i];
+        auto x0a = c0->trans[0];
+        auto y0a = c0->trans[1];
+        auto x1a = x0a + c0->width;
+        auto y1a = y0a + c0->height;
+        for(size_t j = i+1; j < colliders.size(); j++) {
+            auto* c1 = colliders[j];
+            auto x0b = c1->trans[0];
+            auto y0b = c1->trans[1];
+            auto x1b = x0b + c1->width;
+            auto y1b = y0b + c1->height;
+            
+            if(x0a > x1b || x0b > x1a || y0a > y1b || y0b > y1a) {
+                continue;
+            }
+            fmt::print("Collision\n");
+        }
+    }
 }
 
 RSprite* RSprites::add_sprite(RImage* image, int flags)
@@ -155,15 +175,19 @@ RSprite* RSprites::add_sprite(RImage* image, int flags)
         1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     std::copy(uvs.begin(), uvs.end(), vertexData.begin() + 8);
 
-    batch.sprites.push_back(
-        new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}});
-    auto* spr = batch.sprites.back();
-    spr->texture = image->texture;
-    spr->trans[0] = static_cast<float>(spr->texture.x());
-    spr->trans[1] = static_cast<float>(spr->texture.y());
 
-    spr->update_tx(width, height);
-    return spr;
+    auto* sprite = new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}};
+    sprite->texture = image->texture;
+    sprite->trans[0] = static_cast<float>(sprite->texture.x());
+    sprite->trans[1] = static_cast<float>(sprite->texture.y());
+    sprite->width = sprite->texture.width();
+    sprite->height = sprite->texture.height();
+    sprite->update_tx(width, height);
+    batch.sprites.push_back(sprite);
+
+    colliders.push_back(sprite);
+
+    return sprite;
 }
 
 void RSprites::remove_sprite(RSprite* spr)
@@ -232,6 +256,20 @@ void RSprites::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
+    mrb_define_method(
+        ruby, RSprite::rclass, "width",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rspr = mrb::self_to<RSprite>(self);
+            return mrb::to_value(rspr->texture.width(), mrb);
+        },
+        MRB_ARGS_NONE());
+    mrb_define_method(
+        ruby, RSprite::rclass, "height",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rspr = mrb::self_to<RSprite>(self);
+            return mrb::to_value(rspr->texture.height(), mrb);
+        },
+        MRB_ARGS_NONE());
     mrb_define_method(
         ruby, RSprite::rclass, "x",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {

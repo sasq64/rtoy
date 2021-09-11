@@ -227,6 +227,12 @@ module OS
 
     alias readln gets
 
+    def was_pressed(key)
+        r = @@read_key
+        @@read_key = nil
+        r == key
+    end
+
     def read_key()
         if !@@read_key
             Fiber.yield until @@read_key
@@ -297,7 +303,7 @@ HELP
     end
 
     module_function :gets, :readln, :help, :run, :show, :ls,
-        :sleep, :boot, :vsync, :read_key
+        :sleep, :boot, :vsync, :read_key, :was_pressed
 
 end
 
