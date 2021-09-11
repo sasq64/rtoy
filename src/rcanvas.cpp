@@ -103,7 +103,7 @@ void RCanvas::render()
     glEnable(GL_BLEND);
     pix::set_transform(transform);
     pix::set_colors(0xffffffff, 0);
-    auto [w, h] = gl::getViewport();
+    //auto [w, h] = gl::getViewport();
     auto& program = gl::ProgramCache::get_instance().textured;
     program.use();
     pix::draw_quad();

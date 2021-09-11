@@ -45,6 +45,7 @@ using AnyEvent = std::variant<NoEvent, KeyEvent, MoveEvent, ClickEvent,
 class Screen
 {
 public:
+    virtual ~Screen() = default;
     virtual void swap() {}
     virtual std::pair<int, int> get_size() { return {-1, -1}; }
 };
@@ -52,6 +53,7 @@ public:
 class System
 {
 public:
+    virtual ~System() = default;
     virtual std::shared_ptr<Screen> init_screen(Settings const&)
     {
         return nullptr;

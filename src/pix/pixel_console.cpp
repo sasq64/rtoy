@@ -277,7 +277,7 @@ void PixConsole::fill(uint32_t fg, uint32_t bg)
 {
     auto [w0, w1] = make_col(fg, bg);
     w0 |= char_uvs[' '];
-    for (int i = 0; i < uvdata.size(); i++) {
+    for (size_t i = 0; i < uvdata.size(); i++) {
         uvdata[i] = w0;
         coldata[i] = w1;
     }

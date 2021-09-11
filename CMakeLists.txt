@@ -56,7 +56,9 @@ set(GCC_CLANG_WARNINGS
     -Wall
     -Wextra
     -Wnon-virtual-dtor
-    -pedantic
+    #-pedantic
+    -Wno-non-virtual-dtor
+    #-Wno-duplicated-branches
     -Wno-unused-variable
     -Wno-unused-parameter
     -Wno-unused-function)
@@ -64,7 +66,7 @@ set(GCC_CLANG_WARNINGS
 set(MSVC_WARNINGS /W2  /wd4244)
 
 # GCC specific warnings
-set(GCC_WARNINGS -Wduplicated-branches -Wduplicated-cond -Wlogical-op
+set(GCC_WARNINGS -Wduplicated-cond -Wlogical-op
                  -Wcast-align -Wno-missing-field-initializers)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

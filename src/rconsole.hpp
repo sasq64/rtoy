@@ -25,7 +25,7 @@ class RConsole : public RLayer
     int xpos = 0;
     int ypos = 0;
 
-    int current_buf = 0;
+    //int current_buf = 0;
 
     void update_pos(std::pair<int, int> const& cursor);
 
@@ -33,6 +33,7 @@ class RConsole : public RLayer
     std::array<float, 4> default_fg;
     std::array<float, 4> default_bg;
 public:
+    virtual ~RConsole() = default;
     void text(int x, int y, std::string const& t, RStyle const* style = nullptr);
     void fill(uint32_t fg, uint32_t bg);
     void scroll(int dy, int dx);

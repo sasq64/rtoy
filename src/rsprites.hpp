@@ -21,7 +21,7 @@ public:
     float alpha = 1.0F;
     bool dirty = false;
 
-    gl_wrap::TexRef texture;
+    gl_wrap::TexRef texture{};
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     std::array<float, 2> trans = {0.0F, 0.0F};
@@ -53,6 +53,7 @@ public:
     static mrb_data_type dt;
 
     RSprites(int w, int h);
+    virtual ~RSprites() = default;
     void render() override;
     void reset() override;
     void clear();

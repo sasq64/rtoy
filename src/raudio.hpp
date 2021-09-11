@@ -62,7 +62,7 @@ class RAudio
     };
 
     mrb::RubyPtr audio_handler;
-    mrb_state* ruby;
+    //mrb_state* ruby;
     System& system;
     Ring<float, 16384> out_buffer;
     std::array<Channel, 32> channels;

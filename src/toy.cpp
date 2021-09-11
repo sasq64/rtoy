@@ -247,7 +247,7 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     if (proc == nullptr) { throw toy_exception("Can't generate code"); }
     // struct RClass* target = mrb->object_class;
     // MRB_PROC_SET_TARGET_CLASS(proc, target);
-    auto result = mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
+    /* auto result = */ mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
     // stack_keep = proc->body.irep->nlocals;
     // mrb_gc_arena_restore(ruby, ai);
 }

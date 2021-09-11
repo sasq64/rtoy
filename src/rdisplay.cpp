@@ -30,7 +30,7 @@ mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
                           }};
 
 Display::Display(mrb_state* state, System& system, Settings const& _settings)
-    : ruby(state), settings{_settings}, RLayer(0, 0)
+    : RLayer(0, 0), ruby(state), settings{_settings}
 {
     glm::mat4x4 m(1.0F);
     memcpy(Id.data(), glm::value_ptr(m), sizeof(float) * 16);

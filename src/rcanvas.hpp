@@ -17,8 +17,8 @@ class RCanvas : public RLayer
 
     mrb::RubyPtr current_font;
 
-    std::array<double, 16> const Id = {
-        1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+    //std::array<double, 16> const Id = {
+    //    1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
     std::pair<double, double> last_point;
 
@@ -39,6 +39,7 @@ public:
 
     void clear();
     RCanvas(int w, int h);
+    virtual ~RCanvas() = default;
     void render() override;
     void reset() override;
 
