@@ -90,7 +90,7 @@ void Display::swap()
 
 void Display::reset()
 {
-    bg = {0, 0, 0.8, 1.0};
+    bg = {0.0F, 0.0F, 0.8F, 1.0F};
 
     if (mouse_cursor != nullptr) {
         sprites->remove_sprite(mouse_cursor);

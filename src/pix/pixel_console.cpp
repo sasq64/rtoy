@@ -116,7 +116,8 @@ PixConsole::PixConsole(
     uv_texture.bind(1);
     font_texture.bind(0);
 
-    program = gl_wrap::Program({vertex_shader}, {fragment_shader});
+    program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
+        gl_wrap::FragmentShader{fragment_shader});
 
     program.setUniform("in_tex", 0);
     program.setUniform("uv_tex", 1);

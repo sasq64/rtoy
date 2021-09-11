@@ -12,11 +12,11 @@
 
 #include <unordered_map>
 
-struct RImage;
+class RImage;
 struct SpriteBatch;
-
-struct RSprite
+class RSprite
 {
+public:
     gl_wrap::ArrayBuffer<GL_STATIC_DRAW> vbo;
     float alpha = 1.0F;
     bool dirty = false;

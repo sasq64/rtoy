@@ -12,10 +12,10 @@
 #include <memory>
 #include <string>
 
-struct RConsole;
-struct RCanvas;
-struct RSprites;
-struct RSprite;
+class RConsole;
+class RCanvas;
+class RSprites;
+class RSprite;
 
 class Display : public RLayer
 {
@@ -26,8 +26,8 @@ class Display : public RLayer
 
     Settings const& settings;
 
-    std::array<float, 4> bg = {0, 0, 0.8, 1.0};
-    std::array<float, 16> Id = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+    std::array<float, 4> bg = {0.0F, 0.0F, 0.8F, 1.0F};
+    std::array<float, 16> Id = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
 
     std::shared_ptr<RCanvas> canvas;
     std::shared_ptr<RSprites> sprites;

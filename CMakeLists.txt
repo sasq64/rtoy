@@ -30,7 +30,6 @@ if(WIN32)
   add_compile_options(/utf-8)
   add_definitions(/D_CRT_SECURE_NO_WARNINGS /D_USE_MATH_DEFINES
                   /D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
-  set(WARN_EXT /W2)
 endif()
 
 if(APPLE)
@@ -62,7 +61,7 @@ set(GCC_CLANG_WARNINGS
     -Wno-unused-parameter
     -Wno-unused-function)
 
-set(MSVC_WARNINGS /W2)
+set(MSVC_WARNINGS /W2  /wd4244)
 
 # GCC specific warnings
 set(GCC_WARNINGS -Wduplicated-branches -Wduplicated-cond -Wlogical-op
@@ -75,6 +74,9 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(WARNINGS ${WARNINGS} ${MSVC_WARNINGS})
 endif()
+
+add_library(Warnings INTERFACE)
+target_compile_options(Warnings INTERFACE ${WARNINGS})
 
 
 add_subdirectory(external/fmt)
@@ -174,6 +176,7 @@ add_library(pix STATIC
     external/lodepng/lodepng.cpp)
 target_include_directories(pix PRIVATE external/lodepng PUBLIC src)
 target_link_libraries(pix PUBLIC
+    Warnings
     Threads::Threads
     coreutils
     Graphics
