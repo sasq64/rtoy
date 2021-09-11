@@ -10,6 +10,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 cmake_policy(SET CMP0072 NEW)
 
+if(NOT EXISTS ${PROJECT_SOURCE_DIR}/external/mruby/Rakefile)
+    message(FATAL_ERROR "mruby submodule not found. Have you done 'git submodule update --init' ?")
+endif()
+if(NOT EXISTS ${PROJECT_SOURCE_DIR}/external/flite/CMakeLists.txt)
+    message(FATAL_ERROR "flite submodule not found. Have you done 'git submodule update --init' ?")
+endif()
+
 if(EXISTS /opt/vc)
     set(RASPBERRY_PI 1)
 endif()
