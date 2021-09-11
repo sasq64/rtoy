@@ -76,10 +76,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(WARNINGS ${WARNINGS} ${MSVC_WARNINGS})
 endif()
 
-set(MRB ${PROJECT_SOURCE_DIR}/external/mruby)
-set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/mruby/lib)
-set(MRB_INC ${MRB}/include)
-
 
 add_subdirectory(external/fmt)
 add_subdirectory(external/CLI11)
@@ -87,6 +83,10 @@ add_subdirectory(external/coreutils)
 add_subdirectory(external/glm)
 add_subdirectory(external/doctest)
 add_subdirectory(external/flite)
+
+set(MRB ${PROJECT_SOURCE_DIR}/external/mruby)
+set(MRB_LIB ${PROJECT_SOURCE_DIR}/builds/mruby/lib)
+set(MRB_INC ${MRB}/include)
 
 if(RASPBERRY_PI)
     include(FindFreetype)
@@ -97,6 +97,11 @@ if(RASPBERRY_PI)
     add_library(Graphics INTERFACE)
     target_link_libraries(Graphics INTERFACE GLESv2 EGL)
     target_compile_definitions(Graphics INTERFACE USE_GLES)
+
+    add_library(mruby INTERFACE)
+    target_link_libraries(mruby INTERFACE ${MRB_LIB}/libmruby.a ${MRB_LIB}/libmruby_core.a)
+    target_include_directories(mruby INTERFACE ${MRB}/include)
+    target_compile_definitions(mruby INTERFACE MRB_INT32)
 
 elseif(EMSCRIPTEN)
     add_library(_freetype INTERFACE)
@@ -156,8 +161,8 @@ endif()
 
 find_package(Threads REQUIRED)
 
-# Expected libraries at this point;
-# Graphics Freetype::Freetype flite
+# Expected extra libraries at this point;
+# Graphics Freetype::Freetype
 
 # PIX ########
 
@@ -167,13 +172,7 @@ add_library(pix STATIC
     src/pix/font.cpp
     src/pix/pixel_console.cpp
     external/lodepng/lodepng.cpp)
-
-#if(EMSCRIPTEN)
-#    target_compile_options(pix PUBLIC -sUSE_FREETYPE=1)
-#endif()
-
 target_include_directories(pix PRIVATE external/lodepng PUBLIC src)
-
 target_link_libraries(pix PUBLIC
     Threads::Threads
     coreutils
@@ -212,7 +211,7 @@ endif()
 
 add_executable(${TARGET} ${SRC_FILES})
 
-target_include_directories(${TARGET} PUBLIC ${MRB_INC} external)
+target_include_directories(${TARGET} PUBLIC external)
 target_link_libraries(${TARGET} PRIVATE
     pix
     flite
@@ -222,8 +221,7 @@ target_link_libraries(${TARGET} PRIVATE
     mruby
     ${CMAKE_DL_LIBS}
     fmt::fmt
-    ${EXTRA_LIBRARIES}
-    )
+    ${EXTRA_LIBRARIES})
 
 if(EMSCRIPTEN)
     target_link_options(toy.html PRIVATE "SHELL:-s MAX_WEBGL_VERSION=2")
@@ -234,6 +232,8 @@ if(EMSCRIPTEN)
         "SHELL:--preload-file ../../ruby@ruby")
     target_link_options(toy.html PRIVATE
         "SHELL:--preload-file ../../games@games")
+    target_link_options(toy.html PRIVATE
+        "SHELL:--preload-file ../../sys@sys")
     target_link_options(toy.html PRIVATE "-sUSE_SDL=2")
     target_link_options(toy.html PRIVATE "-sFETCH=1")
     target_link_options(toy.html PRIVATE "-sINITIAL_MEMORY=67108864")
@@ -243,6 +243,7 @@ if(EMSCRIPTEN)
  target_link_options(toy.html PRIVATE -sERROR_ON_UNDEFINED_SYMBOLS=1)
 endif()
 
+# Copy DLLs to output directory
 if(WIN32)
     add_custom_command(TARGET ${TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${WINDIR}/SDL2/lib/SDL2.dll $<TARGET_FILE_DIR:${TARGET}>

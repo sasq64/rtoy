@@ -76,9 +76,7 @@ void Toy::init()
     if(data_root.empty()) {
         exit(1);
     }
-
     fs::current_path(data_root);
-
     fs::copy(
         "sys/help.rb", "ruby/help.rb", fs::copy_options::overwrite_existing);
 
