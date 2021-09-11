@@ -8,12 +8,6 @@
 #include <coreutils/utf8.h>
 #include <mruby/class.h>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_keycode.h>
-#include <SDL2/SDL_keyboard.h>
-#include <SDL2/SDL_video.h>
-
 #include <fmt/format.h>
 
 RInput::RInput(mrb_state* _ruby, System& _system) : ruby{_ruby}, system{_system}
