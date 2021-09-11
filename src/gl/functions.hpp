@@ -22,24 +22,16 @@ private:
 inline char const* gl_error_string(GLenum const err) noexcept
 {
     switch (err) {
-    case GL_NO_ERROR:
-        return "GL_NO_ERROR";
-    case GL_INVALID_ENUM:
-        return "GL_INVALID_ENUM";
-    case GL_INVALID_VALUE:
-        return "GL_INVALID_VALUE";
-    case GL_INVALID_OPERATION:
-        return "GL_INVALID_OPERATION";
-    case GL_STACK_OVERFLOW:
-        return "GL_STACK_OVERFLOW";
-    case GL_STACK_UNDERFLOW:
-        return "GL_STACK_UNDERFLOW";
-    case GL_OUT_OF_MEMORY:
-        return "GL_OUT_OF_MEMORY";
+    case GL_NO_ERROR: return "GL_NO_ERROR";
+    case GL_INVALID_ENUM: return "GL_INVALID_ENUM";
+    case GL_INVALID_VALUE: return "GL_INVALID_VALUE";
+    case GL_INVALID_OPERATION: return "GL_INVALID_OPERATION";
+    case GL_STACK_OVERFLOW: return "GL_STACK_OVERFLOW";
+    case GL_STACK_UNDERFLOW: return "GL_STACK_UNDERFLOW";
+    case GL_OUT_OF_MEMORY: return "GL_OUT_OF_MEMORY";
     case GL_INVALID_FRAMEBUFFER_OPERATION:
         return "GL_INVALID_FRAMEBUFFER_OPERATION";
-    default:
-        return "UNKNOWN_ERROR";
+    default: return "UNKNOWN_ERROR";
     }
 }
 
@@ -49,7 +41,7 @@ inline void gl_check(std::string const& f)
     if (auto err = glGetError(); err != GL_NO_ERROR) {
         puts((f + "() error:" + gl_error_string(err)).c_str());
         fflush(stdout);
-        //throw gl_exception(f + "() error:" + gl_error_string(err));
+        // throw gl_exception(f + "() error:" + gl_error_string(err));
     }
 #endif
 }
@@ -59,7 +51,7 @@ inline constexpr T gl_check(T res, std::string const& f)
 {
 #ifndef __EMSCRIPTEN__
     if (auto err = glGetError(); err != GL_NO_ERROR) {
-        //throw gl_exception(f + "() error:" + gl_error_string(err));
+        // throw gl_exception(f + "() error:" + gl_error_string(err));
         puts((f + "() error:" + gl_error_string(err)).c_str());
         fflush(stdout);
     }
@@ -75,8 +67,7 @@ enum class ShaderType
 
 inline GLint createShader(ShaderType shaderType)
 {
-    return gl_check(
-        glCreateShader(to_glenum(shaderType)), "glCreateShader");
+    return gl_check(glCreateShader(to_glenum(shaderType)), "glCreateShader");
 }
 
 inline void clearColor(Color const& color)
@@ -142,32 +133,38 @@ enum class Type
     Float = GL_FLOAT,
 };
 
-inline void drawArrays(Primitive p, GLint offset, size_t count)
+inline void drawArrays(Primitive p, GLint offset, int count)
 {
     glDrawArrays(to_glenum(p), offset, count);
     gl_check("glDrawArrays");
 }
 
-inline void drawElements(Primitive p, size_t count, Type t, GLint offset)
+template <typename T>
+void* to_ptr(T t) {
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(t));
+}
+
+inline void drawElements(Primitive p, int count, Type t, uintptr_t offset)
 {
-    glDrawElements(to_glenum(p), count, to_glenum(t),
-        reinterpret_cast<void*>(offset));
+    glDrawElements(
+        to_glenum(p), count, to_glenum(t), to_ptr(offset));
     gl_check("glDrawElements");
 }
 
 inline void vertexAttrib(GLuint index, GLint size, GLenum type, GLboolean norm,
-    GLsizei stride, GLuint offset)
+    GLsizei stride, uintptr_t offset)
 {
     assert(index < GL_MAX_VERTEX_ATTRIBS);
     assert(size > 0 && size <= 4);
 
     glVertexAttribPointer(
-        index, size, type, norm, stride, reinterpret_cast<void*>(offset));
+        index, size, type, norm, stride, to_ptr(offset));
     gl_check("glVertexAttribPointer");
 }
 
 template <int N>
-struct Size{
+struct Size
+{
     static_assert(N > 0 && N < 5);
 };
 
@@ -186,5 +183,22 @@ inline void vertexAttrib(
         attr.location, size, to_glenum(type), GL_FALSE, stride, offset);
     gl_check("glVertexAttrib");
 }
+
+#if 0
+template <size_t N>
+std::array<GLuint, N> genVertexArrays()
+{
+    std::array<GLuint, N> res;
+    glGenVertexArrays(N, res.data());
+    return res;
+}
+
+inline GLuint genVertexArray()
+{
+    GLuint res; // NOLINT
+    glGenVertexArrays(1, &res);
+    return res;
+}
+#endif
 
 } // namespace gl_wrap

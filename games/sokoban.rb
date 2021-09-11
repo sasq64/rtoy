@@ -15,7 +15,7 @@ class Sokoban
         w,h = img.width / 64, img.height / 64
         @tiles = img.split(w, h)
         @tiles.each_with_index do |tile, i|
-            display.console.add_tile(256 + i, tile)
+            display.console.set_tile_image(256 + i, tile)
         end
     end
 
@@ -94,14 +94,22 @@ class Sokoban
 
     def check_boxes(b = nil)
         @counter = 0
-        @boxes.each do |box|
-            p = from_spr(box.pos)
+        (0...@boxes.size).each do |i|
+            box = @boxes[i]
+            pos = box.pos
+            p = from_spr(pos)
             t = display.console.get_tile(p.x, p.y) - 256
             if t == GOAL
-                box.img = @tiles[GOAL_BOX] unless b && b != box
                 @counter += 1
+                next if b && b != box
+                remove_sprite(box)
+                @boxes[i] = add_sprite(@tiles[GOAL_BOX])
+                @boxes[i].move(*pos)
             else
-                box.img = @tiles[BOX] unless b && b != box
+                next if b && b != box
+                remove_sprite(box)
+                @boxes[i] = add_sprite(@tiles[BOX])
+                @boxes[i].move(*pos)
             end
         end
         @counter == @boxes.length

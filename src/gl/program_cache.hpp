@@ -50,10 +50,20 @@ struct ProgramCache
             #endif
         })gl"};
 
+//#ifdef EMSCRIPTEN
+//    static const inline std::string version = "#version 150 es\n";
+//#else
+    static const inline std::string version = "";
+//#endif
+
     Program get_program(std::string_view prefix) const
     {
-        Shader<ShaderType::Vertex> vs{std::string(prefix) + vertex_shader};
-        Shader<ShaderType::Fragment> fs{std::string(prefix) + fragment_shader};
+        using namespace std::string_literals;
+        Shader<ShaderType::Vertex> vs{
+            version + std::string(prefix) + vertex_shader};
+
+        Shader<ShaderType::Fragment> fs{
+            version + std::string(prefix) + fragment_shader};
 
         // Get info log
         auto info = getShaderInfoLog(vs.shader);

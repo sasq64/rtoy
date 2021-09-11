@@ -10,12 +10,9 @@
 [submodule "external/CLI11"]
 	path = external/CLI11
 	url = https://github.com/CLIUtils/CLI11.git
-[submodule "external/flite"]
-	path = external/flite
-	url = https://github.com/festvox/flite.git
 [submodule "external/doctest"]
 	path = external/doctest
 	url = https://github.com/onqtam/doctest.git
-[submodule "mruby"]
-    path = external/mruby
-	url = https://github.com/sasq64/mruby.git
+[submodule "external/flite"]
+	path = external/flite
+	url = https://github.com/sasq64/flite

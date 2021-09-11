@@ -1,3 +1,8 @@
 build/
 builds/
 cmake-*/
+toy.history
+ruby/help.rb
+.vscode/
+.cache/
+compile_commands.json

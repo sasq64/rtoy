@@ -1,38 +1,34 @@
 #include "raudio.hpp"
 
-#include <SDL2/SDL_audio.h>
-
 #define DR_WAV_IMPLEMENTATION
 #include <dr_libs/dr_wav.h>
 
 mrb_data_type Sound::dt{
     "Sound", [](mrb_state*, void* ptr) { delete static_cast<Sound*>(ptr); }};
 
-RAudio::RAudio(mrb_state* _ruby) : ruby{_ruby}
+RAudio::RAudio(mrb_state* _ruby, System& _system, Settings const& settings)
+    : system{_system}
 {
-    SDL_AudioSpec want;
-    SDL_AudioSpec have;
+    system.init_audio(settings);
+    system.set_audio_callback([this](float* data, size_t size) {
+        while (out_buffer.available() < size) {
+            mix(2048);
+        }
+        out_buffer.read(data, size);
+    });
+}
 
-    SDL_memset(&want, 0, sizeof(want)); /* or SDL_zero(want) */
-    want.freq = 44100;
-    want.format = AUDIO_F32;
-    want.channels = 2;
-    want.samples = 4096;
-    want.userdata = this;
-    want.callback = [](void* userdata, Uint8* stream, int len) {
-        static_cast<RAudio*>(userdata)->fill_audio(stream, len);
-    };
-
-    dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have,
-        SDL_AUDIO_ALLOW_ANY_CHANGE & (~SDL_AUDIO_ALLOW_FORMAT_CHANGE));
-
-    fmt::print("Audio format {} {} vs {}\n", have.format, have.freq, dev);
-    SDL_PauseAudioDevice(dev, 0);
+void RAudio::update()
+{
+    while (out_buffer.available() < 2048) {
+        mix(2048 / 2);
+    }
 }
 
 // Pull 'count' samples from all channels into out buffer
 void RAudio::mix(size_t samples_len)
 {
+    //fmt::print("Mix {}\n", samples_len);
     std::array<float, 8192> temp[2]{{}, {}}; // NOLINT
     int ear = 0;
     for (auto& chan : channels) {
@@ -45,22 +41,15 @@ void RAudio::mix(size_t samples_len)
     out_buffer.interleave(temp[0].data(), temp[1].data(), samples_len);
 }
 
-// Called from audio system to read samples
-void RAudio::fill_audio(uint8_t* data, int bytes_len)
-{
-    auto floats_len = bytes_len / 4;
-    while (out_buffer.available() < floats_len) {
-        mix(bytes_len / 8);
-    }
-    out_buffer.read(reinterpret_cast<float*>(data), floats_len);
-}
-
 void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)
 {
+    if (sound.data.empty()) {
+        return;
+    }
     // Assume sample is C4 = 261.63 Hz
     if (freq == 0) { freq = 261.63F; }
     freq = sound.freq * (freq / 261.63F);
-    for (int i = 0; i < sound.channels; i++) {
+    for (size_t i = 0; i < sound.channels; i++) {
         auto& chan = channels[(channel + i) % 32];
         chan.set(freq, sound.channel(i), sound.frames());
         chan.loop = loop;
@@ -73,12 +62,15 @@ void RAudio::set_frequency(int channel, int hz)
     chan.step = static_cast<float>(hz) / 44100.F;
 }
 
-void RAudio::reg_class(mrb_state* ruby)
+void RAudio::reg_class(
+    mrb_state* ruby, System& system, Settings const& settings)
 {
     rclass = mrb_define_class(ruby, "Audio", ruby->object_class);
     Sound::rclass = mrb_define_class(ruby, "Sound", ruby->object_class);
     MRB_SET_INSTANCE_TT(RAudio::rclass, MRB_TT_DATA);
     MRB_SET_INSTANCE_TT(Sound::rclass, MRB_TT_DATA);
+
+    default_audio = new RAudio(ruby, system, settings);
 
     mrb_define_method(
         ruby, Sound::rclass, "channels",
@@ -120,7 +112,6 @@ void RAudio::reg_class(mrb_state* ruby)
     mrb_define_class_method(
         ruby, rclass, "default",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            if (default_audio == nullptr) { default_audio = new RAudio(mrb); }
             return mrb::new_data_obj(mrb, default_audio);
         },
         MRB_ARGS_NONE());

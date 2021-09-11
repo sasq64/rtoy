@@ -1,5 +1,7 @@
 #pragma once
 
+#include "system.hpp"
+#include "settings.hpp"
 #include "mrb_tools.hpp"
 #include "ring_buffer.hpp"
 
@@ -60,17 +62,15 @@ class RAudio
     };
 
     mrb::RubyPtr audio_handler;
-    static inline RAudio* default_audio = nullptr;
-    uint32_t dev = 0;
-    mrb_state* ruby;
-    uint64_t sample_count = 0;
+    //mrb_state* ruby;
+    System& system;
     Ring<float, 16384> out_buffer;
     std::array<Channel, 32> channels;
     int next_channel = 0;
-    void fill_audio(uint8_t* data, int len);
     void mix(size_t samples_len);
 
 public:
+    static inline RAudio* default_audio = nullptr;
     static inline RClass* rclass;
     static inline mrb_data_type dt{"Audio", [](mrb_state*, void* data) {}};
 
@@ -78,9 +78,8 @@ public:
         int channel, Sound const& sound, float freq = 0, bool loop = false);
     void set_frequency(int channel, int hz);
 
-    size_t available() const;
+    void update();
 
-    explicit RAudio(mrb_state*);
-    void reset();
-    static void reg_class(mrb_state* ruby);
+    explicit RAudio(mrb_state* ruby, System& _system, Settings const& settings);
+    static void reg_class(mrb_state* ruby, System& system, Settings const& settings);
 };

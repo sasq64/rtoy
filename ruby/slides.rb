@@ -5,7 +5,6 @@ require 'vec2.rb'
 OS.display.bg = Color::WHITE
 OS.clear()
 
-
 # Slide Contract:
 
 # Should not allocate any graphical resources on creationg

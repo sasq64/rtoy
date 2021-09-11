@@ -23,8 +23,9 @@ public:
     FTFont(const char* name, int size = -1) // NOLINT
     {
         fmt::print("Font: {}\n", name);
-        auto error = FT_Init_FreeType(&library);
-        error = FT_New_Face(library, name, 0, &face);
+        // TODO: Check retrun codes
+        FT_Init_FreeType(&library);
+        FT_New_Face(library, name, 0, &face);
 
         if(size >= 0) {
             set_pixel_size(size);
@@ -43,8 +44,8 @@ public:
 
         auto m = face->glyph->metrics;
         size = {m.width >> 6, m.height >> 6};
-        fmt::print(
-            "{}x{}, {}\n", m.width >> 6, m.height >> 6, m.horiAdvance >> 6);
+        //fmt::print(
+        //    "{}x{}, {}\n", m.width >> 6, m.height >> 6, m.horiAdvance >> 6);
         auto height =
             (face->size->metrics.ascender - face->size->metrics.descender) / 64;
     }
@@ -53,9 +54,12 @@ public:
     void copy_char(T* target, uint32_t color, FT_Bitmap const& b, int xoffs, int yoffs,
         int stride, int width = -1, int height = -1)
     {
+        //fmt::print("{}x{} {}\n", b.width, b.rows, b.pitch);
         auto* data = b.buffer;
-        for (int y = 0; y < b.rows; y++) {
-            for (int x = 0; x < b.width; x++) {
+        int rows = static_cast<int>(b.rows);
+        int bwidth = static_cast<int>(b.width);
+        for (int y = 0; y < rows; y++) {
+            for (int x = 0; x < bwidth; x++) {
                 int pitch = b.pitch;
                 auto* row = &data[pitch * y];
                 uint8_t alpha =

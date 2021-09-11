@@ -11,13 +11,13 @@ zero = 48*17+35
 puts tiles.length
 ts = tiles[zero..zero+9]
 ts.each do |tile|
-    display.console.add_tile(t, tile)
+    display.console.set_tile_image(t, tile)
     t += 1
 end
 ts = tiles[zero+48..zero+48+13]
 t = 'A'.ord
 ts.each do |tile|
-    display.console.add_tile(t, tile)
+    display.console.set_tile_image(t, tile)
     t += 1
 end
 

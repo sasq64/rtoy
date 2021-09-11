@@ -14,9 +14,9 @@ RImage* RFont::render(std::string const& txt, uint32_t color, int n)
     font.set_pixel_size(n);
     auto [w, h] = font.text_size(txt);
     pix::Image img(w, h);
-    auto* image = new RImage(img);
     font.render_text(txt, reinterpret_cast<uint32_t*>(img.ptr), color,
         img.width, img.width, img.height);
+    auto* image = new RImage(img);
     return image;
 }
 
@@ -30,8 +30,7 @@ void RFont::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             const char* name{};
             mrb_get_args(mrb, "z", &name);
-            auto* font = new RFont(name);
-            return mrb::new_data_obj(mrb, font);
+            return mrb::new_data_obj(mrb, new RFont(name));
         },
         MRB_ARGS_REQ(1));
 
@@ -40,9 +39,9 @@ void RFont::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto argc = mrb_get_argc(mrb);
             auto [txt, n] = mrb::get_args<std::string, int>(mrb);
-            auto* font = mrb::self_to<RFont>(self);
-            font->font.set_pixel_size(n);
-            auto [w, h] = font->font.text_size(txt);
+            auto* rfont = mrb::self_to<RFont>(self);
+            rfont->font.set_pixel_size(n);
+            auto [w, h] = rfont->font.text_size(txt);
             std::array<int, 2> a{w, h};
             return mrb::to_value(a, mrb);
         },
@@ -53,16 +52,16 @@ void RFont::reg_class(mrb_state* ruby)
             auto argc = mrb_get_argc(mrb);
             if (argc == 2) {
                 auto [txt, n] = mrb::get_args<std::string, int>(mrb);
-                auto* font = mrb::self_to<RFont>(self);
-                return mrb::new_data_obj(mrb, font->render(txt, 0xffffff00, n));
+                auto* rfont = mrb::self_to<RFont>(self);
+                return mrb::new_data_obj(mrb, rfont->render(txt, 0xffffff00, n));
             }
             auto [txt, col, n] =
                 mrb::get_args<std::string, mrb_value, int>(mrb);
             auto col_a = mrb::to_array<float, 4>(col, mrb);
             auto col_u = gl::Color(col_a).to_bgra();
             fmt::print("Text {} color {:x}\n", txt, col_u);
-            auto* font = mrb::self_to<RFont>(self);
-            return mrb::new_data_obj(mrb, font->render(txt, col_u, n));
+            auto* rfont = mrb::self_to<RFont>(self);
+            return mrb::new_data_obj(mrb, rfont->render(txt, col_u, n));
         },
         MRB_ARGS_REQ(2));
 }

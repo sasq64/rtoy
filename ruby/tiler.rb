@@ -14,7 +14,7 @@ class TileMap
         p "Split into #{@tiles.size}"
         @con = Display.default.console
         @tiles.each_with_index do |tile, i|
-            @con.add_tile(1024+i, tile)
+            @con.set_tile_image(1024+i, tile)
         end
     end
 
@@ -61,7 +61,6 @@ class TileView < UI::Element
     def extend(x, y)
         @ex += x
         @ey += y
-        tween
         @sel.scalex = @scale * @ex * tile_map.size / 8
         @sel.scaley = @scale * @ey * tile_map.size / 8
     end
@@ -77,11 +76,11 @@ class TileView < UI::Element
         if @dirty
             w,h = @tile_map.image.width * @scale,@tile_map.image.height * @scale
             ui.canvas.fg = Color::WHITE
-            ui.canvas.rect(@pos.x, @pos.y, w+6, h+6)
+            ui.canvas.rect(@pos.x, @pos.y, w+6, h+6, fg: Color::WHITE)
             ui.canvas.fg = Color::BLUE
-            ui.canvas.rect(@pos.x+2, @pos.y+2, w, h)
+            ui.canvas.rect(@pos.x+2, @pos.y+2, w, h, fg: Color::BLUE)
             ui.canvas.fg = Color::WHITE
-            ui.canvas.draw(@pos.x+2, @pos.y+2, @tile_map.image, @scale)
+            ui.canvas.draw(@pos.x+2, @pos.y+2, @tile_map.image, @scale, fg: Color::WHITE)
             @dirty = false
         end
     end
@@ -102,13 +101,15 @@ class TileScreen
         image = Image.from_file("data/sel.png")
         @sel = Display.default.sprites.add_sprite(image)
         s = Display.default.console.scale
-        @sel.scale = s[0]
+        @sel.scale = s.x
     end
 
     def click(x,y)
+        p @con.scale.x
+        p @con.scale.y
         w,h = @con.get_tile_size()
-        sx,sy = @con.scale
-        ox,oy = @con.get_offset()
+        sx,sy = @con.scale.to_a
+        ox,oy = @con.offset.to_a
         x = ((x-ox)/(w*sx)).to_i
         y = ((y-oy)/(h*sy)).to_i
         @sel.move(x*(w*sx)+ox, y*(h*sy)+oy)
@@ -126,18 +127,18 @@ class TileScreen
     end
 
     def key(key, mod)
-        s = @con.scale()
-        o = @con.get_offset()
+        s = @con.scale
+        o = @con.offset
         sz = 8*4
         case key
         when Key::LEFT
-            o[0] += sz
+            o.x += sz
         when Key::RIGHT
-            o[0] -= sz
+            o.x -= sz
         when Key::UP
-            o[1] += sz
+            o.y += sz
         when Key::DOWN
-            o[1] -= sz
+            o.y -= sz
         when 'A'.ord
             @tile_view.extend(-1,0)
         when 'W'.ord
@@ -155,11 +156,11 @@ class TileScreen
         when 's'.ord
             @tile_view.tile += (@tile_view.width)
         when '+'.ord
-            @con.scale = [s[0] * 2, s[1] * 2 ]
+            @con.scale = [s.x * 2, s.y * 2 ]
         when '-'.ord
-            @con.scale = [s[0] * 0.5, s[1] * 0.5]
+            @con.scale = [s.x * 0.5, s.y * 0.5]
         end
-        @con.set_offset(*o)
+        @con.offset = o
     end
 end
 
@@ -167,6 +168,7 @@ Display.default.console.fg = Color::WHITE
 Display.default.clear()
 ui = UI::Frame.new
 pos = Vec2.new(0,0)
+Display.default.console.set_tile_size(8,8)
 
 tm = TileMap.new(Image.from_file("data/cave.png"), 8)
 tile_view = TileView.new(tm, pos)
@@ -178,5 +180,5 @@ ui.input.on_key {| key,mod| tile_screen.key(key, mod) }
 
 sz = tm.size
 Display.default.bg = Color::BLACK
-Display.default.console.set_tile_size(sz, sz)
 
+loop { vsync }

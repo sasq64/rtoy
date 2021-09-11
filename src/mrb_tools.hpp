@@ -125,7 +125,7 @@ auto get_args(
     mrb_value* rest{};
     mrb_get_args(mrb, spec.data(), &std::get<A>(input)..., &rest, &n);
     std::tuple<ARGS...> converted{static_cast<ARGS>(std::get<A>(input))...};
-    if (n > 0) {
+    if (n > 0 && restv != nullptr) {
         for (int i = 0; i < n; i++) {
             restv->push_back(rest[i]);
         }
@@ -164,7 +164,7 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
     } else if constexpr (std::is_floating_point_v<RET>) {
         return mrb_float_value(mrb, r);
     } else if constexpr (std::is_integral_v<RET>) {
-        return mrb_fixnum_value(r);
+        return mrb_int_value(mrb, r);
     } else if constexpr (std::is_same_v<RET, std::string>) {
         return mrb_str_new_cstr(mrb, r.c_str());
     } else if constexpr (std::is_same_v<RET, const char*>) {
@@ -368,5 +368,7 @@ struct RubyPtr
 
     void clear() { ptr = nullptr; }
 };
+
+using Float = mrb_float;
 
 } // namespace mrb

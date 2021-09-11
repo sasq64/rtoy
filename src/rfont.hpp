@@ -7,7 +7,7 @@
 #include <string>
 
 struct RClass;
-struct RImage;
+class RImage;
 struct mrb_state;
 
 class RFont

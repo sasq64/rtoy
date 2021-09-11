@@ -5,7 +5,7 @@
 #include <mruby/compile.h>
 #include <mruby/value.h>
 
-#include <pix/gl_console.hpp>
+#include <pix/pixel_console.hpp>
 
 #include "error.hpp"
 #include "mrb_tools.hpp"
@@ -21,6 +21,7 @@
 #include "rtimer.hpp"
 
 #include <chrono>
+#include <coreutils/split.h>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -40,21 +41,66 @@ std::time_t to_time_t(TP tp)
     return system_clock::to_time_t(sctp);
 }
 
+extern "C" void send_to_rtoy(const char* text)
+{
+    auto* inp = RInput::default_input;
+    for (auto c : std::string(text)) {
+        inp->put_char(c);
+    }
+}
+
+fs::path find_data_root()
+{
+    fs::path d = fs::current_path();
+    while (true) {
+        if (fs::exists(d / "data") && fs::exists(d / "sys")) { return d; }
+        d = d.parent_path();
+        if (d.empty()) {
+            break;
+        }
+    }
+    return {};
+}
+
 void Toy::init()
 {
     ruby = mrb_open();
+
+#ifdef RASPBERRY_PI
+    system = create_pi_system();
+#else
+    system = create_sdl_system();
+#endif
+
+    data_root = find_data_root();
+    if(data_root.empty()) {
+        exit(1);
+    }
+    fs::current_path(data_root);
+    fs::copy(
+        "sys/help.rb", "ruby/help.rb", fs::copy_options::overwrite_existing);
 
     RLayer::reg_class(ruby);
     RConsole::reg_class(ruby);
     RCanvas::reg_class(ruby);
     RFont::reg_class(ruby);
     RImage::reg_class(ruby);
-    Display::reg_class(ruby, settings);
-    RInput::reg_class(ruby);
+    Display::reg_class(ruby, *system, settings);
+    RInput::reg_class(ruby, *system);
     RSprites::reg_class(ruby);
     RTimer::reg_class(ruby);
-    RAudio::reg_class(ruby);
+    RAudio::reg_class(ruby, *system, settings);
     RSpeech::reg_class(ruby);
+
+    fmt::print("SYSTEM: {}\n", settings.system);
+    auto* rclass = mrb_define_class(ruby, "Settings", nullptr);
+    mrb_intern_cstr(ruby, settings.system.c_str());
+    mrb_define_const(ruby, rclass, "SYSTEM",
+        mrb_check_intern_cstr(ruby, settings.system.c_str()));
+    mrb_define_const(
+        ruby, rclass, "BOOT_CMD", mrb::to_value(settings.boot_cmd, ruby));
+    mrb_define_const(ruby, rclass, "CONSOLE_FONT",
+        mrb::to_value(settings.console_font.string(), ruby));
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",
@@ -75,6 +121,11 @@ void Toy::init()
         MRB_ARGS_REQ(1));
 
     mrb_define_module_function(
+        ruby, ruby->kernel_module, "exit",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value { exit(0); },
+        MRB_ARGS_NONE());
+    
+    mrb_define_module_function(
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [what] = mrb::get_args<bool>(mrb);
@@ -84,41 +135,62 @@ void Toy::init()
         MRB_ARGS_REQ(1));
 
     mrb_define_module_function(
+        ruby, ruby->kernel_module, "file_time",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            auto [name] = mrb::get_args<std::string>(mrb);
+            auto rb_file = fs::canonical(name);
+            auto modified = fs::last_write_time(rb_file);
+            auto tt = static_cast<double>(to_time_t(modified));
+            return mrb::to_value(tt, mrb);
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_module_function(
         ruby, ruby->kernel_module, "require",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [name] = mrb::get_args<std::string>(mrb);
             fmt::print("Require {}\n", name);
-            auto p = ruby_path / name;
-            if (p.extension() == "") { p.replace_extension(".rb"); }
-            if (fs::exists(p)) {
-                auto cp = fs::canonical(p);
-                auto t = fs::last_write_time(cp);
 
-                auto it = already_loaded.find(cp.string());
-
-                if (it != already_loaded.end() && it->second == t) {
-                    fmt::print("{} already loaded\n", cp.string());
-                    return mrb_nil_value();
+            auto parts = utils::split(ruby_path, ":"s);
+            std::optional<fs::path> to_load;
+            for (auto const& part : parts) {
+                auto rb_file = fs::path(part) / name;
+                if (rb_file.extension() == "") {
+                    rb_file.replace_extension(".rb");
                 }
-                already_loaded[cp.string()] = t;
-
-                FILE* fp = fopen(("ruby/"s + name).c_str(), "rbe");
-                if (fp != nullptr) {
-                    auto* ctx = mrbc_context_new(mrb);
-                    ctx->capture_errors = true;
-                    mrbc_filename(mrb, ctx, name.c_str());
-                    ctx->lineno = 1;
-                    mrb_load_file_cxt(mrb, fp, ctx);
-                    mrbc_context_free(mrb, ctx);
-                    fclose(fp);
-                    if (auto err = mrb::check_exception(mrb)) {
-                        fmt::print("REQUIRE Error: {}\n", *err);
-                        exit(1);
-                    }
+                if (fs::exists(rb_file)) {
+                    to_load = rb_file;
+                    break;
                 }
-            } else {
+            }
+            if (!to_load) {
                 mrb_raise(mrb, mrb->object_class,
                     fmt::format("'{}' not found", name).c_str());
+            }
+            auto rb_file = fs::canonical(*to_load);
+            auto modified = fs::last_write_time(rb_file);
+
+            auto it = already_loaded.find(rb_file.string());
+
+            if (it != already_loaded.end() && it->second == modified) {
+                fmt::print("{} already loaded\n", rb_file.string());
+                return mrb_nil_value();
+            }
+            already_loaded[rb_file.string()] = modified;
+
+            FILE* fp = fopen(rb_file.string().c_str(), "rb");
+            if (fp != nullptr) {
+                auto* ctx = mrbc_context_new(mrb);
+                ctx->capture_errors = true;
+                mrbc_filename(mrb, ctx, name.c_str());
+                ctx->lineno = 1;
+                mrb_load_file_cxt(mrb, fp, ctx);
+                mrbc_context_free(mrb, ctx);
+                fclose(fp);
+                if (auto err = mrb::check_exception(mrb)) {
+                    fmt::print("REQUIRE Error: {}\n", *err);
+                    exit(1);
+                }
             }
             return mrb_nil_value();
         },
@@ -135,10 +207,11 @@ void Toy::init()
             std::vector<std::string> files;
             if (fs::is_directory(parent)) {
                 for (auto&& p : fs::directory_iterator(parent)) {
-                    auto real_path = dir == "." ? p.path().filename()
-                                                : dir / p.path().filename();
+                    auto real_path = p.path().filename();//
+                    //dir == "." ? p.path().filename()
+                      //                          : dir / p.path().filename();
                     fmt::print("{}\n", real_path.string());
-                    files.emplace_back(real_path);
+                    files.emplace_back(real_path.string());
                 }
             }
             return mrb::to_value(files, mrb);
@@ -179,7 +252,7 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     if (proc == nullptr) { throw toy_exception("Can't generate code"); }
     // struct RClass* target = mrb->object_class;
     // MRB_PROC_SET_TARGET_CLASS(proc, target);
-    auto result = mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
+    /* auto result = */ mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep);
     // stack_keep = proc->body.irep->nlocals;
     // mrb_gc_arena_restore(ruby, ai);
 }
@@ -192,6 +265,8 @@ void Toy::destroy()
 
 bool Toy::render_loop()
 {
+    RAudio::default_audio->update();
+
     auto* display = Display::default_display;
     // auto seconds = get_seconds();
     auto* input = RInput::default_input;
@@ -209,10 +284,10 @@ bool Toy::render_loop()
             RTimer::default_timer->reset();
         }
         display->console->clear();
-        display->console->console->text(0, 0, e.text);
+        display->console->text(0, 0, e.text);
         int y = 2;
         for (auto& bt : e.backtrace) {
-            display->console->console->text(2, y++, bt);
+            display->console->text(2, y++, bt);
         }
     }
 
@@ -221,14 +296,22 @@ bool Toy::render_loop()
         input->reset();
         RTimer::default_timer->reset();
         std::ifstream ruby_file;
-        ruby_file.open("ruby/main.rb");
+        ruby_file.open("sys/main.rb");
         auto source = read_all(ruby_file);
         mrb_load_string(ruby, source.c_str());
+    }
+
+    auto [mx, my] = input->mouse_pos();
+    if (display->mouse_cursor != nullptr) {
+        display->mouse_cursor->trans = {
+            static_cast<float>(mx), static_cast<float>(my)};
+        display->mouse_cursor->dirty = true;
     }
 
     if (RTimer::default_timer != nullptr) { RTimer::default_timer->update(); }
 
     display->end_draw();
+    display->swap();
 
     if (!to_run.empty()) {
         fmt::print("Running\n");
@@ -248,14 +331,24 @@ bool Toy::render_loop()
 #    include <emscripten.h>
 #endif
 
-Toy::Toy(Settings const& _settings) : settings{_settings}
-{
-    Display::full_screen = settings.screen == ScreenType::Full;
-}
+Toy::Toy(Settings const& _settings) : settings{_settings} {}
 
 int Toy::run()
 {
     init();
+
+    auto con = Display::default_display->console->console;
+
+    if (settings.console_benchmark) {
+        for (int i = 0; i < 500; i++) {
+            con->fill(0xff00ff00, 0x00ff00ff);
+            con->flush();
+            con->fill(0x00ff00ff, 0xff00ff00);
+            con->flush();
+        }
+        return 0;
+    }
+
     puts("Main");
     std::ifstream ruby_file;
     ruby_file.open(settings.boot_script);

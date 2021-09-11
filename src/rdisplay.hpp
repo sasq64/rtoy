@@ -2,6 +2,7 @@
 
 #include "rlayer.hpp"
 #include "settings.hpp"
+#include "system.hpp"
 
 #include "mrb_tools.hpp"
 #include <mruby.h>
@@ -11,44 +12,40 @@
 #include <memory>
 #include <string>
 
-struct SDL_Window;
-struct RConsole;
-struct RCanvas;
-struct RSprites;
+class RConsole;
+class RCanvas;
+class RSprites;
+class RSprite;
 
 class Display : public RLayer
 {
-
     mrb_value draw_handler{};
-
     mrb_value disp_obj{};
-
     mrb_state* ruby = nullptr;
-    SDL_Window* window = nullptr;
+    std::shared_ptr<Screen> window = nullptr;
 
     Settings const& settings;
 
-    int w = 1440;
-    int h = 960;
-    std::array<float, 4> bg = {0, 0, 0.8, 1.0};
-    std::array<float, 16> Id = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+    std::array<float, 4> bg = {0.0F, 0.0F, 0.8F, 1.0F};
+    std::array<float, 16> Id = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
 
     std::shared_ptr<RCanvas> canvas;
     std::shared_ptr<RSprites> sprites;
 
 public:
-    static inline bool full_screen = false;
+    RSprite* mouse_cursor = nullptr;
     std::shared_ptr<RConsole> console;
     static inline RClass* rclass;
     static mrb_data_type dt;
     static inline Display* default_display = nullptr;
-    explicit Display(mrb_state* state, Settings const& _settings);
+    explicit Display(mrb_state* state, System& system, Settings const& _settings);
 
     void setup();
     void reset() override;
     bool begin_draw();
     void end_draw();
+    void swap();
 
-    static void reg_class(mrb_state* ruby, Settings const& settings);
+    static void reg_class(mrb_state* ruby, System& system, Settings const& settings);
 };
 

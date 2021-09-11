@@ -57,7 +57,8 @@ inline void draw_line(Point p0, Size p1)
 }
 
 void draw_quad_uvs(
-    float x0, float y0, float w, float h, std::array<float, 8> const& uvs);
+    double x, double y, double sx, double sy, std::array<float, 8> const& uvs);
+
 void draw_quad_uvs(std::array<float, 8> const& uvs);
 
 void draw_circle_impl(float x, float y, float r);
@@ -81,14 +82,14 @@ void set_colors(gl_wrap::Color fg, gl_wrap::Color bg);
 struct Image
 {
     Image() = default;
-    Image(unsigned w, unsigned h)
+    Image(int w, int h)
         : width(w),
           height(h),
           sptr{new std::byte[static_cast<size_t>(w) * h * 4]},
           ptr{sptr.get()},
           format{GL_RGBA}
     {}
-    Image(unsigned w, unsigned h, std::byte* p, unsigned f = 0)
+    Image(int w, int h, std::byte* p, unsigned f = 0)
         : width(w), height(h), sptr{nullptr}, ptr{p}, format{f}
     {}
 
@@ -97,8 +98,8 @@ struct Image
         auto* pixel_ptr = reinterpret_cast<uint32_t*>(ptr);
         std::fill(pixel_ptr, pixel_ptr + width * height, pixel);
     }
-    unsigned width = 0;
-    unsigned height = 0;
+    int width = 0;
+    int height = 0;
     std::shared_ptr<std::byte> sptr;
     std::byte* ptr = nullptr;
     unsigned format = 0;

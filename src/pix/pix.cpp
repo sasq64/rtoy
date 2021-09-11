@@ -26,6 +26,23 @@ void set_colors(gl::Color fg, gl::Color bg)
     plain.setUniform("in_color", fg);
 }
 
+void draw_with_uvs()
+{
+    // gl::ProgramCache::get_instance().textured.use();
+    auto& program = gl::Program::current();
+    // auto& program = gl::ProgramCache::get_instance().textured;
+    program.use();
+    auto pos = program.getAttribute("in_pos");
+    auto uv = program.getAttribute("in_uv");
+    pos.enable();
+    uv.enable();
+    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
+    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
+    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
+    pos.disable();
+    uv.disable();
+}
+
 void draw_quad_invy()
 {
     float x0 = -1;
@@ -39,19 +56,7 @@ void draw_quad_invy()
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad()
@@ -67,63 +72,33 @@ void draw_quad()
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad_uvs(std::array<float, 8> const& uvs)
 {
-    float x0 = -1;
-    float y0 = -1;
-
-    float x1 = 1;
-    float y1 = 1;
-
-    std::array vertexData{
-        x0, y0, x1, y0, x1, y1, x0, y1, 0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
+    std::array vertexData{-1.F, -1.F, 1.F, -1.F, 1.F, 1.F, -1.F, 1.F, 0.F, 0.F,
+        1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     std::copy(uvs.begin(), uvs.end(), vertexData.begin() + 8);
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad_uvs(
-    float x, float y, float sx, float sy, std::array<float, 8> const& uvs)
+    double x, double y, double sx, double sy, std::array<float, 8> const& uvs)
 {
     auto [w, h] = gl::getViewport<float>();
 
-    auto x0 = x * 2.0F / w - 1.0F;
-    auto y0 = y * -2.0F / h + 1.0F;
+    float x0 = static_cast<float>(x) * 2.0F / w - 1.0F;
+    float y0 = static_cast<float>(y) * -2.0F / h + 1.0F;
 
     x += sx;
     y += sy;
 
-    auto x1 = x * 2.0F / w - 1.0F;
-    auto y1 = y * -2.0F / h + 1.0F;
+    float x1 = static_cast<float>(x) * 2.0F / w - 1.0F;
+    float y1 = static_cast<float>(y) * -2.0F / h + 1.0F;
 
     std::array vertexData{
         x0, y0, x1, y0, x1, y1, x0, y1, 0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
@@ -133,19 +108,7 @@ void draw_quad_uvs(
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad_impl(float x, float y, float sx, float sy)
@@ -166,21 +129,7 @@ void draw_quad_impl(float x, float y, float sx, float sy)
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-
-    auto& program = gl::ProgramCache::get_instance().textured;
-    program.use();
-    auto pos = program.getAttribute("in_pos");
-    auto uv = program.getAttribute("in_uv");
-    // program.setUniform("in_color", gl::Color(0xffffffff));
-    pos.enable();
-    uv.enable();
-
-    gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-    gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-
-    gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-    pos.disable();
-    uv.disable();
+    draw_with_uvs();
 }
 
 void draw_quad_filled(float x, float y, float sx, float sy)
@@ -215,9 +164,13 @@ Image load_png(std::string_view name)
 {
     Image image;
     std::byte* out{};
+    unsigned w = 0;
+    unsigned h = 0;
     auto err = lodepng_decode32_file(reinterpret_cast<unsigned char**>(&out),
-        &image.width, &image.height, std::string(name).c_str());
+        &w, &h, std::string(name).c_str());
     if (err != 0) { return image; }
+    image.width = static_cast<int>(w);
+    image.height = static_cast<int>(h);
     image.sptr = std::shared_ptr<std::byte>(out, &free);
     image.ptr = out;
     image.format = GL_RGBA;
@@ -291,12 +244,17 @@ void draw_circle_impl(float x, float y, float radius)
 
 void save_png(Image const& image, std::string_view name)
 {
+    auto* ptr = reinterpret_cast<unsigned char *>(image.ptr);
+    /* for (int i = 0; i < image.width * image.height * 4; i++) { */
+    /*     if ((i & 3) == 3) { ptr[i] = 0xff; } */
+    /* } */
+    lodepng_encode_file(
+        std::string(name).c_str(), ptr, image.width, image.height, LCT_RGBA, 8);
+}
 
-    lodepng_encode_file(std::string(name).c_str(),
-        reinterpret_cast<unsigned char const*>(image.ptr), image.width,
-        image.height, LCT_RGBA, 8);
-
-    return;
+#if 0
+void save_png_gray(Image const& image, std::string_view name)
+{
 
     unsigned error{};
     LodePNGState state;
@@ -341,5 +299,6 @@ void save_png(Image const& image, std::string_view name)
     // LodePNGColorType lt = LCT_PALETTE;
     // lodepng_encode_file(name, image.ptr, image.width, image.height, lt, 8);
 }
+#endif
 
 } // namespace pix

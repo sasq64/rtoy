@@ -22,8 +22,8 @@ TextureFont::TextureFont(const char* name, int size)
         add_char(c);
     }
 
-    pix::Image image{texture_width, texture_height,
-        reinterpret_cast<std::byte*>(data.data()), 0};
+    //pix::Image image{texture_width, texture_height,
+    //    reinterpret_cast<std::byte*>(data.data()), 0};
 
     textures.push_back({std::make_shared<gl::Texture>(
         texture_width, texture_height, data, GL_RGBA)});
@@ -35,8 +35,8 @@ void TextureFont::clear()
     namespace gl = gl_wrap;
     next_pos = {0, 0};
     std::fill(data.begin(), data.end(), 0);
-    pix::Image image{texture_width, texture_height,
-        reinterpret_cast<std::byte*>(data.data()), 0};
+    //pix::Image image{texture_width, texture_height,
+    //    reinterpret_cast<std::byte*>(data.data()), 0};
     textures.clear();
     textures.push_back({std::make_shared<gl::Texture>(
         texture_width, texture_height, data, GL_RGBA)});
@@ -59,10 +59,10 @@ void TextureFont::add_char(char32_t c)
     // then check if this char is wide and flag it
     if (cw < char_width) { cw = char_width; }
 
-    float fx = (float)x / texture_width;
-    float fy = (float)y / texture_height;
-    float fw = (float)cw / texture_width;
-    float fh = (float)char_height / texture_height;
+    float fx = static_cast<float>(x) / texture_width;
+    float fy = static_cast<float>(y) / texture_height;
+    float fw = static_cast<float>(cw) / texture_width;
+    float fh = static_cast<float>(char_height) / texture_height;
     UV uv = {vec2{fx, fy}, {fx + fw, fy}, {fx + fw, fy + fh}, {fx, fy + fh}};
     // Add the char UV to the renderer
     // renderer.add_char_location(c, x, y, cw, char_height);
@@ -75,19 +75,19 @@ void TextureFont::add_char(char32_t c)
     }
     needs_update = true;
 }
-void TextureFont::add_tile(char32_t index, gl_wrap::TexRef texture)
+void TextureFont::set_tile_image(char32_t index, gl_wrap::TexRef texture)
 {
     // TODO: Usually multiple tiles are added from the same texture, so
     //       cache last and check it it's the same.
     auto it = utils::find(textures, texture);
-    int tindex = -1;
+    int tindex = 0;
     if (it == textures.end()) {
         textures.push_back(texture);
-        tindex = textures.size() - 1;
+        tindex = int(textures.size() - 1);
     } else {
-        tindex = it - textures.begin();
+        tindex = int(it - textures.begin());
     }
-    UV uvs = *((UV*)&texture.uvs);
+    UV uvs = *(reinterpret_cast<UV*>(&texture.uvs));
     renderer.add_tile_location(index, uvs, tindex);
 }
 
@@ -108,9 +108,9 @@ void TextureFont::render_text(std::pair<float, float> xy,
         fflush(stdout);
         renderer.add_text(xy, {attrs.fg, attrs.bg, attrs.scale},
             text32.substr(lasti, i - lasti));
-        textures[last_index].bind();
+        textures[last_index].bind(0);
         renderer.render();
-        xy.first += (i - lasti) * tile_width;
+        xy.first += static_cast<float>((i - lasti) * tile_width);
         lasti = i;
     };
 

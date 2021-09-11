@@ -43,6 +43,15 @@ end
  
 on_key { |key| $keys.append(key) }
 
+on_click do |x,y|
+    if $mx != 0
+        $keys.append(y/32 > $y ? Key::DOWN : Key::UP)
+    else
+        $keys.append(x/32 > $x ? Key::RIGHT : Key::LEFT)
+    end
+end
+
+
 def step_worm
 
     $x += $mx
@@ -61,9 +70,9 @@ def step_worm
     c
 end
 
+#tween(console).to(scale: [4,2])
 scale(4.0, 2.0)
-display.bg = Color::BLACK
-display.console.fg = Color::GREEN
+console.clear(fg: Color::GREEN, bg: Color::BLACK)
 clear()
 draw_box(0,TOP, WIDTH, HEIGHT-TOP)
 

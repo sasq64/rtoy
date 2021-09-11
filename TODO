@@ -1,5 +1,7 @@
 
 [ ] Wait for key after error in editor
+[ ] Unified exception handling (sometimes you CANT go back to editor)
+    Sometimes stack only in terminal
 [x] Set default colors before showing error
 [ ] Scale issue when returning to editor
 [x] Fix font rendering bgcolor
@@ -11,9 +13,15 @@
 [ ] Fix Jetbrains font
 [x] Reset changes tile size to 16
 [ ] Investigate RGB ordering strangeness
-[ ] Change prompt
-[ ] Style keyword args to drawing methods
-[ ] Box charater snake bug. After "reset" character appears in different location in texture but cache kept ?
+[X] Change prompt
+[X] Style keyword args to drawing methods
+[X] Box charater snake bug
+[X] Move SDL code to system specific class
+[X] Port to Raspberry PI
+
+[X] After RSprites::reset, all batches are destroyed while sprites can still
+be referenced from code, so "img" references destroyed batch.
+
 
 # SLIDES
 
@@ -21,3 +29,35 @@ Add font.get_size method
 Render whole paragraph to one image
 Do word wrap
 Background rect on code block
+
+# USABILITY
+
+## Editor
+
+* Undo/Redo
+* Comment/Uncomment
+* Mark text / Copy/Paste
+* Indent/Unindent marked
+
+## Web
+
+* TextEdit -> Paste into R-Toy
+* Upload/Download files
+* Login: Persist files
+
+
+# NOTES
+
+kwargs to set state of layer...
+layer has default style
+
+push/pop style ?
+
+
+## WHAT TO FIGURE OUT
+
+* When to use floats vs ints, and how to convert?
+* Move to doubles and rely on int fitting?
+* Access to style object?
+* Key mapping, and wether to get key up events
+* require vs loading, hard rules. Many smaller components ?

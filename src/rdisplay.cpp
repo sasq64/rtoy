@@ -1,5 +1,6 @@
 #include "rdisplay.hpp"
 
+#include "mruby/value.h"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
 #include "rimage.hpp"
@@ -8,9 +9,7 @@
 #include "error.hpp"
 #include "gl/functions.hpp"
 #include "mrb_tools.hpp"
-#include "pix/gl_console.hpp"
-#include <SDL.h>
-#include <SDL_video.h>
+
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <mruby/compile.h>
@@ -30,42 +29,27 @@ mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
                               }
                           }};
 
-Display::Display(mrb_state* state, Settings const& _settings)
-    : ruby(state), settings{_settings}, RLayer(0, 0)
+Display::Display(mrb_state* state, System& system, Settings const& _settings)
+    : RLayer(0, 0), ruby(state), settings{_settings}
 {
     glm::mat4x4 m(1.0F);
-    memcpy(Id.data(), glm::value_ptr(m), 16 * 4);
+    memcpy(Id.data(), glm::value_ptr(m), sizeof(float) * 16);
 
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-    window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-#ifdef OSX
-        w / 2, h / 2,
-        SDL_WINDOW_ALLOW_HIGHDPI |
-#else
-        w, h,
-#endif
-            SDL_WINDOW_OPENGL |
-            (settings.screen == ScreenType::Full ? SDL_WINDOW_FULLSCREEN_DESKTOP
-                                                 : 0));
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    SDL_GL_CreateContext(window);
-    GLenum err = glewInit();
+    window = system.init_screen(settings);
     setup();
 }
 
 void Display::setup()
 {
-    SDL_GL_GetDrawableSize(window, &w, &h);
+    auto [w, h] = window->get_size();
     RLayer::width = w;
     RLayer::height = h;
 
     fmt::print("{}\n", settings.console_font.string());
 
     console = std::make_shared<RConsole>(w, h,
-        Style{
-            0xffffffff, 0x00008000, settings.console_font.string(), settings.font_size});
+        Style{0xffffffff, 0x00008000, settings.console_font.string(),
+            settings.font_size});
     puts("Console");
     gl::setViewport({w, h});
     fmt::print("{} {}\n", w, h);
@@ -75,6 +59,9 @@ void Display::setup()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // GLuint vao;
+    // glGenVertexArrays(1, &vao);
+    // glBindVertexArray(vao);
 }
 
 bool Display::begin_draw()
@@ -90,30 +77,39 @@ void Display::end_draw()
     gl::clearColor({bg});
     glClear(GL_COLOR_BUFFER_BIT);
 
-    gl::setViewport({w, h});
+    gl::setViewport({width, height});
     console->render();
     canvas->render();
     sprites->render();
+}
 
-    SDL_GL_SwapWindow(window);
+void Display::swap()
+{
+    window->swap();
 }
 
 void Display::reset()
 {
-    bg = {0, 0, 0.8, 1.0};
+    bg = {0.0F, 0.0F, 0.8F, 1.0F};
+
+    if (mouse_cursor != nullptr) {
+        sprites->remove_sprite(mouse_cursor);
+        mouse_cursor = nullptr;
+    }
     console->reset();
     canvas->reset();
     sprites->reset();
     SET_NIL_VALUE(draw_handler);
 }
 
-void Display::reg_class(mrb_state* ruby, Settings const& settings)
+void Display::reg_class(
+    mrb_state* ruby, System& system, Settings const& settings)
 {
     Display::rclass = mrb_define_class(ruby, "Display", RLayer::rclass);
     MRB_SET_INSTANCE_TT(Display::rclass, MRB_TT_DATA);
 
     if (Display::default_display == nullptr) {
-        Display::default_display = new Display(ruby, settings);
+        Display::default_display = new Display(ruby, system, settings);
     } else {
         Display::default_display->ruby = ruby;
     }
@@ -124,10 +120,21 @@ void Display::reg_class(mrb_state* ruby, Settings const& settings)
 
     mrb_define_class_method(
         ruby, Display::rclass, "default",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+        [](mrb_state*  /*mrb*/, mrb_value /*self*/) -> mrb_value {
             return Display::default_display->disp_obj;
         },
         MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, Display::rclass, "mouse_ptr",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            RImage* image = nullptr;
+            mrb_get_args(mrb, "d", &image, &RImage::dt);
+            display->mouse_cursor = display->sprites->add_sprite(image, 1);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(3));
 
     mrb_define_method(
         ruby, Display::rclass, "width",
@@ -157,8 +164,7 @@ void Display::reg_class(mrb_state* ruby, Settings const& settings)
         ruby, Display::rclass, "console",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            auto* console = display->console.get();
-            return mrb::new_data_obj(mrb, console);
+            return mrb::new_data_obj(mrb, display->console.get());
         },
         MRB_ARGS_NONE());
 
@@ -166,8 +172,7 @@ void Display::reg_class(mrb_state* ruby, Settings const& settings)
         ruby, Display::rclass, "canvas",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            auto* canvas = display->canvas.get();
-            return mrb::new_data_obj(mrb, canvas);
+            return mrb::new_data_obj(mrb, display->canvas.get());
         },
         MRB_ARGS_NONE());
 
@@ -175,8 +180,7 @@ void Display::reg_class(mrb_state* ruby, Settings const& settings)
         ruby, Display::rclass, "sprites",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            auto* sprites = display->sprites.get();
-            return mrb::new_data_obj(mrb, sprites);
+            return mrb::new_data_obj(mrb, display->sprites.get());
         },
         MRB_ARGS_NONE());
 
@@ -206,7 +210,6 @@ void Display::reg_class(mrb_state* ruby, Settings const& settings)
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* display = mrb::self_to<Display>(self);
             display->bg = mrb::to_array<float, 4>(av, mrb);
-            ;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
