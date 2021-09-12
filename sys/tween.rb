@@ -113,55 +113,84 @@ class TweenFunc
     end
 end
 
-class TweenTarget
-
-    def initialize(obj, method, from, to, seconds, steps, func)
+class DeltaTarget
+    def initialize(obj, method, from, delta)
         @obj = obj
         @method = method
         @from = from
-        @steps = steps - 1
-        @to = to
         @value = from.clone
-        @func = func
         @callback = nil
-        @every_t = 2.0
+        @type = nil
+        @delta = delta
+        if @from.nil?
+            @delta = nil
+        elsif @from.kind_of? Array
+            @type = :array
+        else
+            @type = :scalar
+        end
     end
 
     def set_callback(cb)
         @callback = cb
     end
 
-    def set_every_cb(dt, cb)
-        @every_cb = cb
-        @every_t = 0
-        @every_dt = dt
+    def update(delta)
+        if @type == :scalar
+            @value += @delta
+            @obj.send @method, @value
+        elsif @type == :array
+            (0...@from.size).each { |i|
+                @value[i] += @delta[i]
+            }
+            @obj.send @method, @value
+        end
+        done = delta >= 1.0
+        @callback.call(self) if done and @callback
+        done
+    end
+end
+
+class TweenTarget
+
+    def initialize(obj, method, from, to, seconds, func)
+        @obj = obj
+        @method = method
+        @from = from
+        @value = from.clone
+        @func = func
+        @callback = nil
+        @type = nil
+        if @from.nil?
+            @delta = nil
+        elsif @from.kind_of? Array
+            @type = :array
+            @diff = to
+            (0...@diff.size).each { |i| @diff[i] -= @from[i] }
+        else
+            @type = :scalar
+            @diff = to - @from
+        end
+    end
+
+    def set_callback(cb)
+        @callback = cb
     end
 
     def update(delta)
-        if @steps > 0
-            delta = (delta * @steps).to_i / @steps.to_f
+        d = TweenFunc.send @func, delta
+        if @type == :scalar
+            @value = @from + @diff * d
+            @obj.send @method, @value
+        elsif @type == :array
+            (0...@from.size).each { |i|
+                @value[i] = @from[i] + @diff[i] * d
+            }
+            @obj.send @method, @value
+        else
+            @obj.send @method,d
         end
-        delta = 1.0 if delta > 1.0
-        if delta >= 0
 
-            if delta > @every_t
-                @every_cb.call(self)
-                @every_t += @every_dt 
-            end
-
-            d = TweenFunc.send @func, delta
-            if @from.nil?
-                @obj.send @method,d
-            elsif @from.kind_of? Array
-                (0...@from.size).each { |i|
-                    @value[i] = @from[i] + (@to[i] - @from[i]) * d
-                }
-                @obj.send @method, @value
-            else
-                @value = @from + (@to - @from) * d
-                @obj.send @method, @value
-            end
-        end
         done = delta >= 1.0
         @callback.call(self) if done and @callback
         done
@@ -172,7 +201,7 @@ class Tween
     @@tweens = []
     @@seconds = Timer.default.seconds
 
-    LEGALS = [ :obj, :method, :func, :seconds, :steps, :from, :to ]
+    LEGALS = [ :obj, :method, :func, :seconds, :from, :to ]
     REQUIRED = [ :obj, :method, :seconds, :from, :to ]
 
     def initialize(o = nil, seconds: 1.0, &block)
@@ -196,7 +225,7 @@ class Tween
 
         @targets.append TweenTarget.new(
             r[:obj], r[:method], r[:from], r[:to],
-            r[:seconds], r[:steps], r[:func])
+            r[:seconds], r[:func])
         self
     end
 
@@ -211,13 +240,29 @@ class Tween
         self
     end
 
-    # attr: val
+    def delta(**kwargs)
+        r = {
+            obj: @obj,
+            seconds: @total_time,
+        }
+
+        delta = 0
+        kwargs.each do |key,val|
+            r[:from] = r[:obj].send(key)
+            val = val.to_a if val.respond_to?(:to_a)
+            r[:from] = r[:from].to_a if r[:from].respond_to?(:to_a)
+            r[:method] = [key, '='].join.to_sym
+            delta = val
+        end
+        @targets.append DeltaTarget.new(
+            r[:obj], r[:method], r[:from], delta)
+        self
+    end
     def to(**kwargs)
         r = {
             obj: @obj,
             func: @func,
             seconds: @total_time,
-            steps: 0
         }
 
         kwargs.each do |key,val|
@@ -237,7 +282,6 @@ class Tween
             obj: @obj,
             func: @func,
             seconds: @total_time,
-            steps: 0
         }
 
         kwargs.each do |key,val|
@@ -257,19 +301,22 @@ class Tween
     end
 
     def every(d, &block)
-        @targets.last.set_every_cb(d, block)
+        #@targets.last.set_every_cb(d, block)
         self
     end
 
     def update(t)
         delta = @total_time ? (@@seconds - @start_time) / @total_time : 0
+        delta = 1.0 if delta > 1.0
         res = true
-        if @block
-            @block.call(delta)
-            res = (delta >= 1.0)
+        if delta >= 0
+            if @block
+                @block.call(delta)
+                res = (delta >= 1.0)
+            end
+            @targets.each { |tg| res &= tg.update(delta) }
+            @on_done.call if @on_done && res
         end
-        @targets.each { |tg| res &= tg.update(delta) } 
-        @on_done.call if @on_done && res
         res
     end
 

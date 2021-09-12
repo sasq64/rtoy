@@ -32,6 +32,14 @@ class Vec2
         a[0] == @data[0] && a[1] == @data[1]
     end
 
+    def rotate(a)
+        return Vec2.new(Math::cos(a) * @data[0], Math::sin(a) * @data[1])
+    end
+
+    def self.from_rot(a)
+        return Vec2.new(Math::cos(a), Math::sin(a))
+    end
+
     # Inside the rect defined by p0 -> p1
     # p0 must be lower than p1 on both axis
     def between?(p0, p1)

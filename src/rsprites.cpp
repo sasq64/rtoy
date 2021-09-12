@@ -41,8 +41,13 @@ static std::string fragment_shader{R"gl(
         })gl"};
 
 mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {
-                              auto* spr = static_cast<RSprite*>(data);
-                              spr->texture = {};
+                              auto* sprite = static_cast<RSprite*>(data);
+                              // fmt::print("free {} {}\n", data, sprite->held);
+                              if (sprite->held) {
+                                  sprite->held = false;
+                              } else {
+                                  delete sprite;
+                              }
                           }};
 mrb_data_type RSprites::dt{"Sprites", [](mrb_state*, void* data) {}};
 
@@ -54,7 +59,7 @@ void RSprite::update_tx(double screen_width, double screen_height)
                               screen_height / 2.0 - trans[1], 0));
     m = glm::translate(m, glm::vec3(texture.width() / 2.0 * scale[0],
                               -texture.height() / 2.0 * scale[1], 0));
-    m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
+    m = glm::rotate(m, -rot, glm::vec3(0.0, 0.0, 1.0));
 
     m = glm::scale(
         m, glm::vec3(static_cast<float>(texture.width()) * scale[0] / 2,
@@ -62,28 +67,78 @@ void RSprite::update_tx(double screen_width, double screen_height)
     memcpy(transform.data(), glm::value_ptr(m), sizeof(float) * 16);
 }
 
-RSprites::RSprites(int w, int h) : RLayer{w, h} {
-    program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader}, gl_wrap::FragmentShader{fragment_shader});
+RSprites::RSprites(int w, int h) : RLayer{w, h}
+{
+    program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
+        gl_wrap::FragmentShader{fragment_shader});
+}
+
+void RSprites::purge()
+{
+    for (auto& [_, batch] : batches) {
+        for (auto& sprite : batch.sprites) {
+            // fmt::print("purge {} {}\n", (void*)sprite, sprite->held);
+            if (sprite->held) {
+                sprite->held = false;
+            } else {
+                delete sprite;
+            }
+        }
+    }
+    batches.clear();
 }
 
 void RSprites::reset()
 {
     RLayer::reset();
-    batches.clear();
+    purge();
 }
 
 void RSprites::clear()
 {
-    batches.clear();
+    purge();
+}
+
+void RSprites::collide()
+{
+    auto it = colliders.begin();
+    while (it != colliders.end()) {
+        auto& c1 = *it;
+        if (!c1.sprite->held) {
+            it = colliders.erase(it);
+            continue;
+        }
+        auto it2 = ++it;
+        while (it2 != colliders.end()) {
+            auto& c2 = *it2;
+
+            auto s1 = c1.sprite->scale[0];
+            auto s2 = c2.sprite->scale[0];
+            auto x = (c2.sprite->trans[0] + c2.sprite->width * s2 / 2) -
+                     (c1.sprite->trans[0] + c1.sprite->width * s1 / 2);
+            auto y = (c2.sprite->trans[1] + c2.sprite->height * s2 / 2) -
+                     (c1.sprite->trans[1] + c1.sprite->height * s1 / 2);
+            auto d2 = x * x + y * y;
+            auto r = (c1.r2 * s1 + c2.r2 * s2);
+            if (d2 < r * r) {
+                fmt::print("Collision\n");
+                c1.sprite->alpha = 0.3;
+                c2.sprite->alpha = 0.3;
+            }
+            ++it2;
+        }
+    }
 }
 
 void RSprites::render()
 {
+    collide();
+
     // if (batches.empty()) { return; }
     glEnable(GL_BLEND);
     glLineWidth(current_style.line_width);
     pix::set_colors(current_style.fg, current_style.bg);
-    auto& textured = program;//gl::ProgramCache::get_instance().textured;
+    auto& textured = program; // gl::ProgramCache::get_instance().textured;
     textured.use();
     float last_alpha = -1;
     auto pos = textured.getAttribute("in_pos");
@@ -95,9 +150,16 @@ void RSprites::render()
         batch.texture->bind();
         auto it = batch.sprites.begin();
         while (it != batch.sprites.end()) {
-            auto& sprite = *it;
+            auto* sprite = *it;
+            int count = 0;
             if (sprite->texture.tex == nullptr) {
                 it = batch.sprites.erase(it);
+                // fmt::print("erase {} {}\n", (void*)sprite, sprite->held);
+                if (sprite->held) {
+                    sprite->held = false;
+                } else {
+                    delete sprite;
+                }
                 continue;
             }
             if (last_alpha != sprite->alpha) {
@@ -124,11 +186,9 @@ void RSprites::render()
     auto it = batches.begin();
     while (it != batches.end()) {
         if (it->second.sprites.empty()) {
-            fmt::print("Batch erased\n");
+            // fmt::print("Batch erased\n");
             it = batches.erase(it);
-            if (batches.empty()) {
-                fmt::print("No more batches\n");
-            }
+            if (batches.empty()) { fmt::print("No more batches\n"); }
             continue;
         }
         draw_batch(it->second);
@@ -138,26 +198,6 @@ void RSprites::render()
     if (fixed_batch.texture != nullptr) { draw_batch(fixed_batch); }
     pos.disable();
     uv.disable();
-
-    for(size_t i=0; i<colliders.size(); i++) {
-        auto* c0 = colliders[i];
-        auto x0a = c0->trans[0];
-        auto y0a = c0->trans[1];
-        auto x1a = x0a + c0->width;
-        auto y1a = y0a + c0->height;
-        for(size_t j = i+1; j < colliders.size(); j++) {
-            auto* c1 = colliders[j];
-            auto x0b = c1->trans[0];
-            auto y0b = c1->trans[1];
-            auto x1b = x0b + c1->width;
-            auto y1b = y0b + c1->height;
-            
-            if(x0a > x1b || x0b > x1a || y0a > y1b || y0b > y1a) {
-                continue;
-            }
-            fmt::print("Collision\n");
-        }
-    }
 }
 
 RSprite* RSprites::add_sprite(RImage* image, int flags)
@@ -175,8 +215,8 @@ RSprite* RSprites::add_sprite(RImage* image, int flags)
         1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     std::copy(uvs.begin(), uvs.end(), vertexData.begin() + 8);
 
-
-    auto* sprite = new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}};
+    auto* sprite =
+        new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}};
     sprite->texture = image->texture;
     sprite->trans[0] = static_cast<float>(sprite->texture.x());
     sprite->trans[1] = static_cast<float>(sprite->texture.y());
@@ -184,8 +224,13 @@ RSprite* RSprites::add_sprite(RImage* image, int flags)
     sprite->height = sprite->texture.height();
     sprite->update_tx(width, height);
     batch.sprites.push_back(sprite);
+    // fmt::print("Add sprite {} {}\n", (void*)sprite, sprite->held);
 
-    colliders.push_back(sprite);
+    colliders.push_back({sprite});
+    auto& c = colliders.back();
+    auto r = static_cast<float>(sprite->width);
+    if (sprite->height > sprite->width) { r = sprite->height; }
+    c.r2 = r / 2;
 
     return sprite;
 }
@@ -193,7 +238,7 @@ RSprite* RSprites::add_sprite(RImage* image, int flags)
 void RSprites::remove_sprite(RSprite* spr)
 {
     // TODO: Optimize
-    spr->texture = {};
+    spr->texture.tex = nullptr;
 }
 
 void RSprites::reg_class(mrb_state* ruby)
@@ -268,6 +313,16 @@ void RSprites::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rspr = mrb::self_to<RSprite>(self);
             return mrb::to_value(rspr->texture.height(), mrb);
+        },
+        MRB_ARGS_NONE());
+    mrb_define_method(
+        ruby, RSprite::rclass, "size",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rspr = mrb::self_to<RSprite>(self);
+            return mrb::to_value(
+                std::array<float, 2>{static_cast<float>(rspr->texture.width()),
+                    static_cast<float>(rspr->texture.height())},
+                mrb);
         },
         MRB_ARGS_NONE());
     mrb_define_method(

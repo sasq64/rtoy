@@ -129,6 +129,7 @@ void Toy::init()
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
             auto [what] = mrb::get_args<bool>(mrb);
+            (void)what;
             assert(what);
             return mrb_nil_value();
         },

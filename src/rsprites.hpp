@@ -27,8 +27,10 @@ public:
     gl_wrap::ArrayBuffer<GL_STATIC_DRAW> vbo;
     float alpha = 1.0F;
     bool dirty = false;
+    // Held by either native or ruby. Whoever tries to destroy it first
+    // sets it to false. If it is already false, free it.
+    bool held = true;
 
-    Collide collide = Collide::None;
 
     gl_wrap::TexRef texture{};
     std::array<float, 16> transform{
@@ -46,6 +48,13 @@ public:
     void update_tx(double screen_width, double screen_height);
 };
 
+struct Collider
+{
+    RSprite* sprite = nullptr;
+    Collide collide = Collide::None;
+    float r2 = 0;
+};
+
 struct SpriteBatch
 {
     std::shared_ptr<gl_wrap::Texture> texture;
@@ -54,10 +63,12 @@ struct SpriteBatch
 
 class RSprites : public RLayer
 {
-    std::vector<RSprite*> colliders;
+    std::vector<Collider> colliders;
     std::unordered_map<GLuint, SpriteBatch> batches;
     SpriteBatch fixed_batch;
     gl_wrap::Program program;
+    void purge();
+    void collide();
 public:
     RSprite* add_sprite(RImage* image, int flags);
     static void remove_sprite(RSprite* spr);
