@@ -40,7 +40,7 @@ if(WIN32)
 endif()
 
 if(APPLE)
-    include_directories(/usr/local/include /opt/homebrew/include)
+    include_directories(SYSTEM /usr/local/include /opt/homebrew/include)
     link_directories(/usr/local/lib /opt/homebrew/lib)
     add_compile_options(-target x86_64-apple-macos10.15)
 endif()
