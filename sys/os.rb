@@ -258,12 +258,12 @@ module OS
         puts text
     end
 
-    def plot(range, &block)
+    def plot(range = (-1.0..1.0), &block)
         ox, oy = nil, nil
         w = display.width.to_f
         (0..w).each do |x|
             y = yield (x.to_f/w) * (range.last - range.first) + range.first
-            y = (y + 1) * display.height/2
+            y = display.height - ((y + 1) * display.height/2)
             line(ox,oy, x, y) if ox
             ox,oy = x,y
         end

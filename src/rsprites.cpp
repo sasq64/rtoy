@@ -1,6 +1,6 @@
 
 #include "rsprites.hpp"
-
+#include "error.hpp"
 #include "gl/buffer.hpp"
 #include "mrb_tools.hpp"
 #include "rimage.hpp"
@@ -67,7 +67,7 @@ void RSprite::update_tx(double screen_width, double screen_height)
     memcpy(transform.data(), glm::value_ptr(m), sizeof(float) * 16);
 }
 
-RSprites::RSprites(int w, int h) : RLayer{w, h}
+RSprites::RSprites(mrb_state* _ruby, int w, int h) : RLayer{w, h}, ruby{_ruby}
 {
     program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
         gl_wrap::FragmentShader{fragment_shader});
@@ -101,39 +101,43 @@ void RSprites::clear()
 
 void RSprites::collide()
 {
-    auto it = colliders.begin();
-    while (it != colliders.end()) {
-        auto& c1 = *it;
-        if (!c1.sprite->held) {
-            it = colliders.erase(it);
-            continue;
-        }
-        auto it2 = ++it;
-        while (it2 != colliders.end()) {
-            auto& c2 = *it2;
+    for (auto& group : groups) {
+        auto& coll0 = colliders[group.from];
+        auto& coll1 = colliders[group.to];
+        auto it = coll0.begin();
+        while (it != coll0.end()) {
+            auto& c1 = *it;
+            auto it2 = coll1.begin();
+            while (it2 != coll1.end()) {
+                auto* c2 = *it2;
+                auto s1 = c1->scale[0];
+                auto s2 = c2->scale[0];
+                auto x = (c2->trans[0] + c2->width * s2 / 2) -
+                         (c1->trans[0] + c1->width * s1 / 2);
+                auto y = (c2->trans[1] + c2->height * s2 / 2) -
+                         (c1->trans[1] + c1->height * s1 / 2);
+                auto d2 = x * x + y * y;
+                auto r = (c1->r * s1 + c2->r * s2);
+                if (d2 < r * r) {
 
-            auto s1 = c1.sprite->scale[0];
-            auto s2 = c2.sprite->scale[0];
-            auto x = (c2.sprite->trans[0] + c2.sprite->width * s2 / 2) -
-                     (c1.sprite->trans[0] + c1.sprite->width * s1 / 2);
-            auto y = (c2.sprite->trans[1] + c2.sprite->height * s2 / 2) -
-                     (c1.sprite->trans[1] + c1.sprite->height * s1 / 2);
-            auto d2 = x * x + y * y;
-            auto r = (c1.r2 * s1 + c2.r2 * s2);
-            if (d2 < r * r) {
-                fmt::print("Collision\n");
-                c1.sprite->alpha = 0.3;
-                c2.sprite->alpha = 0.3;
+                    if (group.handler) {
+                        auto a = mrb::new_data_obj(ruby, c1);
+                        auto b = mrb::new_data_obj(ruby, c2);
+                        call_proc(ruby, group.handler, a, b);
+                    }
+                    // fmt::print("Collision\n");
+                    // c1->alpha = 0.3;
+                    // c2->alpha = 0.3;
+                }
+                ++it2;
             }
-            ++it2;
+            ++it;
         }
     }
 }
 
 void RSprites::render()
 {
-    collide();
-
     // if (batches.empty()) { return; }
     glEnable(GL_BLEND);
     glLineWidth(current_style.line_width);
@@ -146,11 +150,15 @@ void RSprites::render()
     pos.enable();
     uv.enable();
 
+    for (auto& c : colliders) {
+        c.clear();
+    }
     auto draw_batch = [&](SpriteBatch& batch) {
         batch.texture->bind();
         auto it = batch.sprites.begin();
         while (it != batch.sprites.end()) {
             auto* sprite = *it;
+
             int count = 0;
             if (sprite->texture.tex == nullptr) {
                 it = batch.sprites.erase(it);
@@ -161,6 +169,9 @@ void RSprites::render()
                     delete sprite;
                 }
                 continue;
+            }
+            if (sprite->collider >= 0) {
+                colliders[sprite->collider].push_back(sprite);
             }
             if (last_alpha != sprite->alpha) {
                 gl::Color fg = current_style.fg;
@@ -195,6 +206,8 @@ void RSprites::render()
         it++;
     }
 
+    collide();
+
     if (fixed_batch.texture != nullptr) { draw_batch(fixed_batch); }
     pos.disable();
     uv.disable();
@@ -222,15 +235,12 @@ RSprite* RSprites::add_sprite(RImage* image, int flags)
     sprite->trans[1] = static_cast<float>(sprite->texture.y());
     sprite->width = sprite->texture.width();
     sprite->height = sprite->texture.height();
+    auto r = static_cast<float>(sprite->width);
+    if (sprite->height > sprite->width) { r = sprite->height; }
+    sprite->r = r / 2;
     sprite->update_tx(width, height);
     batch.sprites.push_back(sprite);
     // fmt::print("Add sprite {} {}\n", (void*)sprite, sprite->held);
-
-    colliders.push_back({sprite});
-    auto& c = colliders.back();
-    auto r = static_cast<float>(sprite->width);
-    if (sprite->height > sprite->width) { r = sprite->height; }
-    c.r2 = r / 2;
 
     return sprite;
 }
@@ -261,6 +271,27 @@ void RSprites::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(3));
 
     mrb_define_method(
+        ruby, rclass, "on_collision",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* sprites = mrb::self_to<RSprites>(self);
+            mrb_int g0 = -1;
+            mrb_int g1 = -1;
+            mrb_value blk;
+            mrb_get_args(mrb, "ii&", &g0, &g1, &blk);
+
+            CollisionGroup* group = nullptr;
+            for (auto& g : sprites->groups) {
+                if (g.from == g0 && g.to == g1) { group = &g; }
+            }
+            if (group == nullptr) { group = &sprites->groups.emplace_back(); }
+            group->from = g0;
+            group->to = g1;
+            if (!mrb_nil_p(blk)) { group->handler = mrb::RubyPtr{mrb, blk}; }
+            return mrb_nil_value();
+        },
+        MRB_ARGS_BLOCK() | MRB_ARGS_REQ(1));
+
+    mrb_define_method(
         ruby, RSprites::rclass, "remove_sprite",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RSprites>(self);
@@ -270,6 +301,16 @@ void RSprites::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));
+
+    mrb_define_method(
+        ruby, RSprite::rclass, "collider=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto [id] = mrb::get_args<int>(mrb);
+            auto* rspr = mrb::self_to<RSprite>(self);
+            rspr->collider = id;
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
 
     mrb_define_method(
         ruby, RSprite::rclass, "y=",

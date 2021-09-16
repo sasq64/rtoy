@@ -31,6 +31,8 @@ public:
     // sets it to false. If it is already false, free it.
     bool held = true;
 
+    // Collision group
+    int collider = -1;
 
     gl_wrap::TexRef texture{};
     std::array<float, 16> transform{
@@ -41,6 +43,7 @@ public:
 
     int width = 0;
     int height = 0;
+    float r = 0;
 
     static inline RClass* rclass;
     static mrb_data_type dt;
@@ -50,9 +53,17 @@ public:
 
 struct Collider
 {
+    explicit Collider(RSprite* s) : sprite(s) {}
     RSprite* sprite = nullptr;
     Collide collide = Collide::None;
     float r2 = 0;
+};
+
+struct CollisionGroup
+{
+    int from;
+    int to;
+    mrb::RubyPtr handler;
 };
 
 struct SpriteBatch
@@ -63,12 +74,15 @@ struct SpriteBatch
 
 class RSprites : public RLayer
 {
-    std::vector<Collider> colliders;
+    std::vector<CollisionGroup> groups;
+    std::array<std::vector<RSprite*>, 10> colliders;
     std::unordered_map<GLuint, SpriteBatch> batches;
     SpriteBatch fixed_batch;
     gl_wrap::Program program;
+    mrb_state* ruby;
     void purge();
     void collide();
+
 public:
     RSprite* add_sprite(RImage* image, int flags);
     static void remove_sprite(RSprite* spr);
@@ -76,7 +90,7 @@ public:
     static inline RClass* rclass;
     static mrb_data_type dt;
 
-    RSprites(int w, int h);
+    RSprites(mrb_state* _ruby, int w, int h);
     void render() override;
     void reset() override;
     void clear();
