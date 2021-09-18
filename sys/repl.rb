@@ -32,7 +32,7 @@ class Repl
                 while f.alive? do
                     f.resume
                     # Break if CTRL-C was pressed
-                    if Input.default.get_key('c'.ord)
+                    if Input.default.is_pressed('c'.ord)
                         mods = Input.default.get_modifiers()
                         break if mods & 0xc0 != 0
                     end

@@ -193,7 +193,7 @@ module OS
                 break if block_given? and yield
                 f.resume
                 mods = Input.default.get_modifiers()
-                if Input.default.get_key('c'.ord)
+                if Input.default.is_pressed('c'.ord)
                     break if mods & 0xc0 != 0
                 end
                 # if t != file_time(name)

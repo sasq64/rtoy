@@ -58,7 +58,7 @@ module Shortcuts
     def scale(x, y = x) @@display.console.scale = [x,y] end
     def offset(x, y) @@display.console.offset(x,y) end
 
-    def get_key(key) Input.default.get_key(key) end
+    def is_pressed(key) Input.default.is_pressed(key) end
     
     doc! "Draw a line in the canvas from x,y to x2,y2"
     def line(*args) @@display.canvas.line(*args) end

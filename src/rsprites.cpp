@@ -124,9 +124,8 @@ void RSprites::collide()
                 auto r = (coll1->radius * s1 + coll2->radius * s2);
                 if (d2 < r * r) {
                     if (group.handler) {
-                        auto a = mrb::new_data_obj(ruby, sprite1);
-                        auto b = mrb::new_data_obj(ruby, sprite2);
-                        call_proc(ruby, group.handler, a, b);
+                        call_proc(ruby, group.handler, sprite1->value,
+                            sprite2->value);
                     }
                 }
                 ++it2;
@@ -271,7 +270,8 @@ void RSprites::reg_class(mrb_state* ruby)
             RImage* image = nullptr;
             mrb_get_args(mrb, "d", &image, &RImage::dt);
             auto* spr = ptr->add_sprite(image, 0);
-            return mrb::new_data_obj(mrb, spr);
+            spr->value = mrb::new_data_obj(mrb, spr);
+            return spr->value;
         },
         MRB_ARGS_REQ(3));
 

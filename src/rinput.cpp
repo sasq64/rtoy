@@ -165,7 +165,7 @@ void RInput::reg_class(mrb_state* ruby, System& system)
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, rclass, "get_key",
+        ruby, rclass, "is_pressed",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* input = mrb::self_to<RInput>(self);
             auto [code] = mrb::get_args<int>(mrb);

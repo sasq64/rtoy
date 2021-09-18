@@ -49,8 +49,8 @@ vsync do
             fn(:out_elastic).to(x: ship.pos.x).to(rotation: Math::PI).
             when_done { remove_sprite(enemy) }
     end
-    ship.x += 8 if get_key(Key::RIGHT)
-    ship.x -= 8 if get_key(Key::LEFT)
+    ship.x += 8 if is_pressed(Key::RIGHT)
+    ship.x -= 8 if is_pressed(Key::LEFT)
 
     if was_pressed('z'.ord)
         bs = add_sprite(bullet, scale: 4, pos: ship.pos)

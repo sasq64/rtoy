@@ -48,6 +48,8 @@ public:
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0;
 
+    mrb_value value;
+
     // int width = 0;
     // int height = 0;
     // float r = 0;
