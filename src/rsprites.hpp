@@ -21,6 +21,14 @@ enum class Collide
     Point
 };
 
+struct Collider
+{
+    int group = 0;
+    float width = 0;
+    float height = 0;
+    float radius = 0;
+};
+
 class RSprite
 {
 public:
@@ -31,8 +39,7 @@ public:
     // sets it to false. If it is already false, free it.
     bool held = true;
 
-    // Collision group
-    int collider = -1;
+    Collider* collider = nullptr;
 
     gl_wrap::TexRef texture{};
     std::array<float, 16> transform{
@@ -41,28 +48,21 @@ public:
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0;
 
-    int width = 0;
-    int height = 0;
-    float r = 0;
+    // int width = 0;
+    // int height = 0;
+    // float r = 0;
 
     static inline RClass* rclass;
     static mrb_data_type dt;
 
     void update_tx(double screen_width, double screen_height);
-};
-
-struct Collider
-{
-    explicit Collider(RSprite* s) : sprite(s) {}
-    RSprite* sprite = nullptr;
-    Collide collide = Collide::None;
-    float r2 = 0;
+    void update_collision() const;
 };
 
 struct CollisionGroup
 {
-    int from;
-    int to;
+    int from = -1;
+    int to = -1;
     mrb::RubyPtr handler;
 };
 

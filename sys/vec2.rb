@@ -19,6 +19,14 @@ class Vec2
     def to_s() @data.to_s ; end
     def to_a() @data end
 
+    def rotate(a)
+        c = Math.cos(a)
+        s = Math.sin(a)
+        x = c*@data[0] - s*@data[1]
+        y = s*@data[0] + c*@data[1]
+        Vec2.new(x, y)
+    end
+
     def self.rand(x,y)
         Vec2.new(Kernel::rand(x), Kernel::rand(y))
     end
@@ -30,10 +38,6 @@ class Vec2
     def ==(v)
         a = v.to_a
         a[0] == @data[0] && a[1] == @data[1]
-    end
-
-    def rotate(a)
-        return Vec2.new(Math::cos(a) * @data[0], Math::sin(a) * @data[1])
     end
 
     def self.from_rot(a)
