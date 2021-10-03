@@ -37,7 +37,7 @@ public:
         [](mrb_state*,
             void* data) { /*delete static_cast<GLConsole *>(data); */ }};
 
-    void clear();
+    void clear() override;
     RCanvas(int w, int h);
     void render() override;
     void reset() override;

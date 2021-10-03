@@ -1,7 +1,6 @@
 
 #include "toy.hpp"
 
-
 #include "error.hpp"
 #include "mrb_tools.hpp"
 #include "raudio.hpp"
@@ -27,10 +26,9 @@
 #    include <emscripten.h>
 #endif
 
-
 #include <chrono>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -79,7 +77,7 @@ void Toy::init()
     data_root = find_data_root();
     if (data_root.empty()) {
         fprintf(stderr, "**Error: Can not find data files!\n");
-        exit(1);
+        ::exit(1);
     }
     fs::current_path(data_root);
     fs::copy(
@@ -127,7 +125,11 @@ void Toy::init()
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "exit",
-        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value { exit(0); },
+        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value {
+            Toy::exit();
+            puts("EXIT");
+            return mrb_nil_value();
+        },
         MRB_ARGS_NONE());
 
     mrb_define_module_function(
@@ -195,7 +197,7 @@ void Toy::init()
                 fclose(fp);
                 if (auto err = mrb::check_exception(mrb)) {
                     fmt::print("REQUIRE Error: {}\n", *err);
-                    exit(1);
+                    ::exit(1);
                 }
             }
             return mrb_nil_value();
@@ -337,9 +339,9 @@ int Toy::run()
 {
     init();
 
-    auto con = Display::default_display->console->console;
 
     if (settings.console_benchmark) {
+        auto con = Display::default_display->console->console;
         for (int i = 0; i < 500; i++) {
             con->fill(0xff00ff00, 0x00ff00ff);
             con->flush();
@@ -371,7 +373,7 @@ int Toy::run()
         this, 0, true);
 #else
     bool quit = false;
-    while (!quit) {
+    while (!quit && !do_exit) {
         quit = render_loop();
     }
     destroy();

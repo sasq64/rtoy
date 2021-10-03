@@ -1,6 +1,6 @@
 #include "gl/gl.hpp"
 #ifdef USE_ASOUND
-#include "player_linux.h"
+#    include "player_linux.h"
 #endif
 #include "system.hpp"
 #include <coreutils/utf8.h>
@@ -48,6 +48,7 @@ public:
 #else
             settings.display_width, settings.display_height,
 #endif
+                (settings.screen == ScreenType::None ? SDL_WINDOW_HIDDEN : 0) |
                 SDL_WINDOW_OPENGL |
                 (settings.screen == ScreenType::Full
                         ? SDL_WINDOW_FULLSCREEN_DESKTOP

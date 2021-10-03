@@ -46,7 +46,10 @@ protected:
     RStyle& current_style;
 
 public:
+    // Reset all state of the layer to default.
     virtual void reset();
+    // Clear the layer
+    virtual void clear() {};
 
     static inline RClass* rclass = nullptr;
     static void reg_class(mrb_state* ruby);

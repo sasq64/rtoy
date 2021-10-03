@@ -51,6 +51,9 @@ class Toy
         std::filesystem::file_time_type>
         already_loaded;
 
+    static inline bool do_exit = false;
+    static void exit() { do_exit = true; }
+
 public:
     explicit Toy(Settings const& settings);
 

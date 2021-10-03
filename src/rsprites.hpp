@@ -92,7 +92,7 @@ public:
     RSprites(mrb_state* _ruby, int w, int h);
     void render() override;
     void reset() override;
-    void clear();
+    void clear() override;
     static void reg_class(mrb_state* ruby);
 };
 

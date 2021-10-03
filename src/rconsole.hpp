@@ -42,7 +42,7 @@ public:
     RConsole(int width, int height, Style const& style);
 
     void reset() override;
-    void clear();
+    void clear() override;
     void render() override;
     void update_tx() override;
 

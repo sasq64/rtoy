@@ -27,10 +27,13 @@ class Display : public RLayer
     Settings const& settings;
 
     std::array<float, 4> bg = {0.0F, 0.0F, 0.8F, 1.0F};
-    std::array<float, 16> Id = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
+    std::array<float, 16> Id = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+        0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
 
     std::shared_ptr<RCanvas> canvas;
     std::shared_ptr<RSprites> sprites;
+
+    std::vector<std::shared_ptr<RLayer>> layers;
 
 public:
     RSprite* mouse_cursor = nullptr;
@@ -38,7 +41,8 @@ public:
     static inline RClass* rclass;
     static mrb_data_type dt;
     static inline Display* default_display = nullptr;
-    explicit Display(mrb_state* state, System& system, Settings const& _settings);
+    explicit Display(
+        mrb_state* state, System& system, Settings const& _settings);
 
     void setup();
     void reset() override;
@@ -46,6 +50,7 @@ public:
     void end_draw();
     void swap();
 
-    static void reg_class(mrb_state* ruby, System& system, Settings const& settings);
+    static void reg_class(
+        mrb_state* ruby, System& system, Settings const& settings);
 };
 
