@@ -46,7 +46,6 @@ mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {
                               if (sprite->held) {
                                   sprite->held = false;
                               } else {
-                                  delete sprite->collider;
                                   delete sprite;
                               }
                           }};
@@ -82,7 +81,6 @@ void RSprites::purge()
             if (sprite->held) {
                 sprite->held = false;
             } else {
-                delete sprite->collider;
                 delete sprite;
             }
         }
@@ -165,7 +163,6 @@ void RSprites::render()
                 if (sprite->held) {
                     sprite->held = false;
                 } else {
-                    delete sprite->collider;
                     delete sprite;
                 }
                 continue;

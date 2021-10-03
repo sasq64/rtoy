@@ -47,15 +47,12 @@ public:
     std::array<float, 2> trans = {0.0F, 0.0F};
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0;
-
-    mrb_value value;
-
-    // int width = 0;
-    // int height = 0;
-    // float r = 0;
+    mrb_value value{};
 
     static inline RClass* rclass;
     static mrb_data_type dt;
+
+    ~RSprite() { delete collider; }
 
     void update_tx(double screen_width, double screen_height);
     void update_collision() const;

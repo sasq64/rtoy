@@ -2,15 +2,15 @@
 
 #include <mruby.h>
 #include <mruby/data.h>
-#include <mrb_tools.hpp>
+
+#include "mrb_tools.hpp"
 
 #include <chrono>
-#include <memory>
 
 class RTimer
 {
     mrb_state* ruby;
-    //std::shared_ptr<void> timer_handler{};
+    // std::shared_ptr<void> timer_handler{};
     mrb::RubyPtr timer_handler;
 
     std::chrono::steady_clock::time_point start_t;

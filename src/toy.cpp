@@ -1,11 +1,6 @@
 
 #include "toy.hpp"
 
-#include <mruby.h>
-#include <mruby/compile.h>
-#include <mruby/value.h>
-
-#include <pix/pixel_console.hpp>
 
 #include "error.hpp"
 #include "mrb_tools.hpp"
@@ -20,12 +15,23 @@
 #include "rsprites.hpp"
 #include "rtimer.hpp"
 
-#include <chrono>
+#include <pix/pixel_console.hpp>
+
 #include <coreutils/split.h>
-#include <filesystem>
+
+#include <mruby.h>
+#include <mruby/compile.h>
+#include <mruby/value.h>
+
+#ifdef __EMSCRIPTEN__
+#    include <emscripten.h>
+#endif
+
+
+#include <chrono>
 #include <fstream>
+#include <filesystem>
 #include <string>
-#include <thread>
 
 namespace fs = std::filesystem;
 using clk = std::chrono::steady_clock;
@@ -55,9 +61,7 @@ fs::path find_data_root()
     while (true) {
         if (fs::exists(d / "data") && fs::exists(d / "sys")) { return d; }
         d = d.parent_path();
-        if (d.empty()) {
-            break;
-        }
+        if (d.empty()) { break; }
     }
     return {};
 }
@@ -73,7 +77,8 @@ void Toy::init()
 #endif
 
     data_root = find_data_root();
-    if(data_root.empty()) {
+    if (data_root.empty()) {
+        fprintf(stderr, "**Error: Can not find data files!\n");
         exit(1);
     }
     fs::current_path(data_root);
@@ -122,9 +127,9 @@ void Toy::init()
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "exit",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value { exit(0); },
+        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value { exit(0); },
         MRB_ARGS_NONE());
-    
+
     mrb_define_module_function(
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
@@ -208,9 +213,7 @@ void Toy::init()
             std::vector<std::string> files;
             if (fs::is_directory(parent)) {
                 for (auto&& p : fs::directory_iterator(parent)) {
-                    auto real_path = p.path().filename();//
-                    //dir == "." ? p.path().filename()
-                      //                          : dir / p.path().filename();
+                    auto real_path = p.path().filename(); //
                     fmt::print("{}\n", real_path.string());
                     files.emplace_back(real_path.string());
                 }
@@ -328,10 +331,6 @@ bool Toy::render_loop()
     return false;
 }
 
-#ifdef __EMSCRIPTEN__
-#    include <emscripten.h>
-#endif
-
 Toy::Toy(Settings const& _settings) : settings{_settings} {}
 
 int Toy::run()
@@ -360,7 +359,7 @@ int Toy::run()
         for (auto&& line : mrb::get_backtrace(ruby)) {
             fmt::print("  {}", line);
         }
-        exit(1);
+        return -1;
     }
     puts("Loaded");
 #ifdef __EMSCRIPTEN__

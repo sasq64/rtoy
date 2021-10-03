@@ -111,18 +111,18 @@ void draw_quad_uvs(
     draw_with_uvs();
 }
 
-void draw_quad_impl(float x, float y, float sx, float sy)
+void draw_quad_impl(double x, double y, double sx, double sy)
 {
     auto [w, h] = gl::getViewport<float>();
 
-    auto x0 = x * 2.0F / w - 1.0F;
-    auto y0 = y * -2.0F / h + 1.0F;
+    float x0 = static_cast<float>(x) * 2.0F / w - 1.0F;
+    float y0 = static_cast<float>(y) * -2.0F / h + 1.0F;
 
     x += sx;
     y += sy;
 
-    auto x1 = x * 2.0F / w - 1.0F;
-    auto y1 = y * -2.0F / h + 1.0F;
+    float x1 = static_cast<float>(x) * 2.0F / w - 1.0F;
+    float y1 = static_cast<float>(y) * -2.0F / h + 1.0F;
 
     std::array vertexData{
         x0, y0, x1, y0, x1, y1, x0, y1, 0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
@@ -132,7 +132,7 @@ void draw_quad_impl(float x, float y, float sx, float sy)
     draw_with_uvs();
 }
 
-void draw_quad_filled(float x, float y, float sx, float sy)
+void draw_quad_filled(double x, double y, double sx, double sy)
 {
     auto [w, h] = gl::getViewport<float>();
 
@@ -177,7 +177,7 @@ Image load_png(std::string_view name)
     return image;
 }
 
-void draw_line_impl(float x0, float y0, float x1, float y1)
+void draw_line_impl(double x0, double y0, double x1, double y1)
 {
     auto [w, h] = gl::getViewport<float>();
 
@@ -206,19 +206,21 @@ void draw_line_impl(float x0, float y0, float x1, float y1)
     pos.disable();
 }
 
-void draw_circle_impl(float x, float y, float radius)
+void draw_circle_impl(double x, double y, double radius)
 {
     auto [w, h] = gl::getViewport<float>();
-    int steps = static_cast<int>(M_PI / asinf(sqrtf(1 / radius)));
+    int steps = static_cast<int>(M_PI / asin(sqrt(1.0 / radius)));
 
     steps = 64;
 
     std::vector<float> vertexData;
-    vertexData.push_back(x * 2.0F / w - 1.0F);
-    vertexData.push_back(y * -2.0F / h + 1.0F);
+    vertexData.push_back(static_cast<float>(x) * 2.0F / w - 1.0F);
+    vertexData.push_back(static_cast<float>(y) * -2.0F / h + 1.0F);
     for (int i = 0; i <= steps; i++) {
-        auto px = cosf(M_PI * 2.0 * i / steps) * radius + x;
-        auto py = sinf(M_PI * 2.0 * i / steps) * radius + y;
+        auto px =
+            static_cast<float>((cos(M_PI * 2.0 * i / steps)) * radius + x);
+        auto py =
+            static_cast<float>((sin(M_PI * 2.0 * i / steps)) * radius + y);
         px = px * 2.0F / w - 1.0F;
         py = py * -2.0F / h + 1.0F;
         vertexData.push_back(px);
@@ -244,7 +246,7 @@ void draw_circle_impl(float x, float y, float radius)
 
 void save_png(Image const& image, std::string_view name)
 {
-    auto* ptr = reinterpret_cast<unsigned char *>(image.ptr);
+    auto* ptr = reinterpret_cast<unsigned char*>(image.ptr);
     /* for (int i = 0; i < image.width * image.height * 4; i++) { */
     /*     if ((i & 3) == 3) { ptr[i] = 0xff; } */
     /* } */

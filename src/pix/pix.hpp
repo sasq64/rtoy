@@ -14,9 +14,9 @@ struct Color;
 
 namespace pix {
 
-using Float2 = std::pair<float, float>;
+using Float2 = std::pair<double, double>;
 
-void draw_quad_impl(float x, float y, float sx, float sy);
+void draw_quad_impl(double x, double y, double sx, double sy);
 void draw_quad();
 void draw_quad_invy();
 
@@ -38,8 +38,8 @@ inline void draw_quad(Point pos, Size size)
     draw_quad_impl(x, y, w, h);
 }
 
-void draw_line_impl(float x0, float y0, float x1, float y1);
-void draw_quad_filled(float x, float y, float sx, float sy);
+void draw_line_impl(double x0, double y0, double x1, double y1);
+void draw_quad_filled(double x, double y, double sx, double sy);
 
 inline void draw_line(Float2 p0, Float2 p1)
 {
@@ -61,16 +61,16 @@ void draw_quad_uvs(
 
 void draw_quad_uvs(std::array<float, 8> const& uvs);
 
-void draw_circle_impl(float x, float y, float r);
+void draw_circle_impl(double x, double y, double r);
 
-inline void draw_circle(Float2 p, float r)
+inline void draw_circle(Float2 p, double r)
 {
     auto [x, y] = p;
     draw_circle_impl(x, y, r);
 }
 
 template <typename Point>
-inline void draw_circle(Point p, float r)
+inline void draw_circle(Point p, double r)
 {
     auto [x, y] = p;
     draw_circle_impl(x, y, r);
@@ -96,7 +96,8 @@ struct Image
     void fill(uint32_t pixel) const
     {
         auto* pixel_ptr = reinterpret_cast<uint32_t*>(ptr);
-        std::fill(pixel_ptr, pixel_ptr + width * height, pixel);
+        std::fill(
+            pixel_ptr, pixel_ptr + static_cast<size_t>(width) * height, pixel);
     }
     int width = 0;
     int height = 0;

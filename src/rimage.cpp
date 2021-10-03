@@ -58,8 +58,10 @@ void RImage::reg_class(mrb_state* ruby)
             const char* name{};
             mrb_get_args(mrb, "z", &name);
             auto* thiz = mrb::self_to<RImage>(self);
+            // TODO: What does this mean for subpixel references?
             auto bytes = thiz->texture.read_pixels();
-            pix::Image img{thiz->width(), thiz->height(), bytes.data()};
+            pix::Image img{static_cast<int>(thiz->width()),
+                static_cast<int>(thiz->height()), bytes.data()};
             pix::save_png(img, name);
             return mrb_nil_value();
         },
@@ -88,18 +90,16 @@ void RImage::reg_class(mrb_state* ruby)
             float v0 = thiz->texture.uvs[1];
             float u1 = thiz->texture.uvs[4];
             float v1 = thiz->texture.uvs[5];
-            auto du = (u1 - u0) / static_cast<float>(w);
-            auto dv = (v1 - v0) / static_cast<float>(h);
+            float du = (u1 - u0) / static_cast<float>(w);
+            float dv = (v1 - v0) / static_cast<float>(h);
 
             std::vector<mrb_value> images;
 
             float u = u0;
             float v = v0;
-            // fmt::print("{} -> {}\n", u0, u1);
             int x = 0;
             int y = 0;
             while (true) {
-                // fmt::print("{} + {} =  {}\n", u, du, u + du);
                 if (x == w) {
                     u = u0;
                     v += dv;
@@ -121,15 +121,13 @@ void RImage::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(2));
 }
 
-void RImage::upload(pix::Image const& image)
+RImage::RImage(pix::Image const& image)
 {
     if (texture.tex == nullptr) {
         texture.tex = std::make_shared<gl::Texture>(
             image.width, image.height, image.ptr, GL_RGBA, image.format);
     }
 }
-
-void RImage::crop() {}
 
 void RImage::draw(double x, double y, double scale)
 {

@@ -16,19 +16,15 @@ public:
     static mrb_data_type dt;
     gl::TexRef texture;
 
-    int width() const { return texture.width(); }
-    int height() const { return texture.height(); }
-    int x() const { return texture.x(); }
-    int y() const { return texture.y(); }
+    double width() const { return texture.width(); }
+    double height() const { return texture.height(); }
+    double x() const { return texture.x(); }
+    double y() const { return texture.y(); }
 
-    explicit RImage(pix::Image const& img) { upload(img); }
+    explicit RImage(pix::Image const& img);
     explicit RImage(gl::TexRef const& tex) : texture(tex) {}
 
-    void upload(pix::Image const& img);
-
     void draw(double x, double y, double scale = 1.0);
-
-    void crop();
 
     static void reg_class(mrb_state* ruby);
 };

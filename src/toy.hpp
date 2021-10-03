@@ -1,17 +1,17 @@
 #pragma once
 
-#include "settings.hpp"
 #include "system.hpp"
 
 #include <mruby.h>
-#include <mruby/data.h>
-#include <mruby/value.h>
 
-#include <ctime>
+#include <exception>
 #include <filesystem>
+#include <istream>
 #include <memory>
 #include <string>
 #include <unordered_map>
+
+struct Settings;
 
 struct toy_exception : public std::exception
 {

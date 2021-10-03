@@ -1,4 +1,5 @@
 #pragma once
+
 #include <filesystem>
 
 enum class ScreenType

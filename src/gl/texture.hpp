@@ -220,8 +220,9 @@ struct TexRef
     TexRef(int w, int h) : tex{std::make_shared<Texture>(w, h)} {}
 
     explicit TexRef(std::shared_ptr<Texture> const& t) : tex(t) {}
-    TexRef(std::shared_ptr<Texture> const& t, std::array<float, 8> const& u) :
-        tex(t), uvs(u) {}
+    TexRef(std::shared_ptr<Texture> const& t, std::array<float, 8> const& u)
+        : tex(t), uvs(u)
+    {}
 
     std::vector<TexRef> split(int w, int h)
     {
@@ -272,12 +273,12 @@ struct TexRef
     {
         return std::abs(static_cast<double>(tex->height) * (uvs[5] - uvs[1]));
     }
-    double x() const { return tex->width * uvs[0]; }
+    double x() const { return static_cast<double>(tex->width) * uvs[0]; }
     double y() const
     {
         auto uy = uvs[1];
         if ((uvs[5] - uy) < 0) { uy = 1.0F - uy; }
-        return tex->height * uy;
+        return static_cast<double>(tex->height) * uy;
     }
 };
 
