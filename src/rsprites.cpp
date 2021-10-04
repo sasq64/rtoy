@@ -133,7 +133,7 @@ void RSprites::collide()
     }
 }
 
-void RSprites::render()
+void RSprites::render(RLayer const* parent)
 {
     // if (batches.empty()) { return; }
     glEnable(GL_BLEND);

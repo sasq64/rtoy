@@ -33,10 +33,14 @@ class RLayer
 protected:
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+public:
     std::array<float, 2> trans = {0.0F, 0.0F};
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0.0;
 
+    std::array<int, 4> scissor { 0, 0, 0, 0};
+
+protected:
     int width = -1;
     int height = -1;
 
@@ -64,8 +68,8 @@ public:
 
     virtual ~RLayer() = default;
 
-    virtual void render() {}
-    virtual void update_tx();
+    virtual void render(RLayer const* parent) {}
+    virtual void update_tx(RLayer const* parent);
 
     virtual void enable(bool en = true) { enabled = en; }
 };

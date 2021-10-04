@@ -17,11 +17,6 @@ RConsole::RConsole(int w, int h, Style const& style)
     default_fg = this->current_style.fg = gl::Color(style.fg).to_array();
     default_bg = this->current_style.bg = gl::Color(style.bg).to_array();
     reset();
-    /* trans = {0.0F, 0.0F}; */
-    /* scale = {2.0F, 2.0F}; */
-
-    /* rot = 0.0F; */
-    /* update_tx(); */
 }
 
 void RConsole::clear()
@@ -29,7 +24,6 @@ void RConsole::clear()
     auto fg = gl::Color(current_style.fg).to_rgba();
     auto bg = gl::Color(current_style.bg).to_rgba();
     console->fill(fg, bg);
-    // console->flush();
     xpos = ypos = 0;
 }
 
@@ -82,9 +76,13 @@ void RConsole::scroll(int dy, int dx)
     console->flush();
 }
 
-void RConsole::render()
+void RConsole::render(RLayer const* parent)
 {
     if (!enabled) { return; }
+    console->set_scale(
+        {scale[0] * parent->scale[0], scale[1] * parent->scale[1]});
+    console->set_offset(
+        {trans[0] + parent->trans[0], trans[1] + parent->trans[1]});
     console->flush();
     console->render();
 }
@@ -315,13 +313,6 @@ void RConsole::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(2));
 }
 
-void RConsole::update_tx()
-{
-    RLayer::update_tx();
-    console->set_scale({scale[0], scale[1]});
-    console->set_offset({trans[0], trans[1]});
-}
-
 void RConsole::reset()
 {
     RLayer::reset();
@@ -338,7 +329,6 @@ void RConsole::reset()
     }
 
     scale = {s, s};
-    update_tx();
 
     current_style.fg = default_fg;
     current_style.bg = default_bg;

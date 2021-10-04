@@ -82,8 +82,10 @@ void Display::end_draw()
     glClear(GL_COLOR_BUFFER_BIT);
 
     gl::setViewport({width, height});
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(scissor[0], scissor[1], width - scissor[2] * 2, height - scissor[3] * 2);
     for(auto&& layer : layers) {
-        layer->render();
+        layer->render(this);
     }
 }
 

@@ -94,9 +94,10 @@ void RCanvas::draw_image(
     image->draw(x, y, scale);
 }
 
-void RCanvas::render()
+void RCanvas::render(RLayer const* parent)
 {
     if (!enabled) { return; }
+    update_tx(parent);
     canvas->bind();
     glEnable(GL_BLEND);
     pix::set_transform(transform);

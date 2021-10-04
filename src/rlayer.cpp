@@ -1,6 +1,7 @@
 
 #include "rlayer.hpp"
 
+#include "gl/gl.hpp"
 #include <mruby.h>
 #include <mruby/array.h>
 #include <mruby/class.h>
@@ -13,7 +14,7 @@
 mrb_data_type RStyle::dt{
     "RStyle", [](mrb_state*, void* data) { delete static_cast<RStyle*>(data); }};
 
-void RLayer::update_tx()
+void RLayer::update_tx(RLayer const* parent)
 {
     glm::mat4x4 m(1.0F);
     // Matrix operations are read bottom to top
@@ -26,14 +27,17 @@ void RLayer::update_tx()
 
     // 4. Scale back to clip space (-1 -> 1)
     m = glm::scale(m, glm::vec3(2.0 / width, 2.0 / height, 1.0));
-
+    float t0 = parent != nullptr ? parent->trans[0] : 1.0F;
+    float t1 = parent != nullptr ? parent->trans[1] : 1.0F;
     // 3. Translate
-    m = glm::translate(m, glm::vec3(trans[0], -trans[1], 0));
+    m = glm::translate(m, glm::vec3(trans[0] + t0, -(trans[1] + t1), 0));
 
     // 2. Scale to screen space and apply scale (origin is now to top left
     // corner).
-    m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] / 2,
-                          static_cast<float>(height) * scale[1] / 2, 1.0));
+    float s0 = parent != nullptr ? parent->scale[0] : 1.0F;
+    float s1 = parent != nullptr ? parent->scale[1] : 1.0F;
+    m = glm::scale(m, glm::vec3(static_cast<float>(width) * scale[0] * s0 / 2,
+                          static_cast<float>(height) * scale[1] * s1 / 2, 1.0));
 
     // 1. Change center so 0,0 becomes the corner
     m = glm::translate(m, glm::vec3(1.0, -1.0, 0));
@@ -47,6 +51,8 @@ void RLayer::update_tx()
     // -1
     //
     std::copy(glm::value_ptr(m), glm::value_ptr(m) + 16, transform.begin());
+
+    glScissor(scissor[0], scissor[1], width - scissor[2] * 2, height - scissor[3] * 2);
 }
 
 void RLayer::reg_class(mrb_state* ruby)
@@ -203,13 +209,22 @@ void RLayer::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
+        ruby, RLayer::rclass, "border=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          auto [av] = mrb::get_args<mrb_value>(mrb);
+          auto* rlayer = mrb::self_to<RLayer>(self);
+          rlayer->scissor = mrb::to_array<int, 4>(av, mrb);
+          return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
         ruby, RLayer::rclass, "scale=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             fmt::print("SET_SCALE\n");
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
             rlayer->scale = mrb::to_array<float, 2>(av, mrb);
-            rlayer->update_tx();
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -228,7 +243,6 @@ void RLayer::reg_class(mrb_state* ruby)
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
             rlayer->trans = mrb::to_array<float, 2>(av, mrb);
-            rlayer->update_tx();
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
@@ -239,7 +253,6 @@ void RLayer::reg_class(mrb_state* ruby)
             auto [x] = mrb::get_args<float>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
             rlayer->rot = static_cast<float>(x);
-            rlayer->update_tx();
             return mrb::to_value(rlayer->rot, mrb);
         },
         MRB_ARGS_REQ(1));
@@ -259,5 +272,4 @@ void RLayer::reset()
     trans = {0.0F, 0.0F};
     scale = {1.0F, 1.0F};
     rot = 0;
-    update_tx();
 }

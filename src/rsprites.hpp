@@ -90,7 +90,7 @@ public:
     static mrb_data_type dt;
 
     RSprites(mrb_state* _ruby, int w, int h);
-    void render() override;
+    void render(RLayer const* parent) override;
     void reset() override;
     void clear() override;
     static void reg_class(mrb_state* ruby);

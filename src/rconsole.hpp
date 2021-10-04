@@ -43,8 +43,7 @@ public:
 
     void reset() override;
     void clear() override;
-    void render() override;
-    void update_tx() override;
+    void render(RLayer const* parent) override;
 
     static inline RClass* rclass = nullptr;
     static inline mrb_data_type dt{"Console",

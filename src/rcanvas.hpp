@@ -39,7 +39,7 @@ public:
 
     void clear() override;
     RCanvas(int w, int h);
-    void render() override;
+    void render(RLayer const* parent) override;
     void reset() override;
 
     static void reg_class(mrb_state* ruby);
