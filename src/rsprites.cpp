@@ -49,6 +49,7 @@ mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {
                                   delete sprite;
                               }
                           }};
+
 mrb_data_type RSprites::dt{"Sprites", [](mrb_state*, void* data) {}};
 
 void RSprite::update_tx(double screen_width, double screen_height)
@@ -136,6 +137,9 @@ void RSprites::collide()
 void RSprites::render(RLayer const* parent)
 {
     // if (batches.empty()) { return; }
+    update_tx(parent);
+    //textured.setUniform("in_transform", mat);
+
     glEnable(GL_BLEND);
     glLineWidth(current_style.line_width);
     pix::set_colors(current_style.fg, current_style.bg);
@@ -254,7 +258,7 @@ void RSprites::remove_sprite(RSprite* spr)
 
 void RSprites::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Sprites", RLayer::rclass);
+    RSprites::rclass = mrb_define_class(ruby, "Sprites", RLayer::rclass);
     MRB_SET_INSTANCE_TT(RSprites::rclass, MRB_TT_DATA);
 
     RSprite::rclass = mrb_define_class(ruby, "Sprite", ruby->object_class);

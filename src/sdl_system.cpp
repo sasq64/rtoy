@@ -10,6 +10,9 @@
 #include <SDL2/SDL_video.h>
 #include <fmt/format.h>
 
+#include <unordered_map>
+#include <memory>
+
 class SDLWindow : public Screen
 {
     SDL_Window* window = nullptr;

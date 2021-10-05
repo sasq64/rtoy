@@ -38,6 +38,9 @@ class Display : public RLayer
 public:
     RSprite* mouse_cursor = nullptr;
     std::shared_ptr<RConsole> console;
+    mrb_value consoles;
+    mrb_value sprite_layers;
+    mrb_value canvases;
     static inline RClass* rclass;
     static mrb_data_type dt;
     static inline Display* default_display = nullptr;

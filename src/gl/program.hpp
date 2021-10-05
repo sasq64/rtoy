@@ -78,6 +78,12 @@ struct Program
         glUniform2f(location, vec2.first, vec2.second);
     }
 
+    static void glUniform(GLint location, std::pair<double, double> const& vec2)
+    {
+        glUniform2f(location, static_cast<float>(vec2.first),
+            static_cast<float>(vec2.second));
+    }
+
     static void glUniform(GLint location, std::array<float, 9> const& mat)
     {
         glUniformMatrix3fv(location, 1, GL_FALSE, mat.data());
@@ -113,6 +119,10 @@ struct Program
     }
 
     static void glUniform(GLint location, float v) { glUniform1f(location, v); }
+    static void glUniform(GLint location, double v)
+    {
+        glUniform1f(location, static_cast<float>(v));
+    }
 
     static void glUniform(GLint location, int32_t v)
     {

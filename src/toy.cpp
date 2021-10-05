@@ -87,13 +87,16 @@ void Toy::init()
     RConsole::reg_class(ruby);
     RCanvas::reg_class(ruby);
     RFont::reg_class(ruby);
-    RImage::reg_class(ruby);
-    Display::reg_class(ruby, *system, settings);
-    RInput::reg_class(ruby, *system);
     RSprites::reg_class(ruby);
+
+    RImage::reg_class(ruby);
+    RInput::reg_class(ruby, *system);
     RTimer::reg_class(ruby);
+
     RAudio::reg_class(ruby, *system, settings);
     RSpeech::reg_class(ruby);
+
+    Display::reg_class(ruby, *system, settings);
 
     fmt::print("SYSTEM: {}\n", settings.system);
     auto* rclass = mrb_define_class(ruby, "Settings", nullptr);

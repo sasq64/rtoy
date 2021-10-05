@@ -39,21 +39,20 @@ std::string PixConsole::fragment_shader{R"gl(
               gl_FragColor = fg_color * col * col.a + bg_color * (1.0 - col.a);
         })gl"};
 
-
-static constexpr int align(int val, int a) {
-    return (val + (a-1)) & (~(a-1));
+static constexpr int align(int val, int a)
+{
+    return (val + (a - 1)) & (~(a - 1));
 }
 
-void PixConsole::add_char(char32_t c)
+void ConsoleFont::add_char(char32_t c)
 {
     auto cw = char_width + gap;
-    auto [fw,fh] = font.get_size();
+    auto [fw, fh] = font.get_size();
 
-    std::vector<uint32_t> temp(fw * fh*2);
+    std::vector<uint32_t> temp(fw * fh * 2);
     font.render_char(c, temp.data(), 0xffffff00, fw);
 
-    font_texture.update(
-        next_pos.first, next_pos.second, fw, fh, temp.data());
+    font_texture.update(next_pos.first, next_pos.second, fw, fh, temp.data());
 
     auto fx = texture_width / 256;
     auto fy = texture_height / 256;
@@ -61,14 +60,14 @@ void PixConsole::add_char(char32_t c)
     int y = next_pos.second / fy;
     char_uvs[c] = (x) | (y << 8);
 
-    next_pos.first += align(char_width + gap, 4); 
+    next_pos.first += align(char_width + gap, 4);
     if (next_pos.first >= (texture_width - cw)) {
         next_pos.first = 0;
         next_pos.second += align(char_height + gap, 4);
     }
 }
 
-std::pair<int, int> PixConsole::alloc_char(char32_t c)
+std::pair<int, int> ConsoleFont::alloc_char(char32_t c)
 {
     auto cw = char_width + gap;
     auto fx = texture_width / 256;
@@ -87,11 +86,9 @@ std::pair<int, int> PixConsole::alloc_char(char32_t c)
     return res;
 }
 
-PixConsole::PixConsole(
-    int w, int h, std::string const& font_file, int size)
-    : font{font_file.c_str(), size}, width(w), height(h)
+ConsoleFont::ConsoleFont(std::string const& font_file, int size)
+    : font{font_file.c_str(), size}
 {
-    // font.set_pixel_size(32);
     std::vector<uint32_t> data;
     data.resize(texture_width * texture_height);
     std::tie(char_width, char_height) = font.get_size();
@@ -103,18 +100,43 @@ PixConsole::PixConsole(
         add_char(c);
     }
     std::fill(data.begin(), data.end(), 0xff);
+    font_texture.bind(0);
+}
 
-    uvdata.resize(w * h);
+std::pair<float, float> ConsoleFont::get_uvscale()
+{
+    return std::pair{
+        static_cast<float>(char_width) / static_cast<float>(texture_width),
+        static_cast<float>(char_height) / static_cast<float>(texture_height)};
+}
+
+PixConsole::PixConsole(int w, int h, std::string const& font_file, int size)
+    : font{std::make_shared<ConsoleFont>(font_file.c_str(), size)},
+      width(w),
+      height(h)
+{
+    init();
+}
+
+PixConsole::PixConsole(int w, int h, std::shared_ptr<ConsoleFont> _font)
+    : font{_font}, width(w), height(h)
+{
+    init();
+}
+
+void PixConsole::init()
+{
+
+    uvdata.resize(width * height);
     std::fill(uvdata.begin(), uvdata.end(), 0);
-    uv_texture = gl_wrap::Texture{w, h, uvdata};
+    uv_texture = gl_wrap::Texture{width, height, uvdata};
 
-    coldata.resize(w * h);
+    coldata.resize(width * height);
     std::fill(coldata.begin(), coldata.end(), 0);
-    col_texture = gl_wrap::Texture{w, h, coldata};
+    col_texture = gl_wrap::Texture{width, height, coldata};
 
     col_texture.bind(2);
     uv_texture.bind(1);
-    font_texture.bind(0);
 
     program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
         gl_wrap::FragmentShader{fragment_shader});
@@ -123,12 +145,8 @@ PixConsole::PixConsole(
     program.setUniform("uv_tex", 1);
     program.setUniform("col_tex", 2);
 
-    program.setUniform("console_size", std::pair<float, float>(w, h));
-    program.setUniform("uv_scale",
-        std::pair<float, float>(
-            static_cast<float>(char_width) / static_cast<float>(texture_width),
-            static_cast<float>(char_height) /
-                static_cast<float>(texture_height)));
+    program.setUniform("console_size", std::pair<float, float>(width, height));
+    program.setUniform("uv_scale", font->get_uvscale());
     uv_texture.update(uvdata.data());
 
     for (auto& c : coldata) {
@@ -139,10 +157,10 @@ PixConsole::PixConsole(
 
 std::pair<int, int> PixConsole::get_char_size()
 {
-    return {char_width, char_height};
+    return {font->char_width, font->char_height};
 }
 
-void PixConsole::set_tile_size(int w, int h)
+void ConsoleFont::set_tile_size(int w, int h)
 {
     char_uvs.clear();
     next_pos = {0, 0};
@@ -157,12 +175,13 @@ void PixConsole::set_tile_size(int w, int h)
     }
     char_width = w;
     char_height = h;
-    program.use();
-    program.setUniform("uv_scale",
-        std::pair<float, float>(
-            static_cast<float>(char_width) / static_cast<float>(texture_width),
-            static_cast<float>(char_height) /
-                static_cast<float>(texture_height)));
+    /* program.use(); */
+    /* program.setUniform("uv_scale", */
+    /*     std::pair<float, float>( */
+    /*         static_cast<float>(char_width) /
+     * static_cast<float>(texture_width), */
+    /*         static_cast<float>(char_height) / */
+    /*             static_cast<float>(texture_height))); */
     for (char32_t c = 0x20; c <= 0x7f; c++) {
         add_char(c);
     }
@@ -170,11 +189,11 @@ void PixConsole::set_tile_size(int w, int h)
 
 void PixConsole::reset()
 {
-    auto [cw, ch] = font.get_size();
-    set_tile_size(cw, ch);
+    auto [cw, ch] = font->font.get_size();
+    font->set_tile_size(cw, ch);
 }
 
-void PixConsole::set_tile_image(char32_t c, gl_wrap::TexRef tex)
+void ConsoleFont::set_tile_image(char32_t c, gl_wrap::TexRef tex)
 {
     auto fx = texture_width / 256;
     auto fy = texture_height / 256;
@@ -207,6 +226,16 @@ std::pair<int, int> PixConsole::text(int x, int y, std::string const& t)
     return text(x, y, t, 0xffffffff, 0x00000000);
 }
 
+uint32_t ConsoleFont::get_offset(char32_t c)
+{
+    auto it = char_uvs.find(c);
+    if (it == char_uvs.end()) {
+        add_char(c);
+        it = char_uvs.find(c);
+    }
+    return it->second;
+}
+
 std::pair<int, int> PixConsole::text(
     int x, int y, std::string const& t, uint32_t fg, uint32_t bg)
 {
@@ -220,13 +249,7 @@ std::pair<int, int> PixConsole::text(
             continue;
         }
 
-        auto it = char_uvs.find(c);
-        if (it == char_uvs.end()) {
-            add_char(c);
-            it = char_uvs.find(c);
-        }
-
-        uvdata[x + width * y] = it->second | w0;
+        uvdata[x + width * y] = font->get_offset(c) | w0;
         coldata[x + width * y] = w1;
         x++;
         if (x >= width) {
@@ -245,21 +268,17 @@ void PixConsole::flush()
 
 void PixConsole::put_char(int x, int y, char32_t c)
 {
-    auto it = char_uvs.find(c);
-    if (it == char_uvs.end()) {
-        add_char(c);
-        it = char_uvs.find(c);
-    }
-    uvdata[x + width * y] = (uvdata[x + width * y] & 0xffff0000) | it->second;
+    uvdata[x + width * y] =
+        (uvdata[x + width * y] & 0xffff0000) | font->get_offset(c);
 }
 
 uint32_t PixConsole::get_char(int x, int y)
 {
     uint32_t uv = uvdata[x + width * y] & 0xffff;
     // TODO: Reverse lookup table ?
-    auto it = std::find_if(char_uvs.begin(), char_uvs.end(),
+    auto it = std::find_if(font->char_uvs.begin(), font->char_uvs.end(),
         [&](auto&& kv) { return kv.second == uv; });
-    if (it == char_uvs.end()) {
+    if (it == font->char_uvs.end()) {
         fmt::print("{:x} not found\n", uv);
         return 0;
     }
@@ -276,7 +295,7 @@ void PixConsole::put_color(int x, int y, uint32_t fg, uint32_t bg)
 void PixConsole::fill(uint32_t fg, uint32_t bg)
 {
     auto [w0, w1] = make_col(fg, bg);
-    w0 |= char_uvs[' '];
+    w0 |= font->char_uvs[' '];
     for (size_t i = 0; i < uvdata.size(); i++) {
         uvdata[i] = w0;
         coldata[i] = w1;
@@ -286,7 +305,7 @@ void PixConsole::fill(uint32_t fg, uint32_t bg)
 void PixConsole::fill(uint32_t bg)
 {
     auto [w0, w1] = make_col(0, bg);
-    w0 |= char_uvs[' '];
+    w0 |= font->char_uvs[' '];
     for (auto& c : coldata) {
         c = (c & 0xff000000) | w1;
     }
@@ -298,7 +317,7 @@ void PixConsole::clear_area(
     if (w == -1) { w = width; }
     if (h == -1) { h = height; }
     auto [w0, w1] = make_col(fg, bg);
-    w0 |= char_uvs[' '];
+    w0 |= font->char_uvs[' '];
     for (int32_t yy = 0; yy < h; yy++) {
         for (int32_t xx = 0; xx < w; xx++) {
             auto offs = (xx + x) + (yy + y) * w;
@@ -327,25 +346,15 @@ void PixConsole::scroll(int dy, int dx)
     }
 }
 
-void PixConsole::set_scale(std::pair<float, float> s)
-{
-    scale = s;
-}
-
-void PixConsole::set_offset(std::pair<float, float> o)
-{
-    offset = o;
-}
-
-void PixConsole::render()
+void PixConsole::render(float ox, float oy, float sx, float sy)
 {
     glDisable(GL_BLEND);
     col_texture.bind(2);
     uv_texture.bind(1);
-    font_texture.bind(0);
+    font->font_texture.bind(0);
     program.use();
-    float w = scale.first * static_cast<float>(width * char_width);
-    float h = scale.second * static_cast<float>(height * char_height);
-    pix::draw_quad_impl(offset.first, offset.second, w, h);
+    float w = sx * static_cast<float>(width * font->char_width);
+    float h = sy * static_cast<float>(height * font->char_height);
+    pix::draw_quad_impl(ox, oy, w, h);
     glEnable(GL_BLEND);
 }

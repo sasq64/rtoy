@@ -19,6 +19,15 @@ RConsole::RConsole(int w, int h, Style const& style)
     reset();
 }
 
+RConsole::RConsole(
+    int w, int h, Style const& style, std::shared_ptr<PixConsole> con)
+    : RLayer{w, h}, console{con}
+{
+    default_fg = this->current_style.fg = gl::Color(style.fg).to_array();
+    default_bg = this->current_style.bg = gl::Color(style.bg).to_array();
+    reset();
+}
+
 void RConsole::clear()
 {
     auto fg = gl::Color(current_style.fg).to_rgba();
@@ -79,12 +88,13 @@ void RConsole::scroll(int dy, int dx)
 void RConsole::render(RLayer const* parent)
 {
     if (!enabled) { return; }
-    console->set_scale(
-        {scale[0] * parent->scale[0], scale[1] * parent->scale[1]});
-    console->set_offset(
-        {trans[0] + parent->trans[0], trans[1] + parent->trans[1]});
+    auto s =
+        std::pair{scale[0] * parent->scale[0], scale[1] * parent->scale[1]};
+    auto o =
+        std::pair{trans[0] + parent->trans[0], trans[1] + parent->trans[1]};
     console->flush();
-    console->render();
+    update_tx(parent);
+    console->render(o, s);
 }
 
 uint32_t RConsole::get(int x, int y) const
@@ -206,7 +216,7 @@ void RConsole::reg_class(mrb_state* ruby)
                 style->fg = mrb::to_array<float, 4>(fg, mrb);
                 style->bg = mrb::to_array<float, 4>(bg, mrb);
             }
-            ptr->text(x, y, text, style);
+            if (text != nullptr) { ptr->text(x, y, text, style); }
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3) | MRB_ARGS_REST());

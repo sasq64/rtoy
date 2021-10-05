@@ -2,6 +2,7 @@
 
 #include "mruby/array.h"
 #include "mruby/value.h"
+
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
 #include "rimage.hpp"
@@ -10,6 +11,7 @@
 #include "error.hpp"
 #include "gl/functions.hpp"
 #include "mrb_tools.hpp"
+#include "pix/pixel_console.hpp"
 
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
@@ -45,27 +47,53 @@ void Display::setup()
     auto [w, h] = window->get_size();
     RLayer::width = w;
     RLayer::height = h;
-
-    fmt::print("{}\n", settings.console_font.string());
-
-    console = std::make_shared<RConsole>(w, h,
-        Style{0xffffffff, 0x00008000, settings.console_font.string(),
-            settings.font_size});
-    layers.push_back(console);
-    puts("Console");
     gl::setViewport({w, h});
-    fmt::print("{} {}\n", w, h);
-    canvas = std::make_shared<RCanvas>(w, h);
-    canvas->init(ruby);
-    layers.push_back(canvas);
-    sprites = std::make_shared<RSprites>(ruby, w, h);
-    layers.push_back(sprites);
+
+    consoles = mrb_ary_new_capa(ruby, 4);
+    canvases = mrb_ary_new_capa(ruby, 4);
+    sprite_layers = mrb_ary_new_capa(ruby, 4);
+    auto style = Style{0xffffffff, 0x00008000, settings.console_font.string(),
+        settings.font_size};
+    auto font = std::make_shared<ConsoleFont>(
+        settings.console_font.string(), settings.font_size);
+    auto pcon = std::make_shared<PixConsole>(256, 256, font);
+    for (int i = 0; i < 4; i++) {
+        auto con = std::make_shared<RConsole>(w, h, style, pcon);
+        layers.push_back(con);
+        if (console == nullptr) {
+            console = con;
+        } else {
+            con->enable(false);
+        }
+        mrb_ary_set(ruby, consoles, i, mrb::new_data_obj(ruby, con.get()));
+    }
+
+    for (int i = 0; i < 4; i++) {
+        auto cnv = std::make_shared<RCanvas>(w, h);
+        cnv->init(ruby);
+        layers.push_back(cnv);
+        if (canvas == nullptr) {
+            canvas = cnv;
+        } else {
+            cnv->enable(false);
+        }
+        mrb_ary_set(ruby, canvases, i, mrb::new_data_obj(ruby, cnv.get()));
+    }
+
+    for (int i = 0; i < 4; i++) {
+        auto spr = std::make_shared<RSprites>(ruby, w, h);
+        layers.push_back(spr);
+        if (sprites == nullptr) {
+            sprites = spr;
+        } else {
+            spr->enable(false);
+        }
+        mrb_ary_set(ruby, sprite_layers, i, mrb::new_data_obj(ruby, spr.get()));
+    }
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // GLuint vao;
-    // glGenVertexArrays(1, &vao);
-    // glBindVertexArray(vao);
 }
 
 bool Display::begin_draw()
@@ -83,8 +111,9 @@ void Display::end_draw()
 
     gl::setViewport({width, height});
     glEnable(GL_SCISSOR_TEST);
-    glScissor(scissor[0], scissor[1], width - scissor[2] * 2, height - scissor[3] * 2);
-    for(auto&& layer : layers) {
+    glScissor(scissor[0], scissor[1], width - scissor[2] * 2,
+        height - scissor[3] * 2);
+    for (auto&& layer : layers) {
         layer->render(this);
     }
 }
@@ -102,7 +131,7 @@ void Display::reset()
         sprites->remove_sprite(mouse_cursor);
         mouse_cursor = nullptr;
     }
-    for(auto&& layer : layers) {
+    for (auto&& layer : layers) {
         layer->reset();
     }
     SET_NIL_VALUE(draw_handler);
@@ -175,10 +204,26 @@ void Display::reg_class(
         MRB_ARGS_NONE());
 
     mrb_define_method(
+        ruby, Display::rclass, "consoles",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            return display->consoles;
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
         ruby, Display::rclass, "canvas",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             return mrb::new_data_obj(mrb, display->canvas.get());
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, Display::rclass, "canvases",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            return display->canvases;
         },
         MRB_ARGS_NONE());
 
@@ -207,8 +252,7 @@ void Display::reg_class(
             if (mrb_get_argc(mrb) == 2) {
                 auto [x, y] = mrb::get_args<int, int>(mrb);
                 uint32_t v = 0;
-                glReadPixels(x, y, 1, 1, GL_RGBA,
-                    GL_UNSIGNED_BYTE, &v);
+                glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
                 // Little endian, as bytes means we get ABGR 32 bit
                 int rgb = static_cast<int>(
                     ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
@@ -218,9 +262,9 @@ void Display::reg_class(
 
             auto [x, y, w, h] = mrb::get_args<int, int, int, int>(mrb);
             auto* ptr = new uint32_t[w * h];
-            memset(ptr, 0xff, w*h*4);
+            memset(ptr, 0xff, w * h * 4);
 
-            y = display->height - (y+h);
+            y = display->height - (y + h);
 
             glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
 
@@ -243,7 +287,7 @@ void Display::reg_class(
         ruby, Display::rclass, "clear",
         [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            for(auto&& layer : display->layers) {
+            for (auto&& layer : display->layers) {
                 layer->clear();
             }
             display->end_draw();
