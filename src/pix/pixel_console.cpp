@@ -103,7 +103,7 @@ ConsoleFont::ConsoleFont(std::string const& font_file, int size)
     font_texture.bind(0);
 }
 
-std::pair<float, float> ConsoleFont::get_uvscale()
+std::pair<float, float> ConsoleFont::get_uvscale() const
 {
     return std::pair{
         static_cast<float>(char_width) / static_cast<float>(texture_width),
@@ -119,7 +119,7 @@ PixConsole::PixConsole(int w, int h, std::string const& font_file, int size)
 }
 
 PixConsole::PixConsole(int w, int h, std::shared_ptr<ConsoleFont> _font)
-    : font{_font}, width(w), height(h)
+    : font{std::move(_font)}, width(w), height(h)
 {
     init();
 }
@@ -170,18 +170,8 @@ void ConsoleFont::set_tile_size(int w, int h)
     std::fill(data.begin(), data.end(), 0);
     font_texture = gl_wrap::Texture{texture_width, texture_height, data};
 
-    for (char32_t c = 0x20; c <= 0x7f; c++) {
-        add_char(c);
-    }
     char_width = w;
     char_height = h;
-    /* program.use(); */
-    /* program.setUniform("uv_scale", */
-    /*     std::pair<float, float>( */
-    /*         static_cast<float>(char_width) /
-     * static_cast<float>(texture_width), */
-    /*         static_cast<float>(char_height) / */
-    /*             static_cast<float>(texture_height))); */
     for (char32_t c = 0x20; c <= 0x7f; c++) {
         add_char(c);
     }
@@ -190,7 +180,7 @@ void ConsoleFont::set_tile_size(int w, int h)
 void PixConsole::reset()
 {
     auto [cw, ch] = font->font.get_size();
-    font->set_tile_size(cw, ch);
+    set_tile_size(cw, ch);
 }
 
 void ConsoleFont::set_tile_image(char32_t c, gl_wrap::TexRef tex)

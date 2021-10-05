@@ -15,7 +15,7 @@ display.clear
 assert(display.dump(0,0) == 0x40ff80)
 
 assert(display.console != nil)
-assert(display.sprites != nil)
+assert(display.sprite_field != nil)
 assert(display.canvas != nil)
 
 

@@ -30,7 +30,7 @@ struct ConsoleFont
     void set_tile_size(int w, int h);
     uint32_t get_offset(char32_t c);
 
-    std::pair<float, float> get_uvscale();
+    std::pair<float, float> get_uvscale() const;
     void add_char(char32_t c);
     std::pair<int, int> alloc_char(char32_t c);
 };

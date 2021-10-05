@@ -56,9 +56,9 @@ void Display::setup()
         settings.font_size};
     auto font = std::make_shared<ConsoleFont>(
         settings.console_font.string(), settings.font_size);
-    auto pcon = std::make_shared<PixConsole>(256, 256, font);
+    auto pixel_console = std::make_shared<PixConsole>(256, 256, font);
     for (int i = 0; i < 4; i++) {
-        auto con = std::make_shared<RConsole>(w, h, style, pcon);
+        auto con = std::make_shared<RConsole>(w, h, style, pixel_console);
         layers.push_back(con);
         if (console == nullptr) {
             console = con;
@@ -205,7 +205,7 @@ void Display::reg_class(
 
     mrb_define_method(
         ruby, Display::rclass, "consoles",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             return display->consoles;
         },
@@ -221,7 +221,7 @@ void Display::reg_class(
 
     mrb_define_method(
         ruby, Display::rclass, "canvases",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             return display->canvases;
         },
@@ -237,7 +237,7 @@ void Display::reg_class(
 
     mrb_define_method(
         ruby, Display::rclass, "sprite_fields",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             return display->sprite_fields;
         },
