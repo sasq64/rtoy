@@ -21,9 +21,9 @@ module Shortcuts
     returns! Canvas
     def canvas() @@display.canvas end
 
-    doc! "Returns the default sprites layer"
+    doc! "Returns the default sprite field"
     returns! Sprites
-    def sprites() @@display.sprites end
+    def sprite_field() @@display.sprite_field end
 
     doc! "Returns the default Audio instance"
     returns! Audio
@@ -68,14 +68,14 @@ module Shortcuts
     returns! Sprite
     doc! "Add a sprite to the screen"
     def add_sprite(img, **kwargs)
-        spr = @@display.sprites.add_sprite(img)
+        spr = @@display.sprite_field.add_sprite(img)
         kwargs.each do |a,b|
             spr.send (a.to_s + '=').to_sym, b
         end
         spr
     end
     doc! "Remove a sprite"
-    def remove_sprite(spr) @@display.sprites.remove_sprite(spr) end
+    def remove_sprite(spr) @@display.sprite_field.remove_sprite(spr) end
 
     def clear()
         @@display.clear

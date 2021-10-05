@@ -156,7 +156,7 @@ module OS
         end
     end
 
-    module_function :display, :console, :canvas, :sprites, :audio,
+    module_function :display, :console, :canvas, :sprite_field, :audio,
         :text, :line, :scale, :offset, :add_sprite,
         :remove_sprite, :clear, :get_char, :circle
 

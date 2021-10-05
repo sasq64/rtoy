@@ -295,7 +295,7 @@ RClass* get_rclass()
 // must have a static member called 'dt'. Specialize for custom types.
 template <typename C>
 mrb_data_type* get_data_type()
-
+{
     return &C::dt;
 }
 

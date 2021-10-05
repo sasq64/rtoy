@@ -21,7 +21,7 @@ def split_sprite(spr)
 end
 
 
-sprites.on_collision(1,2) do |b,e|
+sprite_field.on_collision(1,2) do |b,e|
     p "Collision!"
     split_sprite(e).each do |s|
         tween(s).seconds(1.0).to(alpha: 0).delta(pos: (Vec2.rand(100,100) - [50,50]) / 10.0).
@@ -30,7 +30,7 @@ sprites.on_collision(1,2) do |b,e|
     remove_sprite(e)
 end
 
-sprites.on_collision(2,3) do |e,ship|
+sprite_field.on_collision(2,3) do |e,ship|
     p "Collision!"
     split_sprite(ship).each do |s|
         tween(s).seconds(1.0).delta(pos: (Vec2.rand(100,100) - [50,50]) / 10.0).

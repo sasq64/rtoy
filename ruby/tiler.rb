@@ -31,7 +31,7 @@ class TileView < UI::Element
         @dirty = true
         @ex,@ey = 1,1
         image = Image.from_file("data/sel.png")
-        @sel = Display.default.sprites.add_sprite(image)
+        @sel = Display.default.sprite_field.add_sprite(image)
         @scale = 3
         @sel.scale = @scale * tile_map.size / 8
 
@@ -99,7 +99,7 @@ class TileScreen
         @tile_view = tv
         @con = Display.default.console
         image = Image.from_file("data/sel.png")
-        @sel = Display.default.sprites.add_sprite(image)
+        @sel = Display.default.sprite_field.add_sprite(image)
         s = Display.default.console.scale
         @sel.scale = s.x
     end

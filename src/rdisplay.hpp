@@ -31,7 +31,7 @@ class Display : public RLayer
         0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
 
     std::shared_ptr<RCanvas> canvas;
-    std::shared_ptr<RSprites> sprites;
+    std::shared_ptr<RSprites> sprite_field;
 
     std::vector<std::shared_ptr<RLayer>> layers;
 
@@ -39,7 +39,7 @@ public:
     RSprite* mouse_cursor = nullptr;
     std::shared_ptr<RConsole> console;
     mrb_value consoles;
-    mrb_value sprite_layers;
+    mrb_value sprite_fields;
     mrb_value canvases;
     static inline RClass* rclass;
     static mrb_data_type dt;

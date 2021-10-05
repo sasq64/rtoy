@@ -51,7 +51,7 @@ void Display::setup()
 
     consoles = mrb_ary_new_capa(ruby, 4);
     canvases = mrb_ary_new_capa(ruby, 4);
-    sprite_layers = mrb_ary_new_capa(ruby, 4);
+    sprite_fields = mrb_ary_new_capa(ruby, 4);
     auto style = Style{0xffffffff, 0x00008000, settings.console_font.string(),
         settings.font_size};
     auto font = std::make_shared<ConsoleFont>(
@@ -83,12 +83,12 @@ void Display::setup()
     for (int i = 0; i < 4; i++) {
         auto spr = std::make_shared<RSprites>(ruby, w, h);
         layers.push_back(spr);
-        if (sprites == nullptr) {
-            sprites = spr;
+        if (sprite_field == nullptr) {
+            sprite_field = spr;
         } else {
             spr->enable(false);
         }
-        mrb_ary_set(ruby, sprite_layers, i, mrb::new_data_obj(ruby, spr.get()));
+        mrb_ary_set(ruby, sprite_fields, i, mrb::new_data_obj(ruby, spr.get()));
     }
 
     glEnable(GL_BLEND);
@@ -128,7 +128,7 @@ void Display::reset()
     bg = {0.0F, 0.0F, 0.8F, 1.0F};
 
     if (mouse_cursor != nullptr) {
-        sprites->remove_sprite(mouse_cursor);
+        sprite_field->remove_sprite(mouse_cursor);
         mouse_cursor = nullptr;
     }
     for (auto&& layer : layers) {
@@ -166,7 +166,7 @@ void Display::reg_class(
             auto* display = mrb::self_to<Display>(self);
             RImage* image = nullptr;
             mrb_get_args(mrb, "d", &image, &RImage::dt);
-            display->mouse_cursor = display->sprites->add_sprite(image, 1);
+            display->mouse_cursor = display->sprite_field->add_sprite(image, 1);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(3));
@@ -228,10 +228,18 @@ void Display::reg_class(
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, Display::rclass, "sprites",
+        ruby, Display::rclass, "sprite_field",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            return mrb::new_data_obj(mrb, display->sprites.get());
+            return mrb::new_data_obj(mrb, display->sprite_field.get());
+        },
+        MRB_ARGS_NONE());
+
+    mrb_define_method(
+        ruby, Display::rclass, "sprite_fields",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            return display->sprite_fields;
         },
         MRB_ARGS_NONE());
 

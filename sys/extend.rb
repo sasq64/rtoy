@@ -119,7 +119,7 @@ class Display
     end
 
     returns! Canvas, :canvas
-    returns! Sprites, :sprites
+    returns! Sprites, :sprite_field
     returns! Console, :console
 end
 

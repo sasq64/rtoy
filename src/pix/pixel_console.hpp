@@ -74,7 +74,10 @@ public:
 
     std::pair<int, int> get_char_size();
 
-    void set_tile_size(int w, int h) { font->set_tile_size(w, h); }
+    void set_tile_size(int w, int h) { 
+        font->set_tile_size(w, h);
+        program.setUniform("uv_scale", font->get_uvscale());
+    }
     void set_tile_image(char32_t c, gl_wrap::TexRef tex)
     {
         font->set_tile_image(c, tex);
