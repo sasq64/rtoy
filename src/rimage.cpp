@@ -80,6 +80,16 @@ void RImage::reg_class(mrb_state* ruby)
             return mrb::to_value(mrb::self_to<RImage>(self)->height(), mrb);
         },
         MRB_ARGS_NONE());
+
+    /* mrb_define_method( */
+    /*     ruby, RImage::rclass, "size", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto const* img = mrb::self_to<RImage>(self); */
+    /*         std::array<double, 2> data{img->width(), img->height()}; */
+    /*         return mrb::to_value(data, mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
+
     mrb_define_method(
         ruby, RImage::rclass, "split",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {

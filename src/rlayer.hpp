@@ -24,7 +24,6 @@ struct RStyle
     static inline RClass* rclass = nullptr;
     static mrb_data_type dt;
     static void reg_class(mrb_state* ruby);
-
     static inline mrb_state* ruby = nullptr;
 };
 

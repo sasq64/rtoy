@@ -23,7 +23,7 @@ enum class Collide
 
 struct Collider
 {
-    int group = 0;
+    uint32_t group = 0;
     float width = 0;
     float height = 0;
     float radius = 0;
@@ -60,8 +60,8 @@ public:
 
 struct CollisionGroup
 {
-    int from = -1;
-    int to = -1;
+    uint32_t from = 0;
+    uint32_t to = 0;
     mrb::RubyPtr handler;
 };
 
@@ -74,7 +74,7 @@ struct SpriteBatch
 class RSprites : public RLayer
 {
     std::vector<CollisionGroup> groups;
-    std::array<std::vector<RSprite*>, 10> colliders;
+    std::unordered_map<uint32_t, std::vector<RSprite*>> colliders;
     std::unordered_map<GLuint, SpriteBatch> batches;
     SpriteBatch fixed_batch;
     gl_wrap::Program program;

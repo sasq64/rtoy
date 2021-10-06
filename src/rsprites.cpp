@@ -3,6 +3,7 @@
 #include "error.hpp"
 #include "gl/buffer.hpp"
 #include "mrb_tools.hpp"
+#include "mruby/value.h"
 #include "rimage.hpp"
 
 #include <gl/gl.hpp>
@@ -138,7 +139,7 @@ void RSprites::render(RLayer const* parent)
 {
     // if (batches.empty()) { return; }
     update_tx(parent);
-    //textured.setUniform("in_transform", mat);
+    // textured.setUniform("in_transform", mat);
 
     glEnable(GL_BLEND);
     glLineWidth(current_style.line_width);
@@ -151,7 +152,7 @@ void RSprites::render(RLayer const* parent)
     pos.enable();
     uv.enable();
 
-    for (auto& c : colliders) {
+    for (auto& [_, c] : colliders) {
         c.clear();
     }
     auto draw_batch = [&](SpriteBatch& batch) {
@@ -171,6 +172,8 @@ void RSprites::render(RLayer const* parent)
                 }
                 continue;
             }
+            // When we render sprites, we sort them into `colliders` according
+            // to their group
             if (sprite->collider != nullptr) {
                 colliders[sprite->collider->group].push_back(sprite);
             }
@@ -280,10 +283,12 @@ void RSprites::reg_class(mrb_state* ruby)
         ruby, rclass, "on_collision",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* sprites = mrb::self_to<RSprites>(self);
-            mrb_int g0 = -1;
-            mrb_int g1 = -1;
             mrb_value blk;
-            mrb_get_args(mrb, "ii&", &g0, &g1, &blk);
+            mrb_value s0;
+            mrb_value s1;
+            mrb_get_args(mrb, "oo&", &s0, &s1, &blk);
+            auto g0 = mrb_obj_to_sym(mrb, s0);
+            auto g1 = mrb_obj_to_sym(mrb, s1);
 
             CollisionGroup* group = nullptr;
             for (auto& g : sprites->groups) {
@@ -311,7 +316,9 @@ void RSprites::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RSprite::rclass, "collider=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [id] = mrb::get_args<int>(mrb);
+            mrb_value sym;
+            mrb_get_args(mrb, "o", &sym);
+            auto id = mrb_obj_to_sym(mrb, sym);
             auto* rspr = mrb::self_to<RSprite>(self);
             if (rspr->collider == nullptr) {
                 rspr->collider = new Collider();

@@ -85,6 +85,12 @@ class Sprite
     returns! Image,:img
 end
 
+class Image
+    def size()
+        Vec2.new(self.width, self.height)
+    end
+end
+
 class Layer
     alias set_scale scale=
     alias get_scale scale

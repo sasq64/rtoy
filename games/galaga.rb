@@ -1,68 +1,77 @@
-ship = add_sprite(Image.from_file('data/ship.png'),
-    pos: [display.width/2, display.height - 180], scale: 3)
-ship.collider = 3
+class Galaga
+    include OS
 
+    def initialize()
+        @ship = add_sprite(Image.from_file('data/ship.png'),
+            pos: [display.width/2, display.height - 180],
+            collider: :ship,
+            scale: 3)
 
-bullet = Image.solid(2,3,Color::LIGHT_RED);
-eimg = Image.from_file('data/enemy0.png')
+        @bullet = Image.solid(2, 3, Color::LIGHT_RED);
+        @eimg = Image.from_file('data/enemy1.png')
+        @counter = 0
 
-def split_sprite(spr)
-    z = vec2(spr.img.width / 2, spr.img.height / 2)
-    rc = spr.img.split(4,4).map do |i|
-        s = add_sprite(i)
-        pos = (s.pos - z).rotate(spr.rotation) + z
-        s.rotation = spr.rotation
-        s.scale = spr.scale
-        s.pos = pos * spr.scale + spr.pos
-        s
+        sprite_field.on_collision(:bullet, :enemy) do |b,e|
+            explode_sprite(e)
+            remove_sprite(b)
+        end
+
+        sprite_field.on_collision(:enemy, :ship) do |e,ship|
+            explode_sprite(ship)
+        end
+
+        display.bg = Color::BLACK
+        console.enabled = false
+
     end
-    remove_sprite(spr)
-    rc
-end
 
-
-sprite_field.on_collision(1,2) do |b,e|
-    p "Collision!"
-    split_sprite(e).each do |s|
-        tween(s).seconds(1.0).to(alpha: 0).delta(pos: (Vec2.rand(100,100) - [50,50]) / 10.0).
-            when_done { remove_sprite(s) }
+    def split_sprite(spr)
+        z = spr.img.size / 2
+        spr.img.split(4,4).map do |img|
+            s = add_sprite(img,
+                rotation: spr.rotation,
+                scale: spr.scale)
+            pos = (s.pos - z).rotate(spr.rotation) + z
+            s.pos = pos * spr.scale + spr.pos
+            s
+        end
     end
-    remove_sprite(e)
-end
 
-sprite_field.on_collision(2,3) do |e,ship|
-    p "Collision!"
-    split_sprite(ship).each do |s|
-        tween(s).seconds(1.0).delta(pos: (Vec2.rand(100,100) - [50,50]) / 10.0).
-            when_done { remove_sprite(s) }
+    def explode_sprite(spr)
+        split_sprite(spr).each do |s|
+            tween(s).seconds(1.0).to(alpha: 0).
+                delta(pos: (Vec2.rand(100,100) - [50,50]) / 10.0).
+                when_done { remove_sprite(s) }
+        end
+        remove_sprite(spr)
     end
-    remove_sprite(ship)
-end
 
-counter = 0
-vsync do
-    if counter % 90 == 0
-        enemy = add_sprite(eimg, scale: 3,
+    def spawn_enemy()
+        enemy = add_sprite(@eimg,
+            scale: 3,
+            collider: :enemy,
             pos: Vec2.rand(display.width, 0))
-        enemy.collider = 2
-        tween(enemy).seconds(5.0).to(y: ship.pos.y + 300).
-            fn(:out_elastic).to(x: ship.pos.x).to(rotation: Math::PI).
+
+        tween(enemy).seconds(5.0).to(y: @ship.pos.y + 300).
+            fn(:out_elastic).to(x: @ship.pos.x).to(rotation: Math::PI).
             when_done { remove_sprite(enemy) }
     end
-    ship.x += 8 if is_pressed(Key::RIGHT)
-    ship.x -= 8 if is_pressed(Key::LEFT)
 
-    if was_pressed('z'.ord) || was_pressed(Key::FIRE)
-        bs = add_sprite(bullet, scale: 4, pos: ship.pos)
-        bs.collider = 1
-        tween(bs).seconds(10).delta(pos: vec2(0,-4)).
-            when_done { remove_sprite(bs) }
+    def update()
+        @counter += 1
+        spawn_enemy() if @counter % 90 == 0
+        @ship.x += 8 if is_pressed(Key::RIGHT)
+        @ship.x -= 8 if is_pressed(Key::LEFT)
+
+        if was_pressed('z'.ord) || was_pressed(Key::FIRE)
+            bs = add_sprite(@bullet, collider: :bullet, scale: 4,
+                pos: @ship.pos)
+            tween(bs).seconds(10).delta(pos: vec2(0,-4)).
+                when_done { remove_sprite(bs) }
+        end
     end
-    ship.alpha = 1.0
-    counter += 1
-    #canvas.clear
-    #x = ship.pos.x + ship.width*3/2
-    #y = ship.pos.y + ship.height*3/2
-    #canvas.circle(x, y, ship.height*3/2)
+    
 end
 
+game = Galaga.new
+vsync { game.update }
