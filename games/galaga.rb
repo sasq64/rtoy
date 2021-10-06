@@ -52,7 +52,7 @@ vsync do
     ship.x += 8 if is_pressed(Key::RIGHT)
     ship.x -= 8 if is_pressed(Key::LEFT)
 
-    if was_pressed('z'.ord)
+    if was_pressed('z'.ord) || was_pressed(Key::FIRE)
         bs = add_sprite(bullet, scale: 4, pos: ship.pos)
         bs.collider = 1
         tween(bs).seconds(10).delta(pos: vec2(0,-4)).

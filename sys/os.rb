@@ -121,10 +121,11 @@ module OS
             end
             Tween.update_all(t.seconds)
             @@handlers.call_all(:draw, t.seconds)
+            @@read_key = nil
         end
-        Input.default.on_key do |key,mod|
-            @@read_key = key
-            @@handlers.call_all(:key, key, mod)
+        Input.default.on_key do |key,mod,dev|
+            @@read_key = key | (dev<<24)
+            @@handlers.call_all(:key, key, mod, dev)
         end
         Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args) }
         Input.default.on_click { |*args| @@handlers.call_all(:click, *args) }
@@ -228,9 +229,8 @@ module OS
     alias readln gets
 
     def was_pressed(key)
-        r = @@read_key
-        @@read_key = nil
-        r == key
+        p "#{key} vs #{@@read_key}"
+        key == @@read_key & 0xffffff
     end
 
     def read_key()

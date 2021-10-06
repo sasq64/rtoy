@@ -10,8 +10,8 @@
 #include <SDL2/SDL_video.h>
 #include <fmt/format.h>
 
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
 
 class SDLWindow : public Screen
 {
@@ -34,6 +34,8 @@ class SDLSystem : public System
     uint32_t dev = 0;
     std::unordered_map<uint32_t, int> pressed;
 
+    std::vector<SDL_Joystick*> joysticks;
+
 #ifdef USE_ASOUND
     std::unique_ptr<LinuxPlayer> player;
 #endif
@@ -42,7 +44,12 @@ public:
     std::shared_ptr<Screen> init_screen(Settings const& settings) override
     {
 
-        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
+        SDL_JoystickEventState(SDL_ENABLE);
+        for (int i = 0; i < SDL_NumJoysticks(); i++) {
+            joysticks.push_back(SDL_JoystickOpen(i));
+        }
+
         auto* window = SDL_CreateWindow("Toy", SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED,
 #ifdef OSX
@@ -67,36 +74,52 @@ public:
 
     void init_input(Settings const& settings) override {}
 
+    static inline std::unordered_map<uint32_t, uint32_t> sdl_map = {
+        {SDLK_LEFT, RKEY_LEFT},
+        {SDLK_RIGHT, RKEY_RIGHT},
+        {SDLK_PAGEUP, RKEY_PAGEUP},
+        {SDLK_PAGEDOWN, RKEY_PAGEDOWN},
+        {SDLK_UP, RKEY_UP},
+        {SDLK_DOWN, RKEY_DOWN},
+        {SDLK_END, RKEY_END},
+        {SDLK_HOME, RKEY_HOME},
+        {SDLK_ESCAPE, RKEY_ESCAPE},
+        {SDLK_RETURN, RKEY_ENTER},
+        {SDLK_INSERT, RKEY_INSERT},
+        {SDLK_DELETE, RKEY_DELETE},
+        {SDLK_F1, RKEY_F1},
+        {SDLK_F2, RKEY_F2},
+        {SDLK_F3, RKEY_F3},
+        {SDLK_F4, RKEY_F4},
+        {SDLK_F5, RKEY_F5},
+        {SDLK_F6, RKEY_F6},
+        {SDLK_F7, RKEY_F7},
+        {SDLK_F8, RKEY_F8},
+        {SDLK_F9, RKEY_F9},
+        {SDLK_F10, RKEY_F10},
+        {SDLK_F11, RKEY_F11},
+        {SDLK_F12, RKEY_F12},
+    };
+
     static uint32_t sdl2key(uint32_t code)
     {
-        switch (code) {
-        case SDLK_LEFT: return RKEY_LEFT;
-        case SDLK_RIGHT: return RKEY_RIGHT;
-        case SDLK_PAGEUP: return RKEY_PAGEUP;
-        case SDLK_PAGEDOWN: return RKEY_PAGEDOWN;
-        case SDLK_UP: return RKEY_UP;
-        case SDLK_DOWN: return RKEY_DOWN;
-        case SDLK_END: return RKEY_END;
-        case SDLK_HOME: return RKEY_HOME;
-        case SDLK_ESCAPE: return RKEY_ESCAPE;
-        case SDLK_RETURN: return RKEY_ENTER;
-        case SDLK_INSERT: return RKEY_INSERT;
-        case SDLK_DELETE: return RKEY_DELETE;
-        case SDLK_F1: return RKEY_F1;
-        case SDLK_F5: return RKEY_F5;
-        case SDLK_F7: return RKEY_F7;
-        case SDLK_F3: return RKEY_F3;
-        case SDLK_F12: return RKEY_F12;
-        default: return code;
-        }
+        auto it = sdl_map.find(code);
+        if (it != sdl_map.end()) { return it->second; }
+        return code;
     }
 
-    bool is_pressed(uint32_t code) override { return pressed[code] != 0; }
+    bool is_pressed(uint32_t code, int device) override
+    {
+        if (device == -1) { return pressed[code] != 0; }
+        return (pressed[code] & (1 << device)) != 0;
+    }
 
+    uint32_t lastAxis = 0;
     AnyEvent poll_events() override
     {
         SDL_Event e;
         while (SDL_PollEvent(&e) != 0) {
+            int device = 0;
             if (e.type == SDL_MOUSEMOTION) {
                 auto& me = e.motion;
                 if (me.state != 0) {
@@ -107,22 +130,83 @@ public:
                 return ClickEvent{e.button.x, e.button.y, 1};
             } else if (e.type == SDL_TEXTINPUT) {
                 fmt::print("TEXT '{}'\n", e.text.text);
-                return TextEvent{e.text.text};
+                return TextEvent{e.text.text, 0};
             } else if (e.type == SDL_KEYDOWN) {
                 auto code = sdl2key(e.key.keysym.sym);
 
                 auto& ke = e.key;
-                pressed[code] = 1;
+                pressed[code] |= (1 << device);
                 auto mod = ke.keysym.mod;
                 // If code is non-ascii
-                if (code < 0x20 || code > 0x1fffc || (mod & 0xc0) != 0) {
+                if (code < 0x20 || (code >= 0x80 && code < 0xA0) || code > 0x1fffc || (mod & 0xc0) != 0) {
                     fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
-                    return KeyEvent{code, mod};
+                    return KeyEvent{code, mod, device};
                 }
             } else if (e.type == SDL_KEYUP) {
                 auto& ke = e.key;
                 auto code = sdl2key(ke.keysym.sym);
-                pressed[code] = 0;
+                pressed[code] &= ~(1 << device);
+            } else if (e.type == SDL_JOYBUTTONUP) {
+                device = (e.jbutton.which + 1);
+                fmt::print("JBUTTON {:x}\n", e.jbutton.button);
+                static uint32_t jbuttons[] = {RKEY_FIRE, RKEY_B, RKEY_X, RKEY_Y,
+                    RKEY_L1, RKEY_L2, RKEY_SELECT, RKEY_START};
+                if (e.jbutton.button <= 7) {
+                    auto code = jbuttons[e.jbutton.button] | (device << 24);
+                    pressed[code] &= ~(1 << device);
+                    return KeyEvent{code, 0, device};
+                }
+            } else if (e.type == SDL_JOYBUTTONDOWN) {
+                device = (e.jbutton.which + 1);
+                static uint32_t jbuttons[] = {RKEY_FIRE, RKEY_B, RKEY_X, RKEY_Y,
+                    RKEY_L1, RKEY_L2, RKEY_SELECT, RKEY_START};
+                if (e.jbutton.button <= 7) {
+                    auto code = jbuttons[e.jbutton.button] | (device << 24);
+                    pressed[code] &= ~(1 << device);
+                }
+            } else if (e.type == SDL_JOYAXISMOTION) {
+                fmt::print("JAXIS {} {} {}\n", e.jaxis.axis, e.jaxis.type,
+                    e.jaxis.value);
+                if (e.jaxis.axis == 0) {
+                    if (e.jaxis.value > 10000) {
+                        if (!pressed[RKEY_RIGHT]) {
+                            pressed[RKEY_RIGHT] = 1;
+                            return KeyEvent{RKEY_RIGHT, 0, device};
+                        }
+                    } else if (e.jaxis.value < -10000) {
+                        if (!pressed[RKEY_LEFT]) {
+                            pressed[RKEY_LEFT] = 1;
+                            return KeyEvent{RKEY_LEFT, 0, device};
+                        }
+                    } else {
+                        pressed[RKEY_RIGHT] = 0;
+                        pressed[RKEY_LEFT] = 0;
+                    }
+                }
+            } else if (e.type == SDL_JOYHATMOTION) {
+                fmt::print(
+                    "JHAT {} {} {}\n", e.jhat.hat, e.jhat.value, e.jhat.which);
+                static uint32_t directions[] = {
+                    RKEY_UP, RKEY_RIGHT, RKEY_DOWN, RKEY_LEFT};
+                auto a = e.jhat.value;
+                auto delta = lastAxis ^ a;
+                uint32_t button = 0;
+                bool down = false;
+                device = (e.jbutton.which + 1);
+                for (int i = 0; i < 4; i++) {
+                    uint32_t mask = 1 << i;
+                    if ((delta & mask) == mask) {
+                        button = directions[i];
+                        down = (a & mask) != 0;
+                    }
+                }
+                lastAxis = a;
+                if (down) {
+                    pressed[button] |= (1 << device);
+                    return KeyEvent{button, 0, device};
+                } else {
+                    pressed[button] &= ~(1 << device);
+                }
             } else if (e.type == SDL_QUIT) {
                 fmt::print("quit\n");
                 return QuitEvent{};

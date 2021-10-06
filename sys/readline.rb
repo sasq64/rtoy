@@ -137,7 +137,7 @@ class LineReader
         @pos = 0
         @line = []
         queue = []
-        kh = OS.on_key { |k| queue << k }
+        kh = OS.on_key { |k,mods,dev| queue << k if dev == 0 }
         res = nil
         draw()
         while !res

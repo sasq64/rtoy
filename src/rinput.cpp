@@ -25,7 +25,7 @@ bool RInput::handle_event(KeyEvent const& e)
         return true;
     }
     auto mod = e.mods;
-    call_proc(ruby, key_handler, code, mod);
+    call_proc(ruby, key_handler, code, mod, e.device);
     return false;
 }
 
@@ -62,14 +62,14 @@ bool RInput::handle_event(TextEvent const& me)
     fmt::print("TEXT '{}'\n", me.text);
     auto text32 = utils::utf8_decode(me.text);
     for (auto s : text32) {
-        call_proc(ruby, key_handler, s, 0);
+        call_proc(ruby, key_handler, s, 0, me.device);
     }
     return false;
 }
 
 void RInput::put_char(char32_t c)
 {
-    call_proc(ruby, key_handler, c, 0);
+    call_proc(ruby, key_handler, c, 0, 0);
 }
 
 bool RInput::should_reset()
@@ -130,6 +130,8 @@ void RInput::reg_class(mrb_state* ruby, System& system)
     mrb_define_const(ruby, keys, "F10", mrb_int_value(ruby, RKEY_F10));
     mrb_define_const(ruby, keys, "F11", mrb_int_value(ruby, RKEY_F11));
     mrb_define_const(ruby, keys, "F12", mrb_int_value(ruby, RKEY_F12));
+
+    mrb_define_const(ruby, keys, "FIRE", mrb_int_value(ruby, RKEY_FIRE));
 
     rclass = mrb_define_class(ruby, "Input", ruby->object_class);
     MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
