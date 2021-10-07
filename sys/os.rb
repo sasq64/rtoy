@@ -228,16 +228,17 @@ module OS
 
     alias readln gets
 
+    doc! "Check if given key was pressed this frame"
     def was_pressed(key)
-        p "#{key} vs #{@@read_key}"
         key == @@read_key & 0xffffff
     end
 
+    doc! "Wait for a key press and return it"
     def read_key()
         if !@@read_key
             Fiber.yield until @@read_key
         end
-        r = @@read_key
+        r = @@read_key & 0xffffff
         @@read_key = nil
         r
     end

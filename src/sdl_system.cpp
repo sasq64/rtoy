@@ -7,11 +7,13 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
+#include <SDL2/SDL_joystick.h>
 #include <SDL2/SDL_video.h>
 #include <fmt/format.h>
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 class SDLWindow : public Screen
 {
@@ -32,7 +34,7 @@ public:
 class SDLSystem : public System
 {
     uint32_t dev = 0;
-    std::unordered_map<uint32_t, int> pressed;
+    std::unordered_map<uint32_t, uint32_t> pressed;
 
     std::vector<SDL_Joystick*> joysticks;
 
@@ -101,6 +103,13 @@ public:
         {SDLK_F12, RKEY_F12},
     };
 
+    static constexpr bool in_unicode_range(uint32_t c)
+    {
+        // 0x00 - 0x1F, 0x80 - 0x9F
+        auto mask = (c & 0xfffffe0);
+        return !(mask == 0x80 || mask == 0x00 || c > 0x1f'ffff);
+    }
+
     static uint32_t sdl2key(uint32_t code)
     {
         auto it = sdl_map.find(code);
@@ -117,6 +126,8 @@ public:
     uint32_t lastAxis = 0;
     AnyEvent poll_events() override
     {
+        static constexpr std::array jbuttons{RKEY_FIRE, RKEY_B, RKEY_X, RKEY_Y,
+            RKEY_L1, RKEY_L2, RKEY_SELECT, RKEY_START};
         SDL_Event e;
         while (SDL_PollEvent(&e) != 0) {
             int device = 0;
@@ -137,8 +148,7 @@ public:
                 auto& ke = e.key;
                 pressed[code] |= (1 << device);
                 auto mod = ke.keysym.mod;
-                // If code is non-ascii
-                if (code < 0x20 || (code >= 0x80 && code < 0xA0) || code > 0x1fffc || (mod & 0xc0) != 0) {
+                if (!in_unicode_range(code) || (mod & 0xc0) != 0) {
                     fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
                     return KeyEvent{code, mod, device};
                 }
@@ -146,47 +156,54 @@ public:
                 auto& ke = e.key;
                 auto code = sdl2key(ke.keysym.sym);
                 pressed[code] &= ~(1 << device);
-            } else if (e.type == SDL_JOYBUTTONUP) {
-                device = (e.jbutton.which + 1);
-                fmt::print("JBUTTON {:x}\n", e.jbutton.button);
-                static uint32_t jbuttons[] = {RKEY_FIRE, RKEY_B, RKEY_X, RKEY_Y,
-                    RKEY_L1, RKEY_L2, RKEY_SELECT, RKEY_START};
-                if (e.jbutton.button <= 7) {
-                    auto code = jbuttons[e.jbutton.button] | (device << 24);
-                    pressed[code] &= ~(1 << device);
-                    return KeyEvent{code, 0, device};
-                }
             } else if (e.type == SDL_JOYBUTTONDOWN) {
                 device = (e.jbutton.which + 1);
-                static uint32_t jbuttons[] = {RKEY_FIRE, RKEY_B, RKEY_X, RKEY_Y,
-                    RKEY_L1, RKEY_L2, RKEY_SELECT, RKEY_START};
+                fmt::print("JBUTTON {:x}\n", e.jbutton.button);
                 if (e.jbutton.button <= 7) {
-                    auto code = jbuttons[e.jbutton.button] | (device << 24);
+                    auto code = jbuttons[e.jbutton.button];
+                    pressed[code] |= (1 << device);
+                    return KeyEvent{code, 0, device};
+                }
+            } else if (e.type == SDL_JOYBUTTONUP) {
+                device = (e.jbutton.which + 1);
+                if (e.jbutton.button <= 7) {
+                    auto code = jbuttons[e.jbutton.button];
                     pressed[code] &= ~(1 << device);
                 }
             } else if (e.type == SDL_JOYAXISMOTION) {
+                device = (e.jbutton.which + 1);
+                uint32_t mask = (1 << device);
                 fmt::print("JAXIS {} {} {}\n", e.jaxis.axis, e.jaxis.type,
                     e.jaxis.value);
+                uint32_t neg_key = 0;
+                uint32_t pos_key = 0;
                 if (e.jaxis.axis == 0) {
+                    neg_key = RKEY_LEFT;
+                    pos_key = RKEY_RIGHT;
+                } else if (e.jaxis.axis == 1) {
+                    neg_key = RKEY_UP;
+                    pos_key = RKEY_DOWN;
+                }
+                if (pos_key != 0) {
                     if (e.jaxis.value > 10000) {
-                        if (!pressed[RKEY_RIGHT]) {
-                            pressed[RKEY_RIGHT] = 1;
-                            return KeyEvent{RKEY_RIGHT, 0, device};
+                        if ((pressed[pos_key] & mask) != 0) {
+                            pressed[pos_key] |= mask;
+                            return KeyEvent{pos_key, 0, device};
                         }
                     } else if (e.jaxis.value < -10000) {
-                        if (!pressed[RKEY_LEFT]) {
-                            pressed[RKEY_LEFT] = 1;
-                            return KeyEvent{RKEY_LEFT, 0, device};
+                        if ((pressed[neg_key] & mask) != 0) {
+                            pressed[neg_key] |= mask;
+                            return KeyEvent{neg_key, 0, device};
                         }
                     } else {
-                        pressed[RKEY_RIGHT] = 0;
-                        pressed[RKEY_LEFT] = 0;
+                        pressed[pos_key] &= ~mask;
+                        pressed[neg_key] &= ~mask;
                     }
                 }
             } else if (e.type == SDL_JOYHATMOTION) {
                 fmt::print(
                     "JHAT {} {} {}\n", e.jhat.hat, e.jhat.value, e.jhat.which);
-                static uint32_t directions[] = {
+                static constexpr std::array directions{
                     RKEY_UP, RKEY_RIGHT, RKEY_DOWN, RKEY_LEFT};
                 auto a = e.jhat.value;
                 auto delta = lastAxis ^ a;
@@ -204,9 +221,8 @@ public:
                 if (down) {
                     pressed[button] |= (1 << device);
                     return KeyEvent{button, 0, device};
-                } else {
-                    pressed[button] &= ~(1 << device);
                 }
+                pressed[button] &= ~(1 << device);
             } else if (e.type == SDL_QUIT) {
                 fmt::print("quit\n");
                 return QuitEvent{};
@@ -247,12 +263,12 @@ public:
         audio_callback = cb;
     }
 
-    void init_audio(Settings const& settings) override
+    void init_audio(Settings const& /*settings*/) override
     {
         SDL_AudioSpec want;
         SDL_AudioSpec have;
 
-        SDL_memset(&want, 0, sizeof(want)); /* or SDL_zero(want) */
+        SDL_memset(&want, 0, sizeof(want));
         want.freq = 44100;
         want.format = AUDIO_F32;
         want.channels = 2;

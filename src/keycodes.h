@@ -27,7 +27,7 @@
 #define IS_SHIFT(k) ((k&0x00fffff7) == RKEY_LSHIFT)
 
 
-enum
+enum RKey : unsigned int
 {
     RKEY_NONE = 0,
     RKEY_RIGHT = 1,

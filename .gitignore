@@ -6,3 +6,5 @@ ruby/help.rb
 .vscode/
 .cache/
 compile_commands.json
+*.lock
+.idea/
