@@ -17,8 +17,8 @@ struct ConsoleFont
 {
     int texture_width = 256 * 4;
     int texture_height = 256 * 4;
-    int char_width = 13;
-    int char_height = 24;
+    int char_width = -1;
+    int char_height = -1;
     static const int gap = 4;
     FTFont font;
     std::pair<int, int> next_pos{0, 0};
@@ -65,8 +65,7 @@ class PixConsole
     void init();
 
 public:
-    PixConsole(int w, int h, std::string const& font_file = "data/bedstead.otf",
-        int size = 32);
+    PixConsole(int w, int h, std::string const& font_file, int size);
 
     PixConsole(int w, int h, std::shared_ptr<ConsoleFont> font);
 
