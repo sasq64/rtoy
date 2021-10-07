@@ -109,6 +109,10 @@ void RSprites::collide()
         auto it = group0.begin();
         while (it != group0.end()) {
             auto* sprite1 = *it;
+            if(sprite1->texture.tex == nullptr) {
+                ++it;
+                continue;
+            }
             auto* coll1 = sprite1->collider;
             auto s1 = sprite1->scale[0];
             auto x1 = sprite1->trans[0] + coll1->width * s1 / 2;
@@ -116,6 +120,10 @@ void RSprites::collide()
             auto it2 = group1.begin();
             while (it2 != group1.end()) {
                 auto* sprite2 = *it2;
+                if(sprite2->texture.tex == nullptr) {
+                    ++it2;
+                    continue;
+                }
                 auto* coll2 = sprite2->collider;
                 auto s2 = sprite2->scale[0];
                 auto x = (sprite2->trans[0] + coll2->width * s2 / 2) - x1;

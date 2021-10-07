@@ -105,7 +105,7 @@ public:
 
     static constexpr bool in_unicode_range(uint32_t c)
     {
-        // 0x00 - 0x1F, 0x80 - 0x9F
+        // 00 - 1F, 80 - 9F
         auto mask = (c & 0xfffffe0);
         return !(mask == 0x80 || mask == 0x00 || c > 0x1f'ffff);
     }
@@ -123,7 +123,8 @@ public:
         return (pressed[code] & (1 << device)) != 0;
     }
 
-    uint32_t lastAxis = 0;
+    std::array<uint32_t, 16> lastAxis{};
+
     AnyEvent poll_events() override
     {
         static constexpr std::array jbuttons{RKEY_FIRE, RKEY_B, RKEY_X, RKEY_Y,
@@ -186,12 +187,12 @@ public:
                 }
                 if (pos_key != 0) {
                     if (e.jaxis.value > 10000) {
-                        if ((pressed[pos_key] & mask) != 0) {
+                        if ((pressed[pos_key] & mask) == 0) {
                             pressed[pos_key] |= mask;
                             return KeyEvent{pos_key, 0, device};
                         }
                     } else if (e.jaxis.value < -10000) {
-                        if ((pressed[neg_key] & mask) != 0) {
+                        if ((pressed[neg_key] & mask) == 0) {
                             pressed[neg_key] |= mask;
                             return KeyEvent{neg_key, 0, device};
                         }
@@ -206,10 +207,10 @@ public:
                 static constexpr std::array directions{
                     RKEY_UP, RKEY_RIGHT, RKEY_DOWN, RKEY_LEFT};
                 auto a = e.jhat.value;
-                auto delta = lastAxis ^ a;
+                device = (e.jbutton.which + 1);
+                auto delta = lastAxis[device] ^ a;
                 uint32_t button = 0;
                 bool down = false;
-                device = (e.jbutton.which + 1);
                 for (int i = 0; i < 4; i++) {
                     uint32_t mask = 1 << i;
                     if ((delta & mask) == mask) {
@@ -217,7 +218,7 @@ public:
                         down = (a & mask) != 0;
                     }
                 }
-                lastAxis = a;
+                lastAxis[device] = a;
                 if (down) {
                     pressed[button] |= (1 << device);
                     return KeyEvent{button, 0, device};

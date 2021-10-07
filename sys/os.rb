@@ -121,10 +121,10 @@ module OS
             end
             Tween.update_all(t.seconds)
             @@handlers.call_all(:draw, t.seconds)
-            @@read_key = nil
+            @@read_key = {}
         end
         Input.default.on_key do |key,mod,dev|
-            @@read_key = key | (dev<<24)
+            @@read_key[dev] = key
             @@handlers.call_all(:key, key, mod, dev)
         end
         Input.default.on_drag { |*args| @@handlers.call_all(:drag, *args) }
@@ -229,13 +229,13 @@ module OS
     alias readln gets
 
     doc! "Check if given key was pressed this frame"
-    def was_pressed(key)
-        key == @@read_key & 0xffffff
+    def was_pressed(key, dev = -1)
+        key == @@read_key[dev] & 0xffffff
     end
 
     doc! "Wait for a key press and return it"
-    def read_key()
-        if !@@read_key
+    def read_key(dev = 0)
+        if !@@read_key[dev]
             Fiber.yield until @@read_key
         end
         r = @@read_key & 0xffffff

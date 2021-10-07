@@ -2,13 +2,12 @@ class Galaga
     include OS
 
     def initialize()
-        @ship = add_sprite(Image.from_file('data/ship.png'),
-            pos: [display.width/2, display.height - 180],
-            collider: :ship,
-            scale: 3)
 
-        @bullet = Image.solid(2, 3, Color::LIGHT_RED);
-        @eimg = Image.from_file('data/enemy1.png')
+        @players = {}
+
+        @ship = Image.from_file('data/ship.png')
+        @bullet = Image.solid(2, 3, Color::LIGHT_RED)
+        @enemy = Image.from_file('data/enemy1.png')
         @counter = 0
 
         sprite_field.on_collision(:bullet, :enemy) do |b,e|
@@ -22,6 +21,16 @@ class Galaga
 
         display.bg = Color::BLACK
         console.enabled = false
+
+        on_key { |key, mod, dev|
+            unless @players.include? dev
+                p "NEW PLAYER"
+                @players[dev] = add_sprite(@ship,
+                    pos: [display.width/4, display.height - 180],
+                    collider: :ship,
+                    scale: 3)
+            end
+        }
 
     end
 
@@ -46,29 +55,32 @@ class Galaga
         remove_sprite(spr)
     end
 
-    def spawn_enemy()
-        enemy = add_sprite(@eimg,
+    def spawn_enemy(pos)
+        enemy = add_sprite(@enemy,
             scale: 3,
             collider: :enemy,
             pos: Vec2.rand(display.width, 0))
 
-        tween(enemy).seconds(5.0).to(y: @ship.pos.y + 300).
-            fn(:out_elastic).to(x: @ship.pos.x).to(rotation: Math::PI).
+        tween(enemy).seconds(5.0).to(y: pos.y).
+            fn(:out_elastic).to(x: pos.x).to(rotation: Math::PI).
             when_done { remove_sprite(enemy) }
     end
 
     def update()
         @counter += 1
-        spawn_enemy() if @counter % 90 == 0
-        @ship.x += 8 if is_pressed(Key::RIGHT)
-        @ship.x -= 8 if is_pressed(Key::LEFT)
-
-        if was_pressed('z'.ord) || was_pressed(Key::FIRE)
-            bs = add_sprite(@bullet, collider: :bullet, scale: 4,
-                pos: @ship.pos)
-            tween(bs).seconds(10).delta(pos: vec2(0,-4)).
-                when_done { remove_sprite(bs) }
+        pos = vec2(display.width/2, display.height + 300)
+        spawn_enemy(pos) if @counter % 90 == 0
+        @players.each do |dev,spr|
+            spr.x += 8 if is_pressed(Key::RIGHT, dev)
+            spr.x -= 8 if is_pressed(Key::LEFT, dev)
+            if was_pressed('z'.ord, dev) || was_pressed(Key::FIRE, dev)
+                bs = add_sprite(@bullet, collider: :bullet, scale: 4,
+                    pos: spr.pos)
+                tween(bs).seconds(10).delta(pos: vec2(0,-4)).
+                    when_done { remove_sprite(bs) }
+            end
         end
+
     end
     
 end

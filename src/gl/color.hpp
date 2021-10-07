@@ -36,13 +36,11 @@ struct Color
 
     std::array<float, 4> to_array() const { return {red, green, blue, alpha}; }
 
-    Color(uint32_t rgba) // NOLINT
-    {
-        red = (rgba >> 24) / 255.0F;
-        green = ((rgba >> 16) & 0xff) / 255.0F; // NOLINT
-        blue = ((rgba >> 8) & 0xff) / 255.0F;   // NOLINT
-        alpha = (rgba & 0xff) / 255.0F;         // NOLINT
-    }
+    Color(uint32_t rgba) :
+        red{static_cast<float>(rgba >> 24) / 255.0F},
+        green{static_cast<float>((rgba >> 16) & 0xff) / 255.0F},
+        blue{(static_cast<float>((rgba >> 8) & 0xff)) / 255.0F},
+        alpha{static_cast<float>(rgba & 0xff) / 255.0F} {}
 };
 
 } // namespace gl_wrap
