@@ -21,11 +21,12 @@ static std::string vertex_shader{R"gl(
         precision mediump float;
     #endif
         attribute vec2 in_pos;
+        uniform mat4 layer_transform;
         uniform mat4 in_transform;
         attribute vec2 in_uv;
         varying vec2 out_uv;
         void main() {
-            vec4 v = in_transform * vec4(in_pos, 0, 1);
+            vec4 v = layer_transform * in_transform * vec4(in_pos, 0, 1);
             gl_Position = vec4( v.x, v.y, 0, 1 );
             out_uv = in_uv;
     })gl"};
@@ -155,6 +156,7 @@ void RSprites::render(RLayer const* parent)
     auto& textured = program; // gl::ProgramCache::get_instance().textured;
     textured.use();
     float last_alpha = -1;
+    textured.setUniform("layer_transform", transform);
     auto pos = textured.getAttribute("in_pos");
     auto uv = textured.getAttribute("in_uv");
     pos.enable();

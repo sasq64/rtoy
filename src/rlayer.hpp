@@ -49,6 +49,7 @@ protected:
     RStyle& current_style;
 
 public:
+    virtual void handle_enable() {}
     // Reset all state of the layer to default.
     virtual void reset();
     // Clear the layer

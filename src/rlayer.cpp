@@ -188,6 +188,7 @@ void RLayer::reg_class(mrb_state* ruby)
             auto [e] = mrb::get_args<bool>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
             rlayer->enabled = e;
+            rlayer->handle_enable();
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -267,7 +268,6 @@ void RLayer::reg_class(mrb_state* ruby)
 
 void RLayer::reset()
 {
-    enabled = true;
     transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     trans = {0.0F, 0.0F};
     scale = {1.0F, 1.0F};

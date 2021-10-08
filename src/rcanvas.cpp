@@ -12,11 +12,17 @@
 #include <array>
 #include <memory>
 
-RCanvas::RCanvas(int w, int h) : RLayer{w, h}
+RCanvas::RCanvas(int w, int h) : RLayer{w, h} {}
+
+void RCanvas::set_target()
 {
-    canvas = std::make_shared<gl::Texture>(w, h);
-    canvas->set_target();
-    canvas->fill(0x00ff0000);
+    if (!canvas) {
+        canvas = std::make_shared<gl::Texture>(width, height);
+        canvas->set_target();
+        canvas->fill(0x00ff0000);
+    } else {
+        canvas->set_target();
+    }
 }
 
 pix::Image RCanvas::read_image(int x, int y, int w, int h)
@@ -27,7 +33,7 @@ pix::Image RCanvas::read_image(int x, int y, int w, int h)
     image.format = GL_RGBA;
     auto* ptr = static_cast<void*>(image.ptr);
     memset(ptr, w * h * 4, 0xff);
-    canvas->set_target();
+    set_target();
     // glReadBuffer(GL_COLOR_ATTACHMENT0);
     glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
     return image;
@@ -37,7 +43,7 @@ void RCanvas::draw_quad(
     double x, double y, double w, double h, RStyle const* style)
 {
     if (style == nullptr) { style = &current_style; }
-    canvas->set_target();
+    set_target();
     gl::ProgramCache::get_instance().textured.use();
     pix::set_colors(style->fg, style->bg);
     if (style->blend_mode == BlendMode::Add) { glBlendFunc(GL_ONE, GL_ONE); }
@@ -51,7 +57,7 @@ void RCanvas::draw_line(
     double x0, double y0, double x1, double y1, RStyle const* style)
 {
     if (style == nullptr) { style = &current_style; }
-    canvas->set_target();
+    set_target();
     glLineWidth(style->line_width);
     pix::set_colors(style->fg, style->bg);
     pix::draw_line({x0, y0}, {x1, y1});
@@ -60,7 +66,7 @@ void RCanvas::draw_line(
 void RCanvas::draw_circle(double x, double y, double r, RStyle const* style)
 {
     if (style == nullptr) { style = &current_style; }
-    canvas->set_target();
+    set_target();
     glLineWidth(style->line_width);
     pix::set_colors(style->fg, style->bg);
     if (style->blend_mode == BlendMode::Add) { glBlendFunc(GL_ONE, GL_ONE); }
@@ -72,10 +78,12 @@ void RCanvas::draw_circle(double x, double y, double r, RStyle const* style)
 
 void RCanvas::clear()
 {
-    canvas->set_target();
-    gl::clearColor({0});
-    glClear(GL_COLOR_BUFFER_BIT);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (canvas != nullptr) {
+        canvas->set_target();
+        gl::clearColor({0});
+        glClear(GL_COLOR_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 }
 
 void RCanvas::reset()
@@ -88,7 +96,7 @@ void RCanvas::draw_image(
     double x, double y, RImage* image, double scale, RStyle const* style)
 {
     if (style == nullptr) { style = &current_style; }
-    canvas->set_target();
+    set_target();
     glLineWidth(current_style.line_width);
     pix::set_colors(style->fg, style->bg);
     image->draw(x, y, scale);
@@ -96,13 +104,13 @@ void RCanvas::draw_image(
 
 void RCanvas::render(RLayer const* parent)
 {
-    if (!enabled) { return; }
+    if (!enabled || canvas == nullptr) { return; }
     update_tx(parent);
     canvas->bind();
     glEnable(GL_BLEND);
     pix::set_transform(transform);
     pix::set_colors(0xffffffff, 0);
-    //auto [w, h] = gl::getViewport();
+    // auto [w, h] = gl::getViewport();
     auto& program = gl::ProgramCache::get_instance().textured;
     program.use();
     pix::draw_quad();

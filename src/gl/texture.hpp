@@ -115,6 +115,7 @@ struct Texture
 
     ~Texture()
     {
+        if (tex_id != 0) { fmt::print("Destroying {}\n", (void*)this); }
         if (tex_id != 0) { glDeleteTextures(1, &tex_id); }
         if (fb_id != 0) { glDeleteFramebuffers(1, &fb_id); }
     };

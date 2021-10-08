@@ -30,6 +30,8 @@ class RCanvas : public RLayer
         RStyle const* style = nullptr);
     void draw_quad(double x, double y, double w, double h, RStyle const* style = nullptr);
 
+    void set_target();
+
 public:
     void init(mrb_state* mrb);
     static inline RClass* rclass;
