@@ -56,7 +56,7 @@ void RLayer::update_tx(RLayer const* parent)
     auto lowery = scissor[3];
     auto w = width - (scissor[0] + scissor[2]);
     auto h = height - (scissor[1] + scissor[3]);
-    fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
+    //fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
     glScissor(lowerx, lowery, w, h);
 
 //    glScissor(scissor[0] + trans[0] + t0, scissor[1] + trans[1] + t1,

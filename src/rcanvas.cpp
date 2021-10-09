@@ -48,14 +48,16 @@ RCanvas::RCanvas(int w, int h) : RLayer{w, h} {
 
 void RCanvas::update_tx(RLayer const* parent)
 {
+    float d = 0.5;
     glm::mat4x4 m(1.0F);
     // Matrix operations are read bottom to top
 
+    m = glm::translate(m, glm::vec3(d, d, 0));
     // 6. Apply rotation
     m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
 
     // 5. Change center back so we rotate around middle of layer
-    m = glm::translate(m, glm::vec3(-1.0, 1.0, 0));
+    //m = glm::translate(m, glm::vec3(-1.0, 1.0, 0));
 
     // 4. Scale back to clip space (-1 -> 1)
     //m = glm::scale(m, glm::vec3(2.0 / width, 2.0 / height, 1.0));
@@ -64,17 +66,17 @@ void RCanvas::update_tx(RLayer const* parent)
     t0 = (t0 + trans[0]) / width;
     t1 = (t1 + trans[1]) / height;
     // 3. Translate
-    m = glm::translate(m, glm::vec3(t0, -t1, 0));
+    m = glm::translate(m, glm::vec3(-t0, t1, 0));
 
     // 2. Scale to screen space and apply scale (origin is now to top left
     // corner).
     float s0 = parent != nullptr ? parent->scale[0] : 1.0F;
     float s1 = parent != nullptr ? parent->scale[1] : 1.0F;
-    m = glm::scale(m, glm::vec3(scale[0] * s0 / 2,
-                                scale[1] * s1 / 2, 1.0));
+    m = glm::scale(m, glm::vec3(1.0F / (scale[0] * s0),
+                                1.0F / (scale[1] * s1), 1.0));
 
     // 1. Change center so 0,0 becomes the corner
-    //m = glm::translate(m, glm::vec3(1.0, -1.0, 0));
+    m = glm::translate(m, glm::vec3(-d, -d, 0));
 
     //  1
     //  ^   Clip space
@@ -90,7 +92,7 @@ void RCanvas::update_tx(RLayer const* parent)
     auto lowery = scissor[3];
     auto w = width - (scissor[0] + scissor[2]);
     auto h = height - (scissor[1] + scissor[3]);
-    fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
+    //fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
     glScissor(lowerx, lowery, w, h);
 
     //    glScissor(scissor[0] + trans[0] + t0, scissor[1] + trans[1] + t1,
@@ -191,7 +193,6 @@ void RCanvas::draw_image(
 void RCanvas::render(RLayer const* parent)
 {
     if (!enabled || canvas == nullptr) { return; }
-    fmt::print("Canvas\n");
     update_tx(parent);
     canvas->bind();
     glEnable(GL_BLEND);
@@ -200,6 +201,8 @@ void RCanvas::render(RLayer const* parent)
     program.setUniform("in_transform", transform);
     program.setUniform("in_color", gl::Color(0xffffffff));
     std::array uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     pix::draw_quad_uvs(uvs);
 }
 
