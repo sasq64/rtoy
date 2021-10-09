@@ -210,10 +210,10 @@ void RLayer::reg_class(mrb_state* ruby)
         MRB_ARGS_NONE());
 
     mrb_define_method(
-        ruby, RLayer::rclass, "scale",
+        ruby, RLayer::rclass, "border",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rlayer = mrb::self_to<RLayer>(self);
-            return mrb::to_value(rlayer->scale, mrb);
+            return mrb::to_value(rlayer->scissor, mrb);
         },
         MRB_ARGS_NONE());
 
@@ -226,6 +226,14 @@ void RLayer::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RLayer::rclass, "scale",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          auto* rlayer = mrb::self_to<RLayer>(self);
+          return mrb::to_value(rlayer->scale, mrb);
+        },
+        MRB_ARGS_NONE());
 
     mrb_define_method(
         ruby, RLayer::rclass, "scale=",

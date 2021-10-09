@@ -113,6 +113,8 @@ void Display::end_draw()
     glEnable(GL_SCISSOR_TEST);
     glScissor(scissor[0], scissor[1], width - scissor[2] * 2,
         height - scissor[3] * 2);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for (auto&& layer : layers) {
         layer->render(this);
     }
@@ -134,7 +136,12 @@ void Display::reset()
     RLayer::reset();
     for (auto&& layer : layers) {
         layer->reset();
+        layer->enable(false);
     }
+    console->enable(true);
+    canvas->enable(true);
+    sprite_field->enable(true);
+
     SET_NIL_VALUE(draw_handler);
 }
 

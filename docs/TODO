@@ -13,19 +13,22 @@
 [ ] Fix Jetbrains font
 [x] Reset changes tile size to 16
 [ ] Investigate RGB ordering strangeness (just endinaness ?)
-[X] Change prompt
-[X] Style keyword args to drawing methods
-[X] Box charater snake bug
-[X] Move SDL code to system specific class
-[X] Port to Raspberry PI
+[x] Change prompt
+[x] Style keyword args to drawing methods
+[x] Box charater snake bug
+[x] Move SDL code to system specific class
+[x] Port to Raspberry PI
 
-[X] After RSprites::reset, all batches are destroyed while sprites can still
+[x] After RSprites::reset, all batches are destroyed while sprites can still
 be referenced from code, so "img" references destroyed batch.
 
 ---
 
-[ ] Reset offset and scissor
+[x] Reset offset and scissor
 [ ] Display sicssor should affect children
+[ ] Function keys in editor
+[ ] Wron console bg after editor
+[ ] Wong scaling aspect on canvas
 
 
 

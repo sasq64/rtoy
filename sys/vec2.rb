@@ -19,6 +19,10 @@ class Vec2
     def to_s() @data.to_s ; end
     def to_a() @data end
 
+    def[](i)
+        @data[i]
+    end
+
     def rotate(a)
         c = Math.cos(a)
         s = Math.sin(a)
@@ -62,7 +66,11 @@ class Vec2
         Vec2.new(@data[0] - a[0], @data[1] - a[1])
     end
     def *(s)
-        Vec2.new(@data[0] * s, @data[1] * s)
+        if s.is_a? Numeric
+            return Vec2.new(@data[0] * s, @data[1] * s)
+        else
+            return Vec2.new(@data[0] * s[0], @data[1] * s[1])
+        end
     end
     def /(s)
         Vec2.new(@data[0] / s, @data[1] / s)

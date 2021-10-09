@@ -103,7 +103,7 @@ void RCanvas::set_target()
     if (!canvas) {
         canvas = std::make_shared<gl::Texture>(width, height);
         canvas->set_target();
-        canvas->fill(0x00ff0000);
+        canvas->fill(0x00000000);
     } else {
         canvas->set_target();
     }
@@ -196,6 +196,7 @@ void RCanvas::render(RLayer const* parent)
     update_tx(parent);
     canvas->bind();
     glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
     // auto [w, h] = gl::getViewport();
     program.use();
     program.setUniform("in_transform", transform);
@@ -204,6 +205,7 @@ void RCanvas::render(RLayer const* parent)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     pix::draw_quad_uvs(uvs);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void RCanvas::init(mrb_state* mrb)
@@ -228,6 +230,27 @@ void RCanvas::reg_class(mrb_state* ruby)
             return mrb::new_data_obj(mrb, image);
         },
         MRB_ARGS_REQ(4));
+
+    mrb_define_method(
+        ruby, RCanvas::rclass, "backing",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            rcanvas->set_target();
+            auto* image = new RImage(gl_wrap::TexRef{rcanvas->canvas});
+            return mrb::new_data_obj(mrb, image);
+        },
+        MRB_ARGS_REQ(0));
+
+    mrb_define_method(
+        ruby, RCanvas::rclass, "backing=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rcanvas = mrb::self_to<RCanvas>(self);
+            RImage* image{};
+            mrb_get_args(mrb, "d", &image, &RImage::dt);
+            rcanvas->canvas = image->texture.tex;
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
 
     mrb_define_method(
         ruby, RCanvas::rclass, "as_image",
