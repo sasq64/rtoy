@@ -11,8 +11,8 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
-mrb_data_type RStyle::dt{
-    "RStyle", [](mrb_state*, void* data) { delete static_cast<RStyle*>(data); }};
+mrb_data_type RStyle::dt{"RStyle",
+    [](mrb_state*, void* data) { delete static_cast<RStyle*>(data); }};
 
 void RLayer::update_tx(RLayer const* parent)
 {
@@ -27,8 +27,8 @@ void RLayer::update_tx(RLayer const* parent)
 
     // 4. Scale back to clip space (-1 -> 1)
     m = glm::scale(m, glm::vec3(2.0 / width, 2.0 / height, 1.0));
-    float t0 = parent != nullptr ? parent->trans[0] : 1.0F;
-    float t1 = parent != nullptr ? parent->trans[1] : 1.0F;
+    float t0 = parent != nullptr ? parent->trans[0] : 0.0F;
+    float t1 = parent != nullptr ? parent->trans[1] : 0.0F;
     // 3. Translate
     m = glm::translate(m, glm::vec3(trans[0] + t0, -(trans[1] + t1), 0));
 
@@ -52,7 +52,15 @@ void RLayer::update_tx(RLayer const* parent)
     //
     std::copy(glm::value_ptr(m), glm::value_ptr(m) + 16, transform.begin());
 
-    glScissor(scissor[0], scissor[1], width - scissor[2] * 2, height - scissor[3] * 2);
+    auto lowerx = scissor[0];
+    auto lowery = scissor[3];
+    auto w = width - (scissor[0] + scissor[2]);
+    auto h = height - (scissor[1] + scissor[3]);
+    fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
+    glScissor(lowerx, lowery, w, h);
+
+//    glScissor(scissor[0] + trans[0] + t0, scissor[1] + trans[1] + t1,
+  //      width + t0 - scissor[2] * 2, height + t1 - scissor[3] * 2);
 }
 
 void RLayer::reg_class(mrb_state* ruby)
@@ -68,8 +76,8 @@ void RLayer::reg_class(mrb_state* ruby)
     //
     mrb_define_method(
         ruby, RStyle::rclass, "initialize",
-        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
-            DATA_PTR(self) = new RStyle(); // NOLINT
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
+            DATA_PTR(self) = new RStyle();                  // NOLINT
             DATA_TYPE(self) = mrb::get_data_type<RStyle>(); // NOLINT
             auto* rstyle = mrb::self_to<RStyle>(self);
             return mrb_nil_value();
@@ -161,7 +169,7 @@ void RLayer::reg_class(mrb_state* ruby)
     //
     mrb_define_method(
         ruby, RLayer::rclass, "style",
-        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
             auto* rlayer = mrb::self_to<RLayer>(self);
             return rlayer->stylep;
         },
@@ -212,10 +220,10 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RLayer::rclass, "border=",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          auto [av] = mrb::get_args<mrb_value>(mrb);
-          auto* rlayer = mrb::self_to<RLayer>(self);
-          rlayer->scissor = mrb::to_array<int, 4>(av, mrb);
-          return mrb_nil_value();
+            auto [av] = mrb::get_args<mrb_value>(mrb);
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            rlayer->scissor = mrb::to_array<int, 4>(av, mrb);
+            return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
 
@@ -271,5 +279,9 @@ void RLayer::reset()
     transform = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     trans = {0.0F, 0.0F};
     scale = {1.0F, 1.0F};
+    scissor = {0, 0, 0, 0};
+    current_style.fg = {1, 1, 1, 1};
+    current_style.bg = {0, 0, 0, 0};
     rot = 0;
+    update_tx(nullptr);
 }

@@ -3,6 +3,8 @@
 #include "mrb_tools.hpp"
 #include "rimage.hpp"
 
+#include <glm/ext.hpp>
+#include <glm/glm.hpp>
 #include <gl/gl.hpp>
 #include <gl/program_cache.hpp>
 #include <pix/pix.hpp>
@@ -12,8 +14,88 @@
 #include <array>
 #include <memory>
 
-RCanvas::RCanvas(int w, int h) : RLayer{w, h} {}
+static std::string vertex_shader{R"gl(
+#ifdef GL_ES
+    precision mediump float;
+#endif
+    attribute vec2 in_pos;
+    uniform mat4 in_transform;
+    attribute vec2 in_uv;
+    varying vec2 out_uv;
+    void main() {
+        //gl_Position = vec4( v.x, v.y, 0, 1 );
+        out_uv = (in_transform * vec4(in_uv, 0, 1)).xy;
+        gl_Position = vec4(in_pos, 0, 1);
+    })gl"};
 
+static std::string fragment_shader{R"gl(
+    #ifdef GL_ES
+        precision mediump float;
+    #endif
+        uniform vec4 in_color;
+        uniform sampler2D in_tex;
+        varying vec2 out_uv;
+        void main() {
+            gl_FragColor = texture2D(in_tex, out_uv) * in_color;
+        })gl"};
+
+RCanvas::RCanvas(int w, int h) : RLayer{w, h} {
+
+    program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
+                               gl_wrap::FragmentShader{fragment_shader});
+
+}
+
+void RCanvas::update_tx(RLayer const* parent)
+{
+    glm::mat4x4 m(1.0F);
+    // Matrix operations are read bottom to top
+
+    // 6. Apply rotation
+    m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
+
+    // 5. Change center back so we rotate around middle of layer
+    m = glm::translate(m, glm::vec3(-1.0, 1.0, 0));
+
+    // 4. Scale back to clip space (-1 -> 1)
+    //m = glm::scale(m, glm::vec3(2.0 / width, 2.0 / height, 1.0));
+    float t0 = parent != nullptr ? parent->trans[0] : 0.0F;
+    float t1 = parent != nullptr ? parent->trans[1] : 0.0F;
+    t0 = (t0 + trans[0]) / width;
+    t1 = (t1 + trans[1]) / height;
+    // 3. Translate
+    m = glm::translate(m, glm::vec3(t0, -t1, 0));
+
+    // 2. Scale to screen space and apply scale (origin is now to top left
+    // corner).
+    float s0 = parent != nullptr ? parent->scale[0] : 1.0F;
+    float s1 = parent != nullptr ? parent->scale[1] : 1.0F;
+    m = glm::scale(m, glm::vec3(scale[0] * s0 / 2,
+                                scale[1] * s1 / 2, 1.0));
+
+    // 1. Change center so 0,0 becomes the corner
+    //m = glm::translate(m, glm::vec3(1.0, -1.0, 0));
+
+    //  1
+    //  ^   Clip space
+    //  |
+    //  |    0
+    //  |
+    //  +-------->1
+    // -1
+    //
+    std::copy(glm::value_ptr(m), glm::value_ptr(m) + 16, transform.begin());
+
+    auto lowerx = scissor[0];
+    auto lowery = scissor[3];
+    auto w = width - (scissor[0] + scissor[2]);
+    auto h = height - (scissor[1] + scissor[3]);
+    fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
+    glScissor(lowerx, lowery, w, h);
+
+    //    glScissor(scissor[0] + trans[0] + t0, scissor[1] + trans[1] + t1,
+    //      width + t0 - scissor[2] * 2, height + t1 - scissor[3] * 2);
+}
 void RCanvas::set_target()
 {
     if (!canvas) {
@@ -78,9 +160,13 @@ void RCanvas::draw_circle(double x, double y, double r, RStyle const* style)
 
 void RCanvas::clear()
 {
+    if (canvas == nullptr &&
+        current_style.bg != std::array<float, 4>{0.F, 0, 0, 0}) {
+        set_target();
+    }
     if (canvas != nullptr) {
         canvas->set_target();
-        gl::clearColor({0});
+        gl::clearColor({current_style.bg});
         glClear(GL_COLOR_BUFFER_BIT);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -105,15 +191,16 @@ void RCanvas::draw_image(
 void RCanvas::render(RLayer const* parent)
 {
     if (!enabled || canvas == nullptr) { return; }
+    fmt::print("Canvas\n");
     update_tx(parent);
     canvas->bind();
     glEnable(GL_BLEND);
-    pix::set_transform(transform);
-    pix::set_colors(0xffffffff, 0);
     // auto [w, h] = gl::getViewport();
-    auto& program = gl::ProgramCache::get_instance().textured;
     program.use();
-    pix::draw_quad();
+    program.setUniform("in_transform", transform);
+    program.setUniform("in_color", gl::Color(0xffffffff));
+    std::array uvs{0.F, 0.F, 1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
+    pix::draw_quad_uvs(uvs);
 }
 
 void RCanvas::init(mrb_state* mrb)
@@ -230,6 +317,7 @@ void RCanvas::reg_class(mrb_state* ruby)
             auto* rcanvas = mrb::self_to<RCanvas>(self);
 
             auto fg = gl::Color(rcanvas->current_style.fg).to_rgba();
+            // TODO: Text image cache
             auto* rimage =
                 rcanvas->current_font.as<RFont>()->render(text, fg, size);
             rcanvas->draw_image(x, y, rimage);

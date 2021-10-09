@@ -72,8 +72,12 @@ end
 
 #tween(console).to(scale: [4,2])
 scale(4.0, 2.0)
+o = vec2((display.width - WIDTH*8*4)/2, (display.height - HEIGHT*16*2)/2)
+display.offset = o
+display.console.border = [o.x, o.y, o.x, o.y]
+
 console.clear(fg: Color::GREEN, bg: Color::BLACK)
-clear()
+#clear()
 draw_box(0,TOP, WIDTH, HEIGHT-TOP)
 
 1.times { create_apple }

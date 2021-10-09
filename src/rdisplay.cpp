@@ -131,6 +131,7 @@ void Display::reset()
         sprite_field->remove_sprite(mouse_cursor);
         mouse_cursor = nullptr;
     }
+    RLayer::reset();
     for (auto&& layer : layers) {
         layer->reset();
     }

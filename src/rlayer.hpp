@@ -45,6 +45,8 @@ protected:
 
     bool enabled = true;
 
+    BlendMode blend_mode = BlendMode::Blend;
+
     mrb::RubyPtr stylep;
     RStyle& current_style;
 

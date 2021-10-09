@@ -4,6 +4,7 @@
 #include "rlayer.hpp"
 
 #include <gl/texture.hpp>
+#include "gl/program.hpp"
 
 #include "mrb_tools.hpp"
 #include <mruby.h>
@@ -22,6 +23,7 @@ class RCanvas : public RLayer
 
     std::pair<double, double> last_point;
 
+    gl_wrap::Program program;
     pix::Image read_image(int x, int y, int w, int h);
     void draw_line(
         double x0, double y0, double x1, double y1, RStyle const* style = nullptr);
@@ -31,6 +33,8 @@ class RCanvas : public RLayer
     void draw_quad(double x, double y, double w, double h, RStyle const* style = nullptr);
 
     void set_target();
+
+    void update_tx(RLayer const* parent) override;
 
 public:
     void init(mrb_state* mrb);

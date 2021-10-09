@@ -162,21 +162,19 @@ std::pair<int, int> PixConsole::get_char_size()
 
 void ConsoleFont::set_tile_size(int w, int h)
 {
-    char_uvs.clear();
-    next_pos = {0, 0};
+    if (char_width != w || char_height != h) {
+        char_uvs.clear();
+        next_pos = {0, 0};
 
-    font_texture.set_target();
-    glClearColor(1.0F, 0.0F, 0.0F, 1.0F);
-    glClear(GL_COLOR_BUFFER_BIT);
-    /* std::vector<uint32_t> data; */
-    /* data.resize(texture_width * texture_height); */
-    /* std::fill(data.begin(), data.end(), 0); */
-    /* font_texture = gl_wrap::Texture{texture_width, texture_height, data}; */
+        font_texture.set_target();
+        glClearColor(1.0F, 0.0F, 0.0F, 1.0F);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-    char_width = w;
-    char_height = h;
-    for (char32_t c = 0x20; c <= 0x7f; c++) {
-        add_char(c);
+        char_width = w;
+        char_height = h;
+        for (char32_t c = 0x20; c <= 0x7f; c++) {
+            add_char(c);
+        }
     }
 }
 

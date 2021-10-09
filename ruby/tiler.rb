@@ -75,11 +75,8 @@ class TileView < UI::Element
     def render(ui)
         if @dirty
             w,h = @tile_map.image.width * @scale,@tile_map.image.height * @scale
-            ui.canvas.fg = Color::WHITE
             ui.canvas.rect(@pos.x, @pos.y, w+6, h+6, fg: Color::WHITE)
-            ui.canvas.fg = Color::BLUE
             ui.canvas.rect(@pos.x+2, @pos.y+2, w, h, fg: Color::BLUE)
-            ui.canvas.fg = Color::WHITE
             ui.canvas.draw(@pos.x+2, @pos.y+2, @tile_map.image, @scale, fg: Color::WHITE)
             @dirty = false
         end

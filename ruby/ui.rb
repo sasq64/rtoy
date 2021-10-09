@@ -2,6 +2,7 @@
 require 'vec2.rb'
 
 module UI
+    # Abstract rectangular UI element
     class Element
 
         def initialize(pos, size)
@@ -24,6 +25,7 @@ module UI
 
     end
 
+    # Parent for UI elements. Renders on canvas
     class Frame
         attr_reader :canvas, :input, :elements
         def initialize()
@@ -89,8 +91,9 @@ module UI
     end
 
     class Button < Element
-        def initialize(pos, size, &block)
+        def initialize(pos, size, text, &block)
             super(pos, size)
+            @text = text
             @click_handler = block
         end
 
@@ -98,6 +101,7 @@ module UI
             e = @pos + @size
             ui.canvas.line(@pos.x, @pos.y, e.x, e.y)
             ui.canvas.line(@pos.x, e.y, e.x, @pos.y)
+            ui.canvas.text(@pos.x, @pos.y, @text, 24)
         end
 
         def on_click(x,y)

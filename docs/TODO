@@ -5,14 +5,14 @@
 [x] Set default colors before showing error
 [ ] Scale issue when returning to editor
 [x] Fix font rendering bgcolor
-[ ] Option to auto run script after boot
-[ ] Option to run screenless (for testing)
+[x] Option to auto run script after boot
+[x] Option to run screenless (for testing)
 [ ] Initial tests
 [x] Option to set different console font
 [x] Intelligent console sizing/scaling depending on system
 [ ] Fix Jetbrains font
 [x] Reset changes tile size to 16
-[ ] Investigate RGB ordering strangeness
+[ ] Investigate RGB ordering strangeness (just endinaness ?)
 [X] Change prompt
 [X] Style keyword args to drawing methods
 [X] Box charater snake bug
@@ -21,6 +21,13 @@
 
 [X] After RSprites::reset, all batches are destroyed while sprites can still
 be referenced from code, so "img" references destroyed batch.
+
+---
+
+[ ] Reset offset and scissor
+[ ] Display sicssor should affect children
+
+
 
 
 # SLIDES
