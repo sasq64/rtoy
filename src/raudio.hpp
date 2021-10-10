@@ -15,7 +15,7 @@ struct Sound
     }
     size_t frames() const { return data.size() / channels; }
     float freq = 0;
-    unsigned channels = 1;
+    int channels = 1;
     static inline RClass* rclass;
     static mrb_data_type dt;
 };

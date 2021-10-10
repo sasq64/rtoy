@@ -49,7 +49,7 @@ void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)
     // Assume sample is C4 = 261.63 Hz
     if (freq == 0) { freq = 261.63F; }
     freq = sound.freq * (freq / 261.63F);
-    for (size_t i = 0; i < sound.channels; i++) {
+    for (int i = 0; i < sound.channels; i++) {
         auto& chan = channels[(channel + i) % 32];
         chan.set(freq, sound.channel(i), sound.frames());
         chan.loop = loop;

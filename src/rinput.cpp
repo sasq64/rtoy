@@ -18,7 +18,7 @@ RInput::RInput(mrb_state* _ruby, System& _system) : ruby{_ruby}, system{_system}
 bool RInput::handle_event(KeyEvent const& e)
 {
     auto code = e.key;
-    fmt::print("CODE {:x}\n", e.key);
+    //fmt::print("CODE {:x}\n", e.key);
     if (code == RKEY_F12) {
         fmt::print("RESET!\n");
         do_reset = true;
@@ -59,7 +59,7 @@ bool RInput::handle_event(MoveEvent const& me)
 }
 bool RInput::handle_event(TextEvent const& me)
 {
-    fmt::print("TEXT '{}'\n", me.text);
+    //fmt::print("TEXT '{}'\n", me.text);
     auto text32 = utils::utf8_decode(me.text);
     for (auto s : text32) {
         call_proc(ruby, key_handler, s, 0, me.device);
@@ -173,10 +173,9 @@ void RInput::reg_class(mrb_state* ruby, System& system)
             if (mrb_get_argc(mrb) == 1) {
                 auto [code] = mrb::get_args<uint32_t>(mrb);
                 return mrb::to_value(input->system.is_pressed(code), mrb);
-            } else {
-                auto [code, dev] = mrb::get_args<uint32_t, int>(mrb);
-                return mrb::to_value(input->system.is_pressed(code, dev), mrb);
             }
+            auto [code, dev] = mrb::get_args<uint32_t, int>(mrb);
+            return mrb::to_value(input->system.is_pressed(code, dev), mrb);
         },
         MRB_ARGS_BLOCK());
 

@@ -265,7 +265,7 @@ void RConsole::reg_class(mrb_state* ruby)
             auto [x, y] = mrb::get_args<int, int>(mrb);
             ptr->xpos = x;
             ptr->ypos = y;
-            fmt::print("Goto {} {}\n", x, y);
+            //fmt::print("Goto {} {}\n", x, y);
             // ptr->console->set_cursor(x, y);
             return mrb_nil_value();
         },

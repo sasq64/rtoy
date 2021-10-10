@@ -105,9 +105,7 @@ public:
 
     static constexpr bool in_unicode_range(uint32_t c)
     {
-        // 00 - 1F, 80 - 9F
-        auto mask = (c & 0xfffffe0);
-        return !(mask == 0x80 || mask == 0x00 || c > 0x1f'ffff);
+        return c >= 0x20 && c <= 0x0f'ffff;
     }
 
     static uint32_t sdl2key(uint32_t code)
@@ -141,7 +139,7 @@ public:
             } else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 return ClickEvent{e.button.x, e.button.y, 1};
             } else if (e.type == SDL_TEXTINPUT) {
-                fmt::print("TEXT '{}'\n", e.text.text);
+                //fmt::print("TEXT '{}'\n", e.text.text);
                 return TextEvent{e.text.text, 0};
             } else if (e.type == SDL_KEYDOWN) {
                 auto code = sdl2key(e.key.keysym.sym);
@@ -150,7 +148,7 @@ public:
                 pressed[code] |= (1 << device);
                 auto mod = ke.keysym.mod;
                 if (!in_unicode_range(code) || (mod & 0xc0) != 0) {
-                    fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
+                    //fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
                     return KeyEvent{code, mod, device};
                 }
             } else if (e.type == SDL_KEYUP) {

@@ -24,7 +24,7 @@
 
 
 #define DEVICE_ID(k) ((k>>24)&0xf)
-#define IS_SHIFT(k) ((k&0x00fffff7) == RKEY_LSHIFT)
+//#define IS_SHIFT(k) ((k&0x00fffff7) == RKEY_LSHIFT)
 
 
 enum RKey : unsigned int
@@ -64,7 +64,7 @@ enum RKey : unsigned int
 
     RKEY_SPACE = ' ',
 
-    RKEY_F1 = 0x80,
+    RKEY_F1 = 0x10'0000,
     RKEY_F2,
     RKEY_F3,
     RKEY_F4,
@@ -77,11 +77,11 @@ enum RKey : unsigned int
     RKEY_F11,
     RKEY_F12,
 
-    RKEY_LSHIFT = 0x90,
+    RKEY_LSHIFT = 0x10'0010,
     RKEY_LCTRL,
     RKEY_LALT,
     RKEY_LWIN,
-    RKEY_RSHIFT = 0x98,
+    RKEY_RSHIFT = 0x10'0018,
     RKEY_RCTRL,
     RKEY_RALT,
     RKEY_RWIN,

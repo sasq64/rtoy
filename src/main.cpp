@@ -45,6 +45,7 @@ int main(int argc, char const** argv)
     }
     settings.screen = full_screen ? ScreenType::Full : ScreenType::Window;
     if (hidden) { settings.screen = ScreenType::None; }
+
     Toy toy(settings);
     toy.run();
 }

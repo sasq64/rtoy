@@ -136,14 +136,14 @@ void draw_quad_filled(double x, double y, double sx, double sy)
 {
     auto [w, h] = gl::getViewport<float>();
 
-    auto x0 = x * 2.0F / w - 1.0F;
-    auto y0 = y * -2.0F / h + 1.0F;
+    float x0 = static_cast<float>(x) * 2.0F / w - 1.0F;
+    float y0 = static_cast<float>(y) * -2.0F / h + 1.0F;
 
     x += sx;
     y += sy;
 
-    auto x1 = x * 2.0F / w - 1.0F;
-    auto y1 = y * -2.0F / h + 1.0F;
+    float x1 = static_cast<float>(x) * 2.0F / w - 1.0F;
+    float y1 = static_cast<float>(y) * -2.0F / h + 1.0F;
 
     std::array vertexData{x0, y0, x1, y0, x1, y1, x0, y1};
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
@@ -181,22 +181,22 @@ void draw_line_impl(double x0, double y0, double x1, double y1)
 {
     auto [w, h] = gl::getViewport<float>();
 
-    x0 = x0 * 2.0F / w - 1.0F;
-    x1 = x1 * 2.0F / w - 1.0F;
-    y0 = y0 * -2.0F / h + 1.0F;
-    y1 = y1 * -2.0F / h + 1.0F;
+    fmt::print("{} {}\n", w, h);
+    fmt::print("{} {} {} {}\n", x0, y0, x1, y1);
 
-    std::array vertexData{x0, y0, x1, y1};
+    std::array vertexData{static_cast<float>(x0) * 2.0F / w - 1.0F,
+        static_cast<float>(y0) * -2.0F / h + 1.0F,
+        static_cast<float>(x1) * 2.0F / w - 1.0F,
+        static_cast<float>(y1) * -2.0F / h + 1.0F};
+
     gl::ArrayBuffer<GL_STREAM_DRAW> vbo{vertexData};
 
     vbo.bind();
-    // glBindBuffer(GL_
 
     auto& program = gl::ProgramCache::get_instance().non_textured;
     program.use();
     auto pos = program.getAttribute("in_pos");
     pos.enable();
-    // program.setUniform("in_color", gl::Color(0xffff00ff));
     program.setUniform("in_transform",
         std::array{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F,
             1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F});

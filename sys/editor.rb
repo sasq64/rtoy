@@ -77,7 +77,7 @@ class Editor
         h = @con.visible_rows-2
         @dirty = true
         case key
-        when 0x20..0xffffff
+        when 0x20..0xfffff
             if mod & 0xc0 != 0
                 if key == 's'.ord
                     save()
