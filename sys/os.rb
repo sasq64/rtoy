@@ -120,7 +120,9 @@ module OS
                 end
             end
             Tween.update_all(t.seconds)
+            Display.default.bench_start(1);
             @@handlers.call_all(:draw, t.seconds)
+            Display.default.bench_end(1)
             @@read_key = {}
         end
         Input.default.on_key do |key,mod,dev|

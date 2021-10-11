@@ -5,6 +5,7 @@
 #include "system.hpp"
 
 #include "mrb_tools.hpp"
+#include <chrono>
 #include <mruby.h>
 #include <mruby/data.h>
 
@@ -16,6 +17,7 @@ class RConsole;
 class RCanvas;
 class RSprites;
 class RSprite;
+class PixConsole;
 
 class Display : public RLayer
 {
@@ -35,6 +37,10 @@ class Display : public RLayer
 
     std::vector<std::shared_ptr<RLayer>> layers;
 
+    std::shared_ptr<PixConsole> debug_console;
+
+    std::array<int64_t, 10> bench_times;
+    std::chrono::time_point<std::chrono::steady_clock> bench_start;
 public:
     RSprite* mouse_cursor = nullptr;
     std::shared_ptr<RConsole> console;

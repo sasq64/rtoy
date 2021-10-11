@@ -333,10 +333,12 @@ class Tween
 
     # Called from handler
     def self.update_all(delta)
+        Display.default.bench_start(0)
         @@seconds = Timer.default.seconds
         @@tweens.delete_if do |tw|
             tw.update(delta)
         end
+        Display.default.bench_end(0)
     end
 
     def self.clear()

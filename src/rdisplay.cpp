@@ -24,6 +24,10 @@
 #    endif
 #endif
 
+#include <chrono>
+using namespace std::chrono_literals;
+using clk = std::chrono::steady_clock;
+
 mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
                               auto* display = static_cast<Display*>(data);
                               // SET_NIL_VALUE(display->draw_handler);
@@ -56,7 +60,15 @@ void Display::setup()
         settings.font_size};
     auto font = std::make_shared<ConsoleFont>(
         settings.console_font.string(), settings.font_size);
-    auto pixel_console = std::make_shared<PixConsole>(256, 256, font);
+
+    debug_console = std::make_shared<PixConsole>(40, 16, font);
+    debug_console->reset();
+    debug_console->fill(0xffffffff, 0x0000000);
+    debug_console->text(0, 0, "DEBUG");
+    debug_console->flush();
+
+    auto pixel_console =
+        std::make_shared<PixConsole>(256, 256, "data/unscii-16.ttf", 16);
     for (int i = 0; i < 4; i++) {
         auto con = std::make_shared<RConsole>(w, h, style, pixel_console);
         layers.push_back(con);
@@ -115,8 +127,20 @@ void Display::end_draw()
         height - scissor[3] * 2);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    auto t = clk::now();
     for (auto&& layer : layers) {
         layer->render(this);
+    }
+    auto rt = clk::now() - t;
+    long ms = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
+
+    if (debug_console) {
+        debug_console->text(0, 0, fmt::format("RENDER: {}ms  ", ms));
+        debug_console->text(0, 1, fmt::format("TWEEN: {}ms  ", bench_times[0]));
+        debug_console->text(0, 2, fmt::format("DRAW: {}ms  ", bench_times[1]));
+        debug_console->flush();
+        debug_console->render(static_cast<float>(width - 320), 0, 1.0F, 1.0F);
     }
 }
 
@@ -213,7 +237,7 @@ void Display::reg_class(
 
     mrb_define_method(
         ruby, Display::rclass, "consoles",
-        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             return display->consoles;
         },
@@ -229,7 +253,7 @@ void Display::reg_class(
 
     mrb_define_method(
         ruby, Display::rclass, "canvases",
-        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             return display->canvases;
         },
@@ -245,7 +269,7 @@ void Display::reg_class(
 
     mrb_define_method(
         ruby, Display::rclass, "sprite_fields",
-        [](mrb_state*  /*mrb*/, mrb_value self) -> mrb_value {
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             return display->sprite_fields;
         },
@@ -298,6 +322,26 @@ void Display::reg_class(
             return a;
         },
         MRB_ARGS_REQ(4));
+
+    mrb_define_method(
+        ruby, Display::rclass, "bench_start",
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            display->bench_start = clk::now();
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+    mrb_define_method(
+        ruby, Display::rclass, "bench_end",
+        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
+            auto* display = mrb::self_to<Display>(self);
+            display->bench_times[0] =
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    clk::now() - display->bench_start)
+                    .count();
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
 
     mrb_define_method(
         ruby, Display::rclass, "clear",
