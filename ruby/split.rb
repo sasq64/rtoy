@@ -1,7 +1,8 @@
 #console.enabled = false
 # Sprite split and tween example
+console.enabled = false
 img = Image.from_file("data/face.png")
-sprites = img.split(32, 32).map { |img| add_sprite(img) }
+sprites = img.split(16, 16).map { |img| add_sprite(img) }
 scale = 4.0
 sprites.each do | s |
     s.pos = s.pos * scale

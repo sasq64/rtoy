@@ -219,7 +219,7 @@ public:
                     int rc = read(fd, &buf[0], sizeof(struct input_event) * 4);
                     auto* ptr = (struct input_event*)&buf[0];
 
-                    while (rc >= sizeof(struct input_event)) {
+                    while (rc >= (int)sizeof(struct input_event)) {
                         if (ptr->type == EV_REL) {
                             if(ptr->code == REL_X) {
                                 mouse_x += ptr->value;
@@ -241,7 +241,7 @@ public:
                         } else
                         if (ptr->type == EV_KEY) {
                             uint32_t k = ptr->code;
-                            int mods = 0;
+                            uint32_t mods = 0;
                             if (k == KEY_LEFTSHIFT || k == KEY_RIGHTSHIFT) {
                                 shift_down = ptr->value != 0;
                             }
@@ -261,7 +261,7 @@ public:
                                     fmt::print("Converted to {:x} > {:x}\n", k,
                                         it->second);
                                     k = it->second;
-                                    putEvent(KeyEvent{k, 0});
+                                    putEvent(KeyEvent{k, mods, 0});
                                 } else {
                                     fmt::print("Unhandled key {:x}\n", ptr->code);
                                 }
@@ -297,7 +297,7 @@ public:
         player->play([fcb](int16_t* data, size_t sz) {
             std::array<float, 32768> fa; // NOLINT
             fcb(fa.data(), sz);
-            for (int i = 0; i < sz; i++) {
+            for (size_t i = 0; i < sz; i++) {
                 auto f = std::clamp(fa[i], -1.0F, 1.0F);
                 data[i] = static_cast<int16_t>(f * 32767.0);
             }

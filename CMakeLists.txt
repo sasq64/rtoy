@@ -25,7 +25,7 @@ endif()
 
 if(RASPBERRY_PI)
     set(VC /opt/vc)
-    include_directories(
+    include_directories(SYSTEM
         ${VC}/include
         ${VC}/include/interface/vcos/pthreads
         ${VC}/include/interface/vmcs_host/linux)
