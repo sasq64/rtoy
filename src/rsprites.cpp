@@ -110,7 +110,7 @@ void RSprites::collide()
         auto it = group0.begin();
         while (it != group0.end()) {
             auto* sprite1 = *it;
-            if(sprite1->texture.tex == nullptr) {
+            if (sprite1->texture.tex == nullptr) {
                 ++it;
                 continue;
             }
@@ -121,7 +121,7 @@ void RSprites::collide()
             auto it2 = group1.begin();
             while (it2 != group1.end()) {
                 auto* sprite2 = *it2;
-                if(sprite2->texture.tex == nullptr) {
+                if (sprite2->texture.tex == nullptr) {
                     ++it2;
                     continue;
                 }
@@ -146,12 +146,12 @@ void RSprites::collide()
 
 void RSprites::render(RLayer const* parent)
 {
+    if (!enabled) { return; }
     // if (batches.empty()) { return; }
     update_tx(parent);
     // textured.setUniform("in_transform", mat);
 
     glEnable(GL_BLEND);
-    glLineWidth(current_style.line_width);
     pix::set_colors(current_style.fg, current_style.bg);
     auto& textured = program; // gl::ProgramCache::get_instance().textured;
     textured.use();
@@ -161,6 +161,8 @@ void RSprites::render(RLayer const* parent)
     auto uv = textured.getAttribute("in_uv");
     pos.enable();
     uv.enable();
+    
+    auto location = glGetUniformLocation(program.program, "in_transform");
 
     for (auto& [_, c] : colliders) {
         c.clear();
@@ -197,7 +199,7 @@ void RSprites::render(RLayer const* parent)
                 sprite->dirty = false;
                 sprite->update_tx(width, height);
             }
-            textured.setUniform("in_transform", sprite->transform);
+            textured.setUniform(location, sprite->transform);
             sprite->vbo.bind();
             gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
             gl::vertexAttrib(

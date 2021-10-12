@@ -188,6 +188,10 @@ target_link_libraries(pix PRIVATE Warnings PUBLIC
     Graphics
     Freetype::Freetype)
 
+if(EMSCRIPTEN OR RASPBERRY_PI)
+    target_compile_definitions(pix PUBLIC NO_GLCHECK)
+endif()
+
 ############## MAIN TARGET ###################################################
 
 if(EMSCRIPTEN)

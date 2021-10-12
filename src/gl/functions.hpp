@@ -37,7 +37,7 @@ inline char const* gl_error_string(GLenum const err) noexcept
 
 inline void gl_check(std::string const& f)
 {
-#ifndef __EMSCRIPTEN__
+#ifndef NO_GLCHECK
     if (auto err = glGetError(); err != GL_NO_ERROR) {
         puts((f + "() error:" + gl_error_string(err)).c_str());
         fflush(stdout);
@@ -47,9 +47,9 @@ inline void gl_check(std::string const& f)
 }
 
 template <typename T>
-inline constexpr T gl_check(T res, std::string const& f)
+inline constexpr T gl_check(T const& res, std::string const& f)
 {
-#ifndef __EMSCRIPTEN__
+#ifndef NO_GLCHECK
     if (auto err = glGetError(); err != GL_NO_ERROR) {
         // throw gl_exception(f + "() error:" + gl_error_string(err));
         puts((f + "() error:" + gl_error_string(err)).c_str());

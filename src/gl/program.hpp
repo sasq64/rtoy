@@ -130,6 +130,11 @@ struct Program
     }
 
     template <typename... ARGS>
+    void setUniform(GLint location, ARGS... args) const
+    {
+        glUniform(location, args...);
+    }
+    template <typename... ARGS>
     void setUniform(const char* name, ARGS... args) const
     {
         auto location = glGetUniformLocation(program, name);
