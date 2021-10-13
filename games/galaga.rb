@@ -7,7 +7,7 @@ class Galaga
 
         @ship = Image.from_file('data/ship.png')
         @bullet = Image.solid(2, 3, Color::LIGHT_RED)
-        @enemy = Image.from_file('data/enemy1.png')
+        @enemy = Image.from_file('data/enemy2.png')
         @counter = 0
 
         sprite_field.on_collision(:bullet, :enemy) do |b,e|
@@ -59,7 +59,7 @@ class Galaga
         enemy = add_sprite(@enemy,
             scale: 3,
             collider: :enemy,
-            pos: Vec2.rand(display.width, 0))
+            pos: Vec2.rand(display.width/2, 0))
 
         tween(enemy).seconds(5.0).to(y: pos.y).
             fn(:out_elastic).to(x: pos.x).to(rotation: Math::PI).
@@ -68,8 +68,8 @@ class Galaga
 
     def update()
         @counter += 1
-        pos = vec2(display.width/2, display.height + 300)
-        spawn_enemy(pos) if @counter % 90 == 0
+        pos = vec2(rand(display.width), display.height + 300)
+        spawn_enemy(pos) if @counter % 20 == 0
         @players.each do |dev,spr|
             spr.x += 8 if is_pressed(Key::RIGHT, dev)
             spr.x -= 8 if is_pressed(Key::LEFT, dev)

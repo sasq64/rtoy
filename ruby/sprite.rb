@@ -14,5 +14,7 @@ on_draw do
   tween(s).seconds(4).delta(pos: delta).to(alpha: 0).when_done { remove_sprite(s) }
   sprite.rotation += 0.04 if is_pressed(Key::RIGHT)
   sprite.rotation -= 0.04 if is_pressed(Key::LEFT)
-
 end
+
+
+vsync {}

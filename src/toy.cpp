@@ -274,6 +274,7 @@ void Toy::destroy()
 
 bool Toy::render_loop()
 {
+    auto t = clk::now();
     RAudio::default_audio->update();
 
     auto* display = Display::default_display;
@@ -318,6 +319,9 @@ bool Toy::render_loop()
     }
 
     if (RTimer::default_timer != nullptr) { RTimer::default_timer->update(); }
+
+    auto rt = clk::now() - t;
+    display->pre_t = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
 
     display->end_draw();
     display->swap();

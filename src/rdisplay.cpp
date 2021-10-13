@@ -117,6 +117,7 @@ bool Display::begin_draw()
 
 void Display::end_draw()
 {
+    auto t = clk::now();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     gl::clearColor({bg});
     glClear(GL_COLOR_BUFFER_BIT);
@@ -126,19 +127,26 @@ void Display::end_draw()
     glScissor(scissor[0], scissor[1], width - scissor[2] * 2,
         height - scissor[3] * 2);
 
+
+    auto rt = clk::now() - t;
+    long clear_t = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
+
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    auto t = clk::now();
+    t = clk::now();
     for (auto&& layer : layers) {
         layer->render(this);
     }
-    auto rt = clk::now() - t;
+    rt = clk::now() - t;
     long ms = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
 
     if (debug_console) {
-        debug_console->text(0, 0, fmt::format("RENDER: {}ms  ", ms));
-        debug_console->text(0, 1, fmt::format("TWEEN: {}ms  ", bench_times[0]));
-        debug_console->text(0, 2, fmt::format("DRAW: {}ms  ", bench_times[1]));
+        debug_console->text(0, 0, fmt::format("CLEAR: {}ms  ", clear_t));
+        debug_console->text(0, 1, fmt::format("RENDER: {}ms  ", ms));
+        debug_console->text(0, 2, fmt::format("TWEEN: {}ms  ", bench_times[0]));
+        debug_console->text(0, 3, fmt::format("DRAW: {}ms  ", bench_times[1]));
+        debug_console->text(0, 4, fmt::format("SWAP: {}ms  ", swap_t));
+        debug_console->text(0, 5, fmt::format("OTHER: {}ms  ", pre_t));
         debug_console->flush();
         debug_console->render(static_cast<float>(width - 320), 0, 1.0F, 1.0F);
     }
@@ -146,7 +154,10 @@ void Display::end_draw()
 
 void Display::swap()
 {
+    auto t = clk::now();
     window->swap();
+    auto rt = clk::now() - t;
+    swap_t = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
 }
 
 void Display::reset()
@@ -333,9 +344,10 @@ void Display::reg_class(
         MRB_ARGS_REQ(1));
     mrb_define_method(
         ruby, Display::rclass, "bench_end",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
-            display->bench_times[0] =
+            auto [i] = mrb::get_args<int>(mrb);
+            display->bench_times[i] =
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                     clk::now() - display->bench_start)
                     .count();

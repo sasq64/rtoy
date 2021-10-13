@@ -41,7 +41,10 @@ class Display : public RLayer
 
     std::array<int64_t, 10> bench_times;
     std::chrono::time_point<std::chrono::steady_clock> bench_start;
+
+    int64_t swap_t = 0;
 public:
+    int64_t pre_t = 0;
     RSprite* mouse_cursor = nullptr;
     std::shared_ptr<RConsole> console;
     mrb_value consoles{};

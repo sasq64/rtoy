@@ -74,6 +74,10 @@ RSprites::RSprites(mrb_state* _ruby, int w, int h) : RLayer{w, h}, ruby{_ruby}
 {
     program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
         gl_wrap::FragmentShader{fragment_shader});
+    tx_location = glGetUniformLocation(program.program, "in_transform");
+    col_location = glGetUniformLocation(program.program, "in_color");
+    pos = program.getAttribute("in_pos");
+    uv = program.getAttribute("in_uv");
 }
 
 void RSprites::purge()
@@ -144,71 +148,64 @@ void RSprites::collide()
     }
 }
 
+bool RSprites::draw_batch(SpriteBatch& batch)
+{
+    float last_alpha = -1;
+    batch.texture->bind();
+    auto it = batch.sprites.begin();
+    while (it != batch.sprites.end()) {
+        auto* sprite = *it;
+
+        int count = 0;
+        if (sprite->texture.tex == nullptr) {
+            it = batch.sprites.erase(it);
+            // fmt::print("erase {} {}\n", (void*)sprite, sprite->held);
+            if (sprite->held) {
+                sprite->held = false;
+            } else {
+                delete sprite;
+            }
+            continue;
+        }
+        // When we render sprites, we sort them into `colliders` according
+        // to their group
+        if (sprite->collider != nullptr) {
+            colliders[sprite->collider->group].push_back(sprite);
+        }
+        if (last_alpha != sprite->alpha) {
+            gl::Color fg = current_style.fg;
+            fg.alpha = sprite->alpha;
+            program.setUniform(col_location, fg);
+            last_alpha = sprite->alpha;
+        }
+        if (sprite->dirty) {
+            sprite->dirty = false;
+            sprite->update_tx(width, height);
+        }
+        program.setUniform(tx_location, sprite->transform);
+        sprite->vbo.bind();
+        gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
+        gl::vertexAttrib(uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
+        gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
+        it++;
+    }
+    return batch.sprites.empty();
+}
+
 void RSprites::render(RLayer const* parent)
 {
     if (!enabled) { return; }
-    // if (batches.empty()) { return; }
-    update_tx(parent);
-    // textured.setUniform("in_transform", mat);
 
+    update_tx(parent);
     glEnable(GL_BLEND);
-    pix::set_colors(current_style.fg, current_style.bg);
-    auto& textured = program; // gl::ProgramCache::get_instance().textured;
-    textured.use();
-    float last_alpha = -1;
-    textured.setUniform("layer_transform", transform);
-    auto pos = textured.getAttribute("in_pos");
-    auto uv = textured.getAttribute("in_uv");
+    program.use();
+    program.setUniform("layer_transform", transform);
     pos.enable();
     uv.enable();
-    
-    auto location = glGetUniformLocation(program.program, "in_transform");
 
     for (auto& [_, c] : colliders) {
         c.clear();
     }
-    auto draw_batch = [&](SpriteBatch& batch) {
-        batch.texture->bind();
-        auto it = batch.sprites.begin();
-        while (it != batch.sprites.end()) {
-            auto* sprite = *it;
-
-            int count = 0;
-            if (sprite->texture.tex == nullptr) {
-                it = batch.sprites.erase(it);
-                // fmt::print("erase {} {}\n", (void*)sprite, sprite->held);
-                if (sprite->held) {
-                    sprite->held = false;
-                } else {
-                    delete sprite;
-                }
-                continue;
-            }
-            // When we render sprites, we sort them into `colliders` according
-            // to their group
-            if (sprite->collider != nullptr) {
-                colliders[sprite->collider->group].push_back(sprite);
-            }
-            if (last_alpha != sprite->alpha) {
-                gl::Color fg = current_style.fg;
-                fg.alpha = sprite->alpha;
-                textured.setUniform("in_color", fg);
-                last_alpha = sprite->alpha;
-            }
-            if (sprite->dirty) {
-                sprite->dirty = false;
-                sprite->update_tx(width, height);
-            }
-            textured.setUniform(location, sprite->transform);
-            sprite->vbo.bind();
-            gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
-            gl::vertexAttrib(
-                uv, 2, gl::Type::Float, 0 * sizeof(GLfloat), 8 * 4);
-            gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
-            it++;
-        }
-        return batch.sprites.empty();
-    };
 
     auto it = batches.begin();
     while (it != batches.end()) {
@@ -238,10 +235,19 @@ void RSprite::update_collision() const
     collider->radius = r / 2;
 }
 
+RSprite* RSprites::add_particle(int size, uint32_t color)
+{
+    auto& batch = particle_batch;
+    std::array vertexData{-1.F, -1.F, 1.F, -1.F, 1.F, 1.F, -1.F, 1.F};
+    auto* sprite =
+        new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}};
+    sprite->update_tx(width, height);
+    batch.sprites.push_back(sprite);
+    return sprite;
+}
+
 RSprite* RSprites::add_sprite(RImage* image, int flags)
 {
-    // image->upload();
-
     auto& batch =
         flags == 1 ? fixed_batch : batches[image->texture.tex->tex_id];
     if (batch.texture == nullptr) {
@@ -461,6 +467,16 @@ void RSprites::reg_class(mrb_state* ruby)
             auto [y] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
             rspr->scale[1] = y;
+            rspr->dirty = true;
+            return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+    mrb_define_method(
+        ruby, RSprite::rclass, "pos=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            auto* rspr = mrb::self_to<RSprite>(self);
+            auto [av] = mrb::get_args<mrb_value>(mrb);
+            rspr->trans = mrb::to_array<float, 2>(av, mrb);
             rspr->dirty = true;
             return mrb_nil_value();
         },

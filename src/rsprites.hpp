@@ -77,13 +77,21 @@ class RSprites : public RLayer
     std::unordered_map<uint32_t, std::vector<RSprite*>> colliders;
     std::unordered_map<GLuint, SpriteBatch> batches;
     SpriteBatch fixed_batch;
+    SpriteBatch particle_batch;
     gl_wrap::Program program;
     mrb_state* ruby;
     void purge();
     void collide();
+    bool draw_batch(SpriteBatch& batch);
+
+    int tx_location;
+    int col_location;
+    gl_wrap::Attribute pos;
+    gl_wrap::Attribute uv;
 
 public:
     RSprite* add_sprite(RImage* image, int flags);
+    RSprite* add_particle(int size, uint32_t color);
     static void remove_sprite(RSprite* spr);
 
     static inline RClass* rclass;
