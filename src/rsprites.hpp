@@ -29,6 +29,23 @@ struct Collider
     float radius = 0;
 };
 
+enum class ParticleFormat
+{
+    XYA,
+};
+
+class Particles
+{
+public:
+    size_t count = 0;
+    ParticleFormat format = ParticleFormat::XYA;
+    gl_wrap::ArrayBuffer<GL_STATIC_DRAW> vbo;
+    std::vector<float> data;
+
+    Particles() = default;
+    void render();
+};
+
 class RSprite
 {
 public:
@@ -71,21 +88,22 @@ struct SpriteBatch
     std::vector<RSprite*> sprites;
 };
 
+
 class RSprites : public RLayer
 {
+    mrb_state* ruby;
     std::vector<CollisionGroup> groups;
     std::unordered_map<uint32_t, std::vector<RSprite*>> colliders;
     std::unordered_map<GLuint, SpriteBatch> batches;
     SpriteBatch fixed_batch;
-    SpriteBatch particle_batch;
     gl_wrap::Program program;
-    mrb_state* ruby;
     void purge();
     void collide();
     bool draw_batch(SpriteBatch& batch);
+    Particles particles;
 
-    int tx_location;
-    int col_location;
+    int tx_location = -1;
+    int col_location = -1;
     gl_wrap::Attribute pos;
     gl_wrap::Attribute uv;
 

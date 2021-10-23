@@ -36,7 +36,7 @@ struct Buffer
         }
     }
 
-    explicit Buffer(size_t size_in_bytes = 0)
+    explicit Buffer(int size_in_bytes)
     {
         glGenBuffers(1, &buffer);
         bind();

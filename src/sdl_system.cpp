@@ -147,8 +147,8 @@ public:
                 auto& ke = e.key;
                 pressed[code] |= (1 << device);
                 auto mod = ke.keysym.mod;
+                fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
                 if (!in_unicode_range(code) || (mod & 0xc0) != 0) {
-                    //fmt::print("KEY {:x} MOD {:x}\n", ke.keysym.sym, mod);
                     return KeyEvent{code, mod, device};
                 }
             } else if (e.type == SDL_KEYUP) {

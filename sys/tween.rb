@@ -10,6 +10,10 @@ end
 
 class TweenFunc
 
+    def self.noise(t)
+        1.0 - rand() * (1.0 - t)
+    end
+
     def self.in_back(t)
         s = 1.70158
         (s+1)*t*t*t - s*t*t

@@ -16,6 +16,31 @@
 
 #include <algorithm>
 
+// language=GLSL
+static std::string vs_particles{R"gl(
+    #ifdef GL_ES
+        precision mediump float;
+    #endif
+        attribute vec2 in_pos;
+        uniform mat4 layer_transform;
+        uniform mat4 in_transform;
+        void main() {
+            vec4 v = layer_transform * in_transform * vec4(in_pos, 0, 1);
+            gl_Position = vec4( v.x, v.y, 0, 1 );
+            gl_PointSize = 4.0;
+    })gl"};
+
+// language=GLSL
+static std::string fs_particles{R"gl(
+    #ifdef GL_ES
+        precision mediump float;
+    #endif
+        uniform vec4 in_color;
+        void main() {
+            gl_FragColor = in_color;
+        })gl"};
+
+// language=GLSL
 static std::string vertex_shader{R"gl(
     #ifdef GL_ES
         precision mediump float;
@@ -31,6 +56,7 @@ static std::string vertex_shader{R"gl(
             out_uv = in_uv;
     })gl"};
 
+// language=GLSL
 static std::string fragment_shader{R"gl(
     #ifdef GL_ES
         precision mediump float;
@@ -192,6 +218,11 @@ bool RSprites::draw_batch(SpriteBatch& batch)
     return batch.sprites.empty();
 }
 
+void Particles::render()
+{
+    //program.use();
+    //program.setUniform("layer_transform", transform);
+}
 void RSprites::render(RLayer const* parent)
 {
     if (!enabled) { return; }
@@ -237,13 +268,7 @@ void RSprite::update_collision() const
 
 RSprite* RSprites::add_particle(int size, uint32_t color)
 {
-    auto& batch = particle_batch;
-    std::array vertexData{-1.F, -1.F, 1.F, -1.F, 1.F, 1.F, -1.F, 1.F};
-    auto* sprite =
-        new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}};
-    sprite->update_tx(width, height);
-    batch.sprites.push_back(sprite);
-    return sprite;
+    return nullptr;
 }
 
 RSprite* RSprites::add_sprite(RImage* image, int flags)

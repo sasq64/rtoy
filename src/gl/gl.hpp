@@ -27,7 +27,7 @@ constexpr typename std::enable_if_t<std::is_arithmetic_v<T>, GLint> to_glint(T f
 
 struct Attribute
 {
-    GLint location;
+    GLint location = -1;
     void enable() const { glEnableVertexAttribArray(location); }
     void disable() const { glDisableVertexAttribArray(location); }
 };
