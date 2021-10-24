@@ -158,11 +158,11 @@ void RAudio::reg_class(
 
             auto* sound = new Sound();
             sound->freq = static_cast<float>(freq);
-            sound->channels = channel_count;
+            sound->channels = static_cast<int>(channel_count);
             sound->data.resize(frames * channel_count);
             for (size_t i = 0; i < frames; i++) {
                 for (size_t j = 0; j < channel_count; j++) {
-                    sound->data[j * frames + i] = sample_data[i * 2 + j];
+                    sound->data[j * frames + i] = sample_data[i * channel_count + j];
                 }
             }
             drwav_free(sample_data, nullptr);

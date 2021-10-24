@@ -61,11 +61,11 @@ void Display::setup()
     auto font = std::make_shared<ConsoleFont>(
         settings.console_font.string(), settings.font_size);
 
-    debug_console = std::make_shared<PixConsole>(40, 16, font);
-    debug_console->reset();
-    debug_console->fill(0xffffffff, 0x0000000);
-    debug_console->text(0, 0, "DEBUG");
-    debug_console->flush();
+    /* debug_console = std::make_shared<PixConsole>(40, 16, font); */
+    /* debug_console->reset(); */
+    /* debug_console->fill(0xffffffff, 0x0000000); */
+    /* debug_console->text(0, 0, "DEBUG"); */
+    /* debug_console->flush(); */
 
     auto pixel_console =
         std::make_shared<PixConsole>(256, 256, "data/unscii-16.ttf", 16);

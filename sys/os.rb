@@ -159,6 +159,17 @@ module OS
         end
     end
 
+    def show_error(e)
+        con = @@display.consoles[0]  # @@display.consoles[3]
+        con.enabled = true
+        con.clear
+        con.text(0, 0, "ERROR")
+        con.text(0, 1, e.message)
+        read_key()
+        #con.enabled = false
+    end
+
+
     module_function :display, :console, :canvas, :sprite_field, :audio,
         :text, :line, :scale, :offset, :add_sprite,
         :remove_sprite, :clear, :get_char, :circle
@@ -238,10 +249,11 @@ module OS
     doc! "Wait for a key press and return it"
     def read_key(dev = 0)
         if !@@read_key[dev]
-            Fiber.yield until @@read_key
+            Fiber.yield until @@read_key[dev]
         end
-        r = @@read_key & 0xffffff
-        @@read_key = nil
+        p @@read_key[dev]
+        r = @@read_key[dev] & 0xffffff
+        @@read_key[dev] = nil
         r
     end
 

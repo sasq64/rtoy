@@ -43,10 +43,17 @@ class SDLSystem : public System
 #endif
 
 public:
+
+
+    SDLSystem()
+    {
+        fmt::format("SDL Init\n");
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
+    };
+
     std::shared_ptr<Screen> init_screen(Settings const& settings) override
     {
 
-        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
         SDL_JoystickEventState(SDL_ENABLE);
         for (int i = 0; i < SDL_NumJoysticks(); i++) {
             joysticks.push_back(SDL_JoystickOpen(i));
@@ -274,16 +281,13 @@ public:
         want.samples = 4096;
         want.userdata = this;
         want.callback = [](void* userdata, Uint8* stream, int len) {
-            if (stream == nullptr || len < 0) {
-                fmt::print("{}/{}\n", stream, len);
-            };
             auto* sys = static_cast<SDLSystem*>(userdata);
             if (sys->audio_callback) {
                 sys->audio_callback(reinterpret_cast<float*>(stream), len / 4);
             }
         };
         dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have,
-            SDL_AUDIO_ALLOW_ANY_CHANGE & (~SDL_AUDIO_ALLOW_FORMAT_CHANGE));
+            SDL_AUDIO_ALLOW_ANY_CHANGE);// & (~SDL_AUDIO_ALLOW_FORMAT_CHANGE));
 
         fmt::print("Audio format {} {} vs {}\n", have.format, have.freq, dev);
         SDL_PauseAudioDevice(dev, 0);

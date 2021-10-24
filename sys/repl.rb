@@ -39,6 +39,7 @@ class Repl
                     Fiber.yield if f.alive?
                 end
             rescue => e
+                show_error(e)
                 p e.backtrace
                 puts "Error " + e.message
             end

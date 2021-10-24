@@ -100,7 +100,11 @@ public:
         if (target != nullptr) { memset(target, 0, width * height * 4); }
 
         auto text32 = utils::utf8_decode(txt);
+
+        //fmt::print("Decode {} to {} chars", txt, text32.length());
+
         for (auto c : text32) {
+            //fmt::print("Render {:x}\n", (uint32_t)c);
             auto error = FT_Load_Char(face, c, FT_LOAD_RENDER);
             FT_GlyphSlot slot = face->glyph;
             if (error) { continue; } /* ignore errors */

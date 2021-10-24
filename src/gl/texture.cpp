@@ -4,7 +4,7 @@ namespace gl_wrap {
 
 void Texture::init()
 {
-    fmt::print("Created {}x{} = {}\n", width, height, (void*)this);
+    //fmt::print("Created {}x{} = {}\n", width, height, (void*)this);
     glGenTextures(1, &tex_id);
     glBindTexture(GL_TEXTURE_2D, tex_id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
