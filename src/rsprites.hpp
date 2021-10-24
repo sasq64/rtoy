@@ -33,7 +33,7 @@ class RSprite
 {
 public:
     gl_wrap::ArrayBuffer<GL_STATIC_DRAW> vbo;
-    float alpha = 1.0F;
+    std::array<float, 4> color{1, 1, 1, 1};
     bool dirty = false;
     // Held by either native or ruby. Whoever tries to destroy it first
     // sets it to false. If it is already false, free it.

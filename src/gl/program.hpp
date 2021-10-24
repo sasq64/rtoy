@@ -94,9 +94,10 @@ struct Program
         glUniformMatrix4fv(location, 1, GL_FALSE, mat.data());
     }
 
-    static void glUniform(GLint location, std::array<float, 4> const& mat)
+    static void glUniform(GLint location, std::array<float, 4> const& v)
     {
-        glUniformMatrix2fv(location, 1, GL_FALSE, mat.data());
+        //glUniformMatrix2fv(location, 1, GL_FALSE, mat.data());
+        glUniform4f(location, v[0], v[1], v[2], v[3]);
     }
 
     static void glUniform(GLint location, Color const& color)

@@ -290,6 +290,22 @@ module OS
         while Timer.default.seconds < t ; Fiber.yield ; end
     end
 
+    def to_upper(s)
+        x = s.chars.map do |c|
+            case c
+            when 'å'
+                'Å'
+            when 'ä'
+                'Ä'
+            when 'ö'
+                'Ö'
+            else
+                c.upcase
+            end
+        end
+        x.join("")
+    end
+
     def help(what = nil)
         if what == 'tutorial'
             ed = Editor.new
@@ -318,7 +334,7 @@ HELP
     end
 
     module_function :gets, :readln, :help, :run, :show, :ls,
-        :sleep, :boot, :vsync, :read_key, :was_pressed
+        :sleep, :boot, :vsync, :read_key, :was_pressed, :to_upper
 
 end
 

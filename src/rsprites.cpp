@@ -172,12 +172,12 @@ bool RSprites::draw_batch(SpriteBatch& batch)
         if (sprite->collider != nullptr) {
             colliders[sprite->collider->group].push_back(sprite);
         }
-        if (last_alpha != sprite->alpha) {
-            gl::Color fg = current_style.fg;
-            fg.alpha = sprite->alpha;
-            program.setUniform(col_location, fg);
-            last_alpha = sprite->alpha;
-        }
+        //if (last_alpha != sprite->alpha) {
+            //gl::Color fg = current_style.fg;
+            //fg.alpha = sprite->alpha;
+            program.setUniform(col_location, sprite->color);
+            //last_alpha = sprite->alpha;
+        //}
         if (sprite->dirty) {
             sprite->dirty = false;
             sprite->update_tx(width, height);
@@ -439,7 +439,7 @@ void RSprites::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [x] = mrb::get_args<float>(mrb);
             auto* rspr = mrb::self_to<RSprite>(self);
-            rspr->alpha = x;
+            rspr->color[3] = x;
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -447,7 +447,7 @@ void RSprites::reg_class(mrb_state* ruby)
         ruby, RSprite::rclass, "alpha",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rspr = mrb::self_to<RSprite>(self);
-            return mrb::to_value(rspr->alpha, mrb);
+            return mrb::to_value(rspr->color[3], mrb);
         },
         MRB_ARGS_NONE());
 
@@ -540,4 +540,22 @@ void RSprites::reg_class(mrb_state* ruby)
             return self;
         },
         MRB_ARGS_REQ(2));
+
+    mrb_define_method(
+        ruby, RSprite::rclass, "color=",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          auto [av] = mrb::get_args<mrb_value>(mrb);
+          auto* rsprite = mrb::self_to<RSprite>(self);
+          rsprite->color = mrb::to_array<float, 4>(av, mrb);
+          return mrb_nil_value();
+        },
+        MRB_ARGS_REQ(1));
+
+    mrb_define_method(
+        ruby, RSprite::rclass, "color",
+        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+          auto* rsprite = mrb::self_to<RSprite>(self);
+          return mrb::to_value(rsprite->color, mrb);
+        },
+        MRB_ARGS_NONE());
 }

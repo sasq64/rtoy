@@ -1,18 +1,79 @@
 
+
+class SpriteSequence
+    include OS
+
+    def initialize(sprites)
+        x = 0
+        @sprites = sprites
+        @x = 0
+        @y = 0
+        @sprites.each do |spr|
+            spr.x = x
+            x += spr.width
+        end
+    end
+
+    def length()
+        return @sprites.length
+    end
+
+    def move(x,y)
+        @x = x
+        @y = y
+        @sprites.each { |spr| spr.move(x,y) if spr ; x += spr.width }
+    end
+
+    def x()
+        @x
+    end
+
+    def x=(v)
+        @x = v
+        @sprites.each { |spr| spr.x = v if spr ; v += spr.width }
+    end
+
+    def y()
+        @y
+    end
+
+    def y=(v)
+        @y = v
+        @sprites.each { |spr| spr.y = v if spr }
+    end
+
+    def color=(v)
+        @color = v
+        @sprites.each { |spr| spr.color = v if spr }
+    end
+
+    def sprites
+        @sprites
+    end
+
+    def remove()
+        @sprites.each { |spr| remove_sprite(spr) }
+        @sprites = []
+    end
+end
+
+
 class Words
 
     include OS
 
     class Word
         include OS
+
+
         def initialize(word, letters)
             x = 0
             @sprites = []
             @chars = []
-            @speed = rand() * 10.0 / word.size
+            @speed = 1 # rand() * 10.0 / word.size
             @x = 0
             @y = 0
-            word.upcase.each_char do |c|
+            to_upper(word).each_char do |c|
                 p c
                 img = letters[c]
                 if img
@@ -37,7 +98,7 @@ class Words
         def move(x,y)
             @x = x
             @y = y
-            @sprites.each { |spr| spr.move(x,y) if spr ; x += @w }
+            @sprites.each { |spr| spr.move(x,y) if spr ; x += spr.width }
         end
 
         def x()
@@ -46,7 +107,7 @@ class Words
 
         def x=(v)
             @x = v
-            @sprites.each { |spr| spr.x = v if spr ; v += @w }
+            @sprites.each { |spr| spr.x = v if spr ; v += spr.width }
         end
 
         def y()
@@ -58,12 +119,17 @@ class Words
             @sprites.each { |spr| spr.y = v if spr }
         end
 
+        def color=(v)
+            @color = v
+            @sprites.each { |spr| spr.color = v if spr }
+        end
+
         def key(c)
             (0...@chars.length).each do |i|
                 next unless @chars[i]
                 if @chars[i] == c
-                    @sprites[i].alpha = 0.25
-                    tween(@sprites[i]).delta(pos: [0,-1]).to(scale: 0.1)
+                    @sprites[i].color = [1.0, 1.0, 1.0, 0.25]
+                    #tween(@sprites[i]).to(scale: 0.1)
                     @chars[i] = nil
                     return true
                 end
@@ -80,10 +146,15 @@ class Words
             return true
         end
 
+        def sprites
+            @sprites
+        end
+
         def destroy()
-            @sprites.each { |spr|
-                remove_sprite(spr) if spr
-            }
+            @sprites.each do |spr|
+                next unless spr
+                tween(spr).to(alpha: 0).when_done { remove_sprite(spr) }
+            end
             @chars = []
             @sprites = []
         end
@@ -95,11 +166,11 @@ class Words
         return nil unless key >= 0x20 && key < 0xffff
         c = [key].pack('U*')
         case c
-        when 'å'
+        when 'å', '['
             'Å'
-        when 'ä'
+        when 'ä', '\''
             'Ä'
-        when 'ö'
+        when 'ö', ';'
             'Ö'
         else
             c.upcase
@@ -108,13 +179,22 @@ class Words
 
     def initialize()
         font = Font.from_file('data/bedstead.otf')
-        @speed = 120
+        @speed = 150
         @dict = []
-        File.open('data/words').readlines.each { |w| @dict << w.chomp("\n") }
+        @start = [0] * 20
+        last_length = 0
+        File.open('data/ord').readlines.each do |w|
+            word = w.chomp("\n")
+            if word.length > last_length
+                last_length = word.length
+                @start[last_length] = @dict.length
+            end
+            @dict << word
+        end
         @letters = {}
         img = nil
         LETTERS.each_char do |c|
-            img = font.render(c, Color::GREEN, 50)
+            img = font.render(c, Color::WHITE, 50)
             @letters[c] = img
         end
         @perfect = font.render('PERFECT', Color::CYAN, 24)
@@ -138,6 +218,8 @@ class Words
                 @words.each do |word|
                     if word.key(key)
                         @current_word = word
+                        word.color = Color::RED
+                        word.sprites[0].color = [1,1,1,0.25]
                         ok = true
                         break
                     end
@@ -180,8 +262,9 @@ class Words
         end
     end
 
-    def add_word(word)
-        word = Word.new(word, @letters)
+    def add_word(text)
+        p text
+        word = Word.new(text, @letters)
         word.x = 500
         @words << word
         word
@@ -200,7 +283,10 @@ class Words
                 next
             end
             if @counter <= 0
-                w = add_word(@dict[rand(@dict.size)])
+                l = rand(8)
+                i = rand(@start[2 + l] - @start[1 + l]) + @start[1]
+                w = add_word(@dict[i])
+                w.color = Color::GREEN
                 w.move(rand(display.width - (w.length + 1) * @char_size), -50)
                 @counter = @speed
             end
