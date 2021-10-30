@@ -1,5 +1,5 @@
 
-
+# Horizontal sequence of sprites
 class SpriteSequence
     include OS
 
@@ -8,6 +8,7 @@ class SpriteSequence
         @sprites = sprites
         @x = 0
         @y = 0
+        @color = @sprites.first.color
         @sprites.each do |spr|
             spr.x = x
             x += spr.width
@@ -42,6 +43,15 @@ class SpriteSequence
         @sprites.each { |spr| spr.y = v if spr }
     end
 
+    def alpha()
+        @alpha
+    end
+
+    def alpha=(v)
+        @alpha = v
+        @sprites.each { |spr| spr.alpha = v if spr }
+    end
+
     def color=(v)
         @color = v
         @sprites.each { |spr| spr.color = v if spr }
@@ -57,110 +67,103 @@ class SpriteSequence
     end
 end
 
+class SpriteWord < SpriteSequence
+
+    include OS
+
+    LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ'
+    @@letters = nil
+    @@font = Font.from_file('data/bedstead.otf')
+
+    def self.font()
+        @@font
+    end
+
+    def initialize(word)
+
+        unless @@letters
+            @@letters = {}
+            img = nil
+            LETTERS.each_char do |c|
+                img = @@font.render(c, Color::WHITE, 50)
+                @@letters[c] = img
+            end
+        end
+
+        @chars = []
+        sprites = []
+        to_upper(word).each_char do |c|
+            img = @@letters[c]
+            if img
+                sprites << add_sprite(img)
+                @chars << c
+            end
+        end
+        super(sprites)
+    end
+
+    def matches(c)
+        first = @chars.find(&:itself)
+        return first == c
+    end
+
+    def hit()
+    end
+
+    def key(c)
+
+        (0...@chars.length).each do |i|
+            next unless @chars[i]
+            if @chars[i] == c
+                @sprites[i].color = [1.0, 1.0, 1.0, 0.25]
+                #tween(@sprites[i]).to(scale: 0.1)
+                @chars[i] = nil
+                return true
+            end
+            return false
+        end
+        return false
+    end
+
+    def done()
+        # TODO better algo
+        @chars.each do |c|
+            return false if c
+        end
+        return true
+    end
+
+    def sprites
+        @sprites
+    end
+
+    def destroy()
+        tween(self).to(alpha: 0).when_done { self.remove() }
+        #remove()
+        @chars = []
+    end
+end
+
+class WordTest
+    def initialize()
+        w = SpriteWord.new("TEST")
+        tween(w).seconds(10.0).to(y: 500).when_done { w.destroy() }
+
+        w.color = Color::RED
+        w.key('T')
+        OS.vsync do
+
+
+
+        end
+    end
+end
+
+
 
 class Words
 
     include OS
-
-    class Word
-        include OS
-
-
-        def initialize(word, letters)
-            x = 0
-            @sprites = []
-            @chars = []
-            @speed = 1 # rand() * 10.0 / word.size
-            @x = 0
-            @y = 0
-            to_upper(word).each_char do |c|
-                p c
-                img = letters[c]
-                if img
-                    @w = img.width unless @w
-                    spr = add_sprite(img)
-                    spr.x = x
-                    x += @w
-                    @chars << c
-                    @sprites << spr
-                end
-            end
-        end
-
-        def speed()
-            @speed
-        end
-
-        def length()
-            return @sprites.length
-        end
-
-        def move(x,y)
-            @x = x
-            @y = y
-            @sprites.each { |spr| spr.move(x,y) if spr ; x += spr.width }
-        end
-
-        def x()
-            @x
-        end
-
-        def x=(v)
-            @x = v
-            @sprites.each { |spr| spr.x = v if spr ; v += spr.width }
-        end
-
-        def y()
-            @y
-        end
-
-        def y=(v)
-            @y = v
-            @sprites.each { |spr| spr.y = v if spr }
-        end
-
-        def color=(v)
-            @color = v
-            @sprites.each { |spr| spr.color = v if spr }
-        end
-
-        def key(c)
-            (0...@chars.length).each do |i|
-                next unless @chars[i]
-                if @chars[i] == c
-                    @sprites[i].color = [1.0, 1.0, 1.0, 0.25]
-                    #tween(@sprites[i]).to(scale: 0.1)
-                    @chars[i] = nil
-                    return true
-                end
-                return false
-            end
-            return false
-        end
-
-        def done()
-            # TODO better algo
-            @chars.each do |c|
-                return false if c
-            end
-            return true
-        end
-
-        def sprites
-            @sprites
-        end
-
-        def destroy()
-            @sprites.each do |spr|
-                next unless spr
-                tween(spr).to(alpha: 0).when_done { remove_sprite(spr) }
-            end
-            @chars = []
-            @sprites = []
-        end
-    end
-
-    LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ'
 
     def to_char(key)
         return nil unless key >= 0x20 && key < 0xffff
@@ -178,7 +181,6 @@ class Words
     end
 
     def initialize()
-        font = Font.from_file('data/bedstead.otf')
         @speed = 150
         @dict = []
         @start = [0] * 20
@@ -191,17 +193,11 @@ class Words
             end
             @dict << word
         end
-        @letters = {}
-        img = nil
-        LETTERS.each_char do |c|
-            img = font.render(c, Color::WHITE, 50)
-            @letters[c] = img
-        end
-        @perfect = font.render('PERFECT', Color::CYAN, 24)
+        @perfect = SpriteWord.font.render('PERFECT', Color::CYAN, 24)
         @click = Audio.load_wav("data/tick.wav")
         @beep = Audio.load_wav("data/beep.wav")
         @words = []
-        @char_size = img.width
+        @char_size = 30 #img.width
         @current_word = nil
         @score = 0
         @combo = 0
@@ -219,7 +215,7 @@ class Words
                     if word.key(key)
                         @current_word = word
                         word.color = Color::RED
-                        word.sprites[0].color = [1,1,1,0.25]
+                        #word.sprites[0].color = [1,1,1,0.25]
                         ok = true
                         break
                     end
@@ -264,7 +260,7 @@ class Words
 
     def add_word(text)
         p text
-        word = Word.new(text, @letters)
+        word = SpriteWord.new(text)
         word.x = 500
         @words << word
         word
@@ -291,7 +287,7 @@ class Words
                 @counter = @speed
             end
             @words.each { 
-                |word| word.y += word.speed
+                |word| word.y += 1
                 if word.y >= display.height
                     @game_over = true
                 end
