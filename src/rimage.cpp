@@ -14,7 +14,6 @@
 #include <array>
 #include <memory>
 
-//#include <jpeg_decoder.h>
 
 mrb_data_type RImage::dt{
     "Image", [](mrb_state*, void* data) { delete static_cast<RImage*>(data); }};
@@ -133,17 +132,18 @@ void RImage::reg_class(mrb_state* ruby)
 
 RImage::RImage(pix::Image const& image)
 {
-    if (texture.tex == nullptr) {
-        texture.tex = std::make_shared<gl::Texture>(
-            image.width, image.height, image.ptr, GL_RGBA, image.format);
-    }
+    texture.tex = std::make_shared<gl::Texture>(
+        image.width, image.height, image.ptr, GL_RGBA, image.format);
 }
 
 void RImage::draw(double x, double y, double scale)
 {
-    // fmt::print("Draw {}x{} at {},{}\n", img_width, img_height, x, y);
+    fmt::print("Draw {} at {}x{}\n", texture.tex->tex_id, x, y);
     // upload();
     texture.bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    pix::set_transform();
     gl_wrap::ProgramCache::get_instance().textured.use();
     pix::draw_quad_uvs(x, y, width() * scale, height() * scale, texture.uvs);
 }

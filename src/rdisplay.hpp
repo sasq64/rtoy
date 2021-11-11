@@ -38,6 +38,7 @@ class Display : public RLayer
     std::vector<std::shared_ptr<RLayer>> layers;
 
     std::shared_ptr<PixConsole> debug_console;
+    bool debug_on = false;
 
     std::array<int64_t, 10> bench_times;
     std::chrono::time_point<std::chrono::steady_clock> bench_start;

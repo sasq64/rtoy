@@ -22,6 +22,7 @@ struct Error
 class ErrorState
 {
 public:
+    static inline mrb_value error_handler{};
     static inline std::deque<Error> stack;
 };
 
@@ -32,10 +33,17 @@ bool call_proc(mrb_state* ruby, mrb_value handler, T... arg)
     mrb_funcall(
         ruby, handler, "call", sizeof...(arg), mrb::to_value(arg, ruby)...);
     if (ruby->exc != nullptr) {
+
+        if (ErrorState::error_handler.w != 0) {
+            auto rc = call_proc(
+                ruby, ErrorState::error_handler, mrb_obj_value(ruby->exc));
+            return rc;
+        }
+
         auto bt = mrb_funcall(ruby, mrb_obj_value(ruby->exc), "backtrace", 0);
-    
+
         std::vector<std::string> backtrace;
-        for(int i=0; i< ARY_LEN(mrb_ary_ptr(bt)); i++) {
+        for (int i = 0; i < ARY_LEN(mrb_ary_ptr(bt)); i++) {
             auto v = mrb_ary_entry(bt, i);
             auto s = mrb_funcall(ruby, v, "to_s", 0);
             std::string line(RSTRING_PTR(s), RSTRING_LEN(s));

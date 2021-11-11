@@ -61,11 +61,11 @@ void Display::setup()
     auto font = std::make_shared<ConsoleFont>(
         settings.console_font.string(), settings.font_size);
 
-    /* debug_console = std::make_shared<PixConsole>(40, 16, font); */
-    /* debug_console->reset(); */
-    /* debug_console->fill(0xffffffff, 0x0000000); */
-    /* debug_console->text(0, 0, "DEBUG"); */
-    /* debug_console->flush(); */
+    debug_console = std::make_shared<PixConsole>(40, 16, font);
+    debug_console->reset();
+    debug_console->fill(0xffffffff, 0x0000000);
+    debug_console->text(0, 0, "DEBUG");
+    debug_console->flush();
 
     auto pixel_console =
         std::make_shared<PixConsole>(256, 256, "data/unscii-16.ttf", 16);
@@ -140,7 +140,7 @@ void Display::end_draw()
     rt = clk::now() - t;
     long ms = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
 
-    if (debug_console) {
+    if (debug_on) {
         debug_console->text(0, 0, fmt::format("CLEAR: {}ms  ", clear_t));
         debug_console->text(0, 1, fmt::format("RENDER: {}ms  ", ms));
         debug_console->text(0, 2, fmt::format("TWEEN: {}ms  ", bench_times[0]));
@@ -299,15 +299,15 @@ void Display::reg_class(
         ruby, Display::rclass, "dump",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
+            display->end_draw();
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             if (mrb_get_argc(mrb) == 2) {
                 auto [x, y] = mrb::get_args<int, int>(mrb);
-                uint32_t v = 0;
-                glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
+                uint8_t v[4];
+                glReadPixels(x, display->height - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
                 // Little endian, as bytes means we get ABGR 32 bit
-                int rgb = static_cast<int>(
-                    ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
-                fmt::print("{:08x} - > {:08x}\n", v, rgb);
+                int rgb = (v[0] << 16) | (v[1] << 8) | v[2]; 
+                fmt::print("{:02x} {:02x} {:02x} {:02x} - > {:08x}\n", v[0], v[1], v[2], v[3], rgb);
                 return mrb::to_value(rgb, mrb);
             }
 

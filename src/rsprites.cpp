@@ -16,7 +16,8 @@
 
 #include <algorithm>
 
-static std::string vertex_shader{R"gl(
+// language=glsl
+static std::string vertex_shader{R"(
     #ifdef GL_ES
         precision mediump float;
     #endif
@@ -29,9 +30,10 @@ static std::string vertex_shader{R"gl(
             vec4 v = layer_transform * in_transform * vec4(in_pos, 0, 1);
             gl_Position = vec4( v.x, v.y, 0, 1 );
             out_uv = in_uv;
-    })gl"};
+    })"};
 
-static std::string fragment_shader{R"gl(
+// language=glsl
+static std::string fragment_shader{R"(
     #ifdef GL_ES
         precision mediump float;
     #endif
@@ -40,7 +42,7 @@ static std::string fragment_shader{R"gl(
         varying vec2 out_uv;
         void main() {
             gl_FragColor = texture2D(in_tex, out_uv) * in_color;
-        })gl"};
+        })"};
 
 mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {
                               auto* sprite = static_cast<RSprite*>(data);

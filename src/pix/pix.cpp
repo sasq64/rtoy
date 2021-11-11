@@ -10,6 +10,16 @@
 namespace pix {
 namespace gl = gl_wrap;
 
+void set_transform()
+{
+    static const std::array<float, 16> mat{
+        1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+    auto& textured = gl::ProgramCache::get_instance().textured;
+    textured.setUniform("in_transform", mat);
+    auto& plain = gl::ProgramCache::get_instance().non_textured;
+    plain.setUniform("in_transform", mat);
+}
+
 void set_transform(std::array<float, 16> const& mat)
 {
     auto& textured = gl::ProgramCache::get_instance().textured;

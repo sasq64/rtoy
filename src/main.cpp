@@ -1,16 +1,13 @@
-
 #include "toy.hpp"
 
 #include <CLI/CLI.hpp>
 #include <coreutils/split.h>
-#include <fmt/format.h>
 #include <string>
 
 using namespace std::string_literals;
 
 int main(int argc, char const** argv)
 {
-    std::string main_script = "sys/main.rb";
     bool full_screen = false;
     bool hidden = false;
     std::string font_name;
@@ -27,7 +24,7 @@ int main(int argc, char const** argv)
 
     CLI::App app{"toy"};
     app.set_help_flag();
-    auto* help = app.add_flag("-h,--help", "Request help");
+    app.set_help_flag("-h,--help", "Request help");
     app.add_flag("-f,--full-screen", full_screen, "Fullscreen");
     app.add_flag("-t,--hidden", hidden, "Hide window");
     app.add_option("--boot", settings.boot_cmd, "Command to run at bootup");
@@ -39,7 +36,6 @@ int main(int argc, char const** argv)
 
     if (!font_name.empty()) {
         auto [font, size] = utils::split2(font_name, ":"s);
-        fmt::print("'{}' '{}'\n", font, size);
         settings.console_font = font;
         if (!size.empty()) { settings.font_size = std::stoi(size); }
     }

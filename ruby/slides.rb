@@ -7,7 +7,7 @@ OS.clear()
 
 # Slide Contract:
 
-# Should not allocate any graphical resources on creationg
+# Should not allocate any graphical resources on creation
 # start() will allow the Slide to animate and render to the canvas
 # A slide can be stepped until :showing
 # At this point all information is visible

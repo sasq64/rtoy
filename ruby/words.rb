@@ -8,6 +8,7 @@ class SpriteSequence
         @sprites = sprites
         @x = 0
         @y = 0
+        @alpha = 1.0
         @color = @sprites.first.color
         @sprites.each do |spr|
             spr.x = x
@@ -71,29 +72,16 @@ class SpriteWord < SpriteSequence
 
     include OS
 
-    LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ'
-    @@letters = nil
-    @@font = Font.from_file('data/bedstead.otf')
-
     def self.font()
         @@font
     end
 
-    def initialize(word)
-
-        unless @@letters
-            @@letters = {}
-            img = nil
-            LETTERS.each_char do |c|
-                img = @@font.render(c, Color::WHITE, 50)
-                @@letters[c] = img
-            end
-        end
+    def initialize(word, letters)
 
         @chars = []
         sprites = []
         to_upper(word).each_char do |c|
-            img = @@letters[c]
+            img = letters[c]
             if img
                 sprites << add_sprite(img)
                 @chars << c
@@ -139,27 +127,42 @@ class SpriteWord < SpriteSequence
 
     def destroy()
         tween(self).to(alpha: 0).when_done { self.remove() }
-        #remove()
         @chars = []
     end
 end
 
+class WordLayer
+    LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ'
+    def initialize(font, size = 50)
+        @font = Font.from_file(font)
+        @letters = {}
+        @words = []
+        img = nil
+        LETTERS.each_char do |c|
+            img = @font.render(c, Color::WHITE, size)
+            @letters[c] = img
+        end
+    end
+
+    def add_word(text)
+        word = SpriteWord.new(text, @letters)
+        @words << word
+        word
+    end
+
+end
+
 class WordTest
     def initialize()
-        w = SpriteWord.new("TEST")
-        tween(w).seconds(10.0).to(y: 500).when_done { w.destroy() }
-
+        l = WordLayer.new('data/bedstead.otf')
+        w = l.add_word("TEST")
+        tween(w).seconds(2.0).to(y: 500).when_done { w.destroy() }
         w.color = Color::RED
         w.key('T')
         OS.vsync do
-
-
-
         end
     end
 end
-
-
 
 class Words
 
@@ -297,4 +300,4 @@ class Words
     end
 end
 
-Words.new.run
+WordTest.new.run

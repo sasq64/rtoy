@@ -130,11 +130,18 @@ void Toy::init()
         ruby, ruby->kernel_module, "exit",
         [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value {
             Toy::exit();
-            puts("EXIT");
             return mrb_nil_value();
         },
         MRB_ARGS_NONE());
 
+    mrb_define_module_function(
+        ruby, ruby->kernel_module, "set_error_handler",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            mrb_get_args(mrb, "&!", &Toy::error_handler);
+            mrb_gc_register(mrb, Toy::error_handler);
+            return mrb_nil_value();
+        },
+        MRB_ARGS_BLOCK());
     mrb_define_module_function(
         ruby, ruby->kernel_module, "assert",
         [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
@@ -321,7 +328,8 @@ bool Toy::render_loop()
     if (RTimer::default_timer != nullptr) { RTimer::default_timer->update(); }
 
     auto rt = clk::now() - t;
-    display->pre_t = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
+    display->pre_t =
+        std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
 
     display->end_draw();
     display->swap();
@@ -345,7 +353,6 @@ Toy::Toy(Settings const& _settings) : settings{_settings} {}
 int Toy::run()
 {
     init();
-
 
     if (settings.console_benchmark) {
         auto con = Display::default_display->console->console;

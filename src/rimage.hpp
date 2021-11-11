@@ -21,7 +21,7 @@ public:
     double x() const { return texture.x(); }
     double y() const { return texture.y(); }
 
-    explicit RImage(pix::Image const& img);
+    explicit RImage(pix::Image const& image);
     explicit RImage(gl::TexRef const& tex) : texture(tex) {}
 
     void draw(double x, double y, double scale = 1.0);

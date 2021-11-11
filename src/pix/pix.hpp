@@ -76,6 +76,7 @@ inline void draw_circle(Point p, double r)
     draw_circle_impl(x, y, r);
 }
 
+void set_transform();
 void set_transform(std::array<float, 16> const& mat);
 void set_colors(gl_wrap::Color fg, gl_wrap::Color bg);
 

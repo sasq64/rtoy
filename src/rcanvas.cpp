@@ -14,6 +14,7 @@
 #include <array>
 #include <memory>
 
+// language=glsl
 static std::string vertex_shader{R"gl(
 #ifdef GL_ES
     precision mediump float;
@@ -28,6 +29,7 @@ static std::string vertex_shader{R"gl(
         gl_Position = vec4(in_pos, 0, 1);
     })gl"};
 
+// language=glsl
 static std::string fragment_shader{R"gl(
     #ifdef GL_ES
         precision mediump float;
@@ -185,8 +187,10 @@ void RCanvas::draw_image(
 {
     if (style == nullptr) { style = &current_style; }
     set_target();
-    glLineWidth(current_style.line_width);
-    pix::set_colors(style->fg, style->bg);
+    //glLineWidth(current_style.line_width);
+    std::array<float, 4> fg{1, 1, 1, 1};
+    std::array<float, 4> bg{0, 0, 0, 0};
+    pix::set_colors(fg, bg);
     image->draw(x, y, scale);
 }
 

@@ -165,7 +165,15 @@ module OS
         con.clear
         con.text(0, 0, "ERROR")
         con.text(0, 1, e.message)
-        read_key()
+        y = 3
+        e.backtrace.each do |b|
+            p b
+            con.text(0,y, b)
+            y += 1
+        end
+        while read_key() != 0x20
+            yield nil
+        end
         #con.enabled = false
     end
 

@@ -54,6 +54,7 @@ class Toy
     static inline bool do_exit = false;
     static void exit() { do_exit = true; }
 
+    static inline mrb_value error_handler{};
 public:
     explicit Toy(Settings const& settings);
 

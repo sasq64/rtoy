@@ -84,8 +84,8 @@ class RSprites : public RLayer
     void collide();
     bool draw_batch(SpriteBatch& batch);
 
-    int tx_location;
-    int col_location;
+    int tx_location = -1;
+    int col_location = -1;
     gl_wrap::Attribute pos;
     gl_wrap::Attribute uv;
 
