@@ -64,6 +64,34 @@ fs::path find_data_root()
     return {};
 }
 
+class ScriptInterface
+{
+    mrb_state* ruby;
+public:
+    explicit ScriptInterface(mrb_state* _ruby) : ruby{_ruby} {}
+
+    template <typename FX, typename RET, typename ...ARGS>
+    void gf(std::string const& name, FX const& fn, RET (FX::*)(ARGS...) const)
+    {
+        static FX _fn{fn};
+        mrb_define_module_function(
+            ruby, ruby->kernel_module, name.c_str(),
+            [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+              FX fn{_fn};
+              auto args = mrb::get_args<ARGS...>(mrb);
+              auto res =  std::apply(fn, args);
+              return mrb::to_value(res, mrb);
+            },
+           MRB_ARGS_REQ(sizeof...(ARGS)));
+    }
+
+    template <typename FN>
+    void global_function(std::string const& name, FN const& fn)
+    {
+        gf(name, fn, &FN::operator());
+    }
+};
+
 void Toy::init()
 {
     ruby = mrb_open();
@@ -107,6 +135,11 @@ void Toy::init()
         ruby, rclass, "BOOT_CMD", mrb::to_value(settings.boot_cmd, ruby));
     mrb_define_const(ruby, rclass, "CONSOLE_FONT",
         mrb::to_value(settings.console_font.string(), ruby));
+
+    ScriptInterface si{ruby};
+    si.global_function("test_me", [](int x) {
+        return 3 + x;
+    });
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",

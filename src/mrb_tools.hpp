@@ -121,6 +121,10 @@ auto get_args(
     spec[sizeof...(ARGS) + 1] = 0;
     (void)std::tuple{(get_spec(A, std::get<A>(input), spec.data()), 0)...};
 
+    // TODO
+    // Put arguments on heap
+    // Needs recursive template calls
+
     mrb_int n = 0;
     mrb_value* rest{};
     mrb_get_args(mrb, spec.data(), &std::get<A>(input)..., &rest, &n);

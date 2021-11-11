@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10/)
+cmake_minimum_required(VERSION 3.10)
 project(rtoy VERSION 1.0)
 
 include(ExternalProject)
@@ -42,7 +42,7 @@ endif()
 if(APPLE)
     include_directories(SYSTEM /usr/local/include /opt/homebrew/include)
     link_directories(/usr/local/lib /opt/homebrew/lib)
-    add_compile_options(-target x86_64-apple-macos10.15)
+    #add_compile_options(-target x86_64-apple-macos10.15)
 endif()
 
 if(CMAKE_CXX_COMPILER MATCHES "/em\\+\\+(-[a-zA-Z0-9.])?$")
