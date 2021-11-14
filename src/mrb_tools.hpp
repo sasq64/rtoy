@@ -1,5 +1,7 @@
 #pragma once
 
+#include "conv.hpp"
+
 extern "C"
 {
 #include <mruby.h>
@@ -25,74 +27,12 @@ extern "C"
 
 namespace mrb {
 
-template<typename Type>
-struct is_std_array : std::false_type { };
-
-template<typename Item, std::size_t N>
-struct is_std_array< std::array<Item, N> > : std::true_type { };
-
-template <typename TARGET>
-TARGET tox(mrb_value obj, mrb_state* mrb = nullptr)
+struct mrb_exception : public std::exception
 {
-    if constexpr (std::is_arithmetic_v<TARGET>) {
-        if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
-        if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
-        throw std::exception();
-    } else {
-    return static_cast<TARGET>(obj);
-    //    throw std::exception();
-    }
-}
-template <typename T, typename VAL, size_t SIZE, typename A = std::array<VAL, SIZE> >
-T toa(std::array<VAL, SIZE>& result, mrb_value ary, mrb_state* mrb = nullptr)
-{
-    if (!mrb_array_p(ary)) { ary = mrb_funcall(mrb, ary, "to_a", 0); }
-    if (mrb_array_p(ary)) {
-        auto sz = ARY_LEN(mrb_ary_ptr(ary));
-        for (int i = 0; i < sz; i++) {
-            auto v = mrb_ary_entry(ary, i);
-            result[i] = tox<VAL>(v);
-        }
-    } else {
-        mrb_raise(mrb, E_TYPE_ERROR, "not an array");
-    }
-    return result;
-}
-
-//! Convert ruby (mrb_value) type to native
-template <typename TARGET>
-TARGET to(mrb_value obj, mrb_state* mrb = nullptr)
-{
-    if constexpr (is_std_array<TARGET>()) {
-
-        TARGET result;
-        return toa<TARGET>(result, obj, mrb);
-    } else if constexpr (std::is_same_v<TARGET, std::string_view>) {
-        return std::string_view(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
-    } else if constexpr (std::is_same_v<TARGET, std::string>) {
-        return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
-    } else if constexpr (std::is_arithmetic_v<TARGET>) {
-        if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
-        if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
-        throw std::exception();
-    } else {
-    return static_cast<TARGET>(obj);
-    //    throw std::exception();
-    }
-}
-template <typename TARGET, typename SOURCE>
-TARGET to(SOURCE obj, mrb_state* mrb = nullptr)
-{
-    return static_cast<TARGET>(obj);
-}
-
-template <typename Target>
-Target* self_to(mrb_value self)
-{
-    return static_cast<Target*>(
-        (static_cast<struct RData*>(mrb_ptr(self)))->data);
-}
-
+    explicit mrb_exception(std::string const& text) : msg(text) {}
+    std::string msg;
+    char const* what() const noexcept override { return msg.c_str(); }
+};
 template <typename ARG>
 constexpr size_t get_spec(std::vector<char>&, std::vector<void*>&, ARG*);
 
@@ -170,45 +110,45 @@ inline size_t get_spec(
 
 
 template <typename T>
-struct ToMrb
+struct to_mrb
 {
-    using To = T;
+    using type = T;
 };
 
 template <>
-struct ToMrb<std::string>
+struct to_mrb<std::string>
 {
-    using To = const char*;
+    using type = const char*;
 };
 
 template <>
-struct ToMrb<std::string const&>
+struct to_mrb<std::string const&>
 {
-    using To = const char*;
+    using type = const char*;
 };
 
 template <>
-struct ToMrb<float>
+struct to_mrb<float>
 {
-    using To = mrb_float;
+    using type = mrb_float;
 };
 
 template <>
-struct ToMrb<int>
+struct to_mrb<int>
 {
-    using To = mrb_int;
+    using type = mrb_int;
 };
 
 template <>
-struct ToMrb<unsigned int>
+struct to_mrb<unsigned int>
 {
-    using To = mrb_int;
+    using type = mrb_int;
 };
 
 template <typename T, size_t N>
-struct ToMrb<std::array<T, N>>
+struct to_mrb<std::array<T, N>>
 {
-    using To = mrb_value;
+    using type = mrb_value;
 };
 
 template <class... ARGS, size_t... A>
@@ -216,10 +156,8 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
     std::index_sequence<A...>)
 {
     // A tuple to store the arguments. Types are converted to mruby
-    std::tuple<typename ToMrb<ARGS>::To...> target;
+    std::tuple<typename to_mrb<ARGS>::type...> target;
 
-    // Build spec string, one character per type, plus a trailing '*' to capture
-    // remaining arguments
 
     std::vector<char> v;
     std::vector<void*> arg_ptrs;
@@ -229,6 +167,8 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
     auto arg_count = mrb_get_argc(mrb);
     if (num) { *num = arg_count; }
 
+    // Build spec string, one character per type, plus a trailing '*' to capture
+    // remaining arguments
     ((get_spec(v, arg_ptrs, &std::get<A>(target))), ...);
     if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
     v.push_back('*');
@@ -240,7 +180,7 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
 
     mrb_get_args_a(mrb, v.data(), arg_ptrs.data());
 
-    std::tuple<ARGS...> converted{to<ARGS>(std::get<A>(target), mrb)...};
+    std::tuple<ARGS...> converted{value_to<ARGS>(std::get<A>(target), mrb)...};
     if (n > 0 && restv != nullptr) {
         for (int i = 0; i < n; i++) {
             restv->push_back(rest[i]);
@@ -276,81 +216,6 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>& rest)
 {
     return get_args<ARGS...>(
         mrb, &rest, nullptr, std::make_index_sequence<sizeof...(ARGS)>());
-}
-
-//! Convert native type to ruby (mrb_value)
-template <typename RET>
-mrb_value to_value(RET const& r, mrb_state* const mrb)
-{
-    if constexpr (std::is_same_v<RET, mrb_value>) {
-        return r;
-    } else if constexpr (std::is_same_v<RET, bool>) {
-        return mrb_bool_value(r);
-    } else if constexpr (std::is_floating_point_v<RET>) {
-        return mrb_float_value(mrb, r);
-    } else if constexpr (std::is_integral_v<RET>) {
-        return mrb_int_value(mrb, r);
-    } else if constexpr (std::is_same_v<RET, std::string>) {
-        return mrb_str_new_cstr(mrb, r.c_str());
-    } else if constexpr (std::is_same_v<RET, const char*>) {
-        return mrb_str_new_cstr(mrb, r);
-    } else if constexpr (std::is_same_v<RET, mrb_sym>) {
-        return mrb_sym_str(mrb, r);
-    } else {
-        return RET::can_not_convert;
-    }
-}
-template <typename ELEM>
-mrb_value to_value(std::vector<ELEM> const& r, mrb_state* mrb)
-{
-    std::vector<mrb_value> output(r.size());
-    std::transform(r.begin(), r.end(), output.begin(),
-        [&](ELEM const& e) { return to_value(e, mrb); });
-    return mrb_ary_new_from_values(
-        mrb, static_cast<mrb_int>(output.size()), output.data());
-}
-
-template <typename ELEM, size_t N>
-mrb_value to_value(std::array<ELEM, N> const& r, mrb_state* mrb)
-{
-    std::vector<mrb_value> output(r.size());
-    std::transform(r.begin(), r.end(), output.begin(),
-        [&](ELEM const& e) { return to_value(e, mrb); });
-    return mrb_ary_new_from_values(
-        mrb, static_cast<mrb_int>(output.size()), output.data());
-}
-
-template <typename T, size_t N>
-std::array<T, N> to_array(mrb_value ary, mrb_state* mrb)
-{
-    std::array<T, N> result{};
-    if (!mrb_array_p(ary)) { ary = mrb_funcall(mrb, ary, "to_a", 0); }
-    if (mrb_array_p(ary)) {
-        auto sz = ARY_LEN(mrb_ary_ptr(ary));
-        if (sz != N) {
-            mrb_raise(mrb, E_TYPE_ERROR, "not an array");
-            return result;
-        }
-        for (int i = 0; i < sz; i++) {
-            auto v = mrb_ary_entry(ary, i);
-            result[i] = to<T>(v);
-        }
-    } else {
-        mrb_raise(mrb, E_TYPE_ERROR, "not an array");
-    }
-    return result;
-}
-
-template <typename T>
-std::vector<T> to_vector(mrb_value ary)
-{
-    auto sz = ARY_LEN(mrb_ary_ptr(ary));
-    std::vector<T> result;
-    for (int i = 0; i < sz; i++) {
-        auto v = mrb_ary_entry(ary, i);
-        result.push_back(to<T>(v));
-    }
-    return result;
 }
 
 template <class CLASS, class RET, class... ARGS, size_t... A>
@@ -419,7 +284,7 @@ inline std::optional<std::string> check_exception(mrb_state* ruby)
 {
     if (ruby->exc != nullptr) {
         auto obj = mrb_funcall(ruby, mrb_obj_value(ruby->exc), "inspect", 0);
-        return to<std::string>(obj);
+        return value_to<std::string>(obj);
     }
     return std::nullopt;
 }
@@ -514,6 +379,47 @@ public:
     void global_function(std::string const& name, FN const& fn)
     {
         gf(name, fn, &FN::operator());
+    }
+
+    template <typename RET = void>
+    RET run(std::string const& code)
+    {
+        auto* ctx = mrbc_context_new(ruby);
+        ctx->capture_errors = TRUE;
+        ctx->lineno = 1;
+
+        // auto ai = mrb_gc_arena_save(ruby);
+
+        auto* parser = mrb_parser_new(ruby);
+        if (parser == nullptr) { throw mrb_exception("Can't create parser"); }
+
+        parser->s = code.c_str();
+        parser->send = code.c_str() + code.length();
+        parser->lineno = 1;
+        mrb_parser_parse(parser, ctx);
+
+        if (parser->nwarn > 0) {
+            char* msg = mrb_locale_from_utf8(parser->warn_buffer[0].message, -1);
+            printf("line %d: %s\n", parser->warn_buffer[0].lineno, msg);
+            mrb_locale_free(msg);
+            return RET{};
+        }
+        if (parser->nerr > 0) {
+            char* msg = mrb_locale_from_utf8(parser->error_buffer[0].message, -1);
+            printf("line %d: %s\n", parser->error_buffer[0].lineno, msg);
+            mrb_locale_free(msg);
+            return RET{};
+        }
+        struct RProc* proc = mrb_generate_code(ruby, parser);
+        mrb_parser_free(parser);
+        if (proc == nullptr) { throw mrb_exception("Can't generate code"); }
+        // struct RClass* target = ruby->object_class;
+        // MRB_PROC_SET_TARGET_CLASS(proc, target);
+        mrb_int stack_keep = 0;
+        auto result = mrb_vm_run(ruby, proc, mrb_top_self(ruby), stack_keep);
+        return value_to<RET>(result);
+        // stack_keep = proc->body.irep->nlocals;
+        // mrb_gc_arena_restore(ruby, ai);
     }
 };
 

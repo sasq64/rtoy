@@ -192,6 +192,9 @@ if(EMSCRIPTEN OR RASPBERRY_PI)
     target_compile_definitions(pix PUBLIC NO_GLCHECK)
 endif()
 
+add_executable(mrbtest src/tests/testmain.cpp src/tests/mrb_conv_test.cpp)
+target_link_libraries(mrbtest PRIVATE Warnings mruby fmt::fmt doctest)
+
 ############## MAIN TARGET ###################################################
 
 if(EMSCRIPTEN)
