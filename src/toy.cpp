@@ -64,32 +64,10 @@ fs::path find_data_root()
     return {};
 }
 
-class ScriptInterface
+struct Dummy
 {
-    mrb_state* ruby;
-public:
-    explicit ScriptInterface(mrb_state* _ruby) : ruby{_ruby} {}
-
-    template <typename FX, typename RET, typename ...ARGS>
-    void gf(std::string const& name, FX const& fn, RET (FX::*)(ARGS...) const)
-    {
-        static FX _fn{fn};
-        mrb_define_module_function(
-            ruby, ruby->kernel_module, name.c_str(),
-            [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-              FX fn{_fn};
-              auto args = mrb::get_args<ARGS...>(mrb);
-              auto res =  std::apply(fn, args);
-              return mrb::to_value(res, mrb);
-            },
-           MRB_ARGS_REQ(sizeof...(ARGS)));
-    }
-
-    template <typename FN>
-    void global_function(std::string const& name, FN const& fn)
-    {
-        gf(name, fn, &FN::operator());
-    }
+    std::string name;
+    int age;
 };
 
 void Toy::init()
@@ -136,9 +114,22 @@ void Toy::init()
     mrb_define_const(ruby, rclass, "CONSOLE_FONT",
         mrb::to_value(settings.console_font.string(), ruby));
 
-    ScriptInterface si{ruby};
-    si.global_function("test_me", [](int x) {
-        return 3 + x;
+    mrb::ScriptInterface si{ruby};
+    si.global_function("test_me", [](int x) { return 3 + x; });
+
+    mrb::ScriptClass<Dummy> dummy{ruby, "Dummy"};
+    dummy.initialize([](Dummy* d) {
+        d->name = "default";
+        d->age = 100;
+    });
+
+    dummy.method("age", [](Dummy* d) {
+        fmt::print("age\n");
+        return d->age;
+    });
+    dummy.method("age=", [](Dummy* d, int a) {
+        fmt::print("age=\n");
+        d->age = a;
     });
 
     mrb_define_module_function(
@@ -354,7 +345,8 @@ bool Toy::render_loop()
     if (RTimer::default_timer != nullptr) { RTimer::default_timer->update(); }
 
     auto rt = clk::now() - t;
-    display->pre_t = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
+    display->pre_t =
+        std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
 
     display->end_draw();
     display->swap();
@@ -378,7 +370,6 @@ Toy::Toy(Settings const& _settings) : settings{_settings} {}
 int Toy::run()
 {
     init();
-
 
     if (settings.console_benchmark) {
         auto con = Display::default_display->console->console;

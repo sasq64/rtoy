@@ -56,24 +56,31 @@ void RLayer::update_tx(RLayer const* parent)
     auto lowery = scissor[3];
     auto w = width - (scissor[0] + scissor[2]);
     auto h = height - (scissor[1] + scissor[3]);
-    //fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
+    // fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
     glScissor(lowerx, lowery, w, h);
 
-//    glScissor(scissor[0] + trans[0] + t0, scissor[1] + trans[1] + t1,
-  //      width + t0 - scissor[2] * 2, height + t1 - scissor[3] * 2);
+    //    glScissor(scissor[0] + trans[0] + t0, scissor[1] + trans[1] + t1,
+    //      width + t0 - scissor[2] * 2, height + t1 - scissor[3] * 2);
 }
 
 void RLayer::reg_class(mrb_state* ruby)
 {
     RStyle::ruby = ruby;
-    RStyle::rclass = mrb_define_class(ruby, "Style", ruby->object_class);
-    MRB_SET_INSTANCE_TT(RStyle::rclass, MRB_TT_DATA);
+    // RStyle::rclass = mrb_define_class(ruby, "Style", ruby->object_class);
+    // MRB_SET_INSTANCE_TT(RStyle::rclass, MRB_TT_DATA);
 
     rclass = mrb_define_class(ruby, "Layer", ruby->object_class);
     MRB_SET_INSTANCE_TT(RLayer::rclass, MRB_TT_DATA);
 
+    mrb::ScriptClass<RStyle> style(ruby, "Style");
+    RStyle::rclass = style.rclass;
     // RSTYLE
     //
+    style.initialize([](RStyle* style) {});
+
+    style.method("fg=", [](RStyle* s, std::array<float, 4> fg) { s->fg = fg; });
+
+#if 0
     mrb_define_method(
         ruby, RStyle::rclass, "initialize",
         [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
@@ -93,7 +100,7 @@ void RLayer::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
-
+#endif
     mrb_define_method(
         ruby, RStyle::rclass, "fg",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -230,8 +237,8 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb_define_method(
         ruby, RLayer::rclass, "scale",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          auto* rlayer = mrb::self_to<RLayer>(self);
-          return mrb::to_value(rlayer->scale, mrb);
+            auto* rlayer = mrb::self_to<RLayer>(self);
+            return mrb::to_value(rlayer->scale, mrb);
         },
         MRB_ARGS_NONE());
 

@@ -25,6 +25,67 @@ extern "C"
 
 namespace mrb {
 
+template<typename Type>
+struct is_std_array : std::false_type { };
+
+template<typename Item, std::size_t N>
+struct is_std_array< std::array<Item, N> > : std::true_type { };
+
+template <typename TARGET>
+TARGET tox(mrb_value obj, mrb_state* mrb = nullptr)
+{
+    if constexpr (std::is_arithmetic_v<TARGET>) {
+        if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
+        if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
+        throw std::exception();
+    } else {
+    return static_cast<TARGET>(obj);
+    //    throw std::exception();
+    }
+}
+template <typename T, typename VAL, size_t SIZE, typename A = std::array<VAL, SIZE> >
+T toa(std::array<VAL, SIZE>& result, mrb_value ary, mrb_state* mrb = nullptr)
+{
+    if (!mrb_array_p(ary)) { ary = mrb_funcall(mrb, ary, "to_a", 0); }
+    if (mrb_array_p(ary)) {
+        auto sz = ARY_LEN(mrb_ary_ptr(ary));
+        for (int i = 0; i < sz; i++) {
+            auto v = mrb_ary_entry(ary, i);
+            result[i] = tox<VAL>(v);
+        }
+    } else {
+        mrb_raise(mrb, E_TYPE_ERROR, "not an array");
+    }
+    return result;
+}
+
+//! Convert ruby (mrb_value) type to native
+template <typename TARGET>
+TARGET to(mrb_value obj, mrb_state* mrb = nullptr)
+{
+    if constexpr (is_std_array<TARGET>()) {
+
+        TARGET result;
+        return toa<TARGET>(result, obj, mrb);
+    } else if constexpr (std::is_same_v<TARGET, std::string_view>) {
+        return std::string_view(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
+    } else if constexpr (std::is_same_v<TARGET, std::string>) {
+        return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
+    } else if constexpr (std::is_arithmetic_v<TARGET>) {
+        if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
+        if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
+        throw std::exception();
+    } else {
+    return static_cast<TARGET>(obj);
+    //    throw std::exception();
+    }
+}
+template <typename TARGET, typename SOURCE>
+TARGET to(SOURCE obj, mrb_state* mrb = nullptr)
+{
+    return static_cast<TARGET>(obj);
+}
+
 template <typename Target>
 Target* self_to(mrb_value self)
 {
@@ -33,43 +94,80 @@ Target* self_to(mrb_value self)
 }
 
 template <typename ARG>
-constexpr void get_spec(size_t i, ARG, char* data);
+constexpr size_t get_spec(std::vector<char>&, std::vector<void*>&, ARG*);
 
-template <typename PTR>
-constexpr void get_spec(size_t i, PTR*, char* data)
+/* template <typename PTR> */
+/* constexpr void get_spec(size_t i, PTR*, char* data) */
+/* { */
+/*     data[i] = 'p'; */
+/* } */
+
+template <typename OBJ>
+constexpr inline size_t get_spec(
+    std::vector<char>& target, std::vector<void*>& ptrs, OBJ** p)
 {
-    data[i] = 'p';
+    ptrs.push_back(p);
+    ptrs.push_back(&OBJ::dt);
+    target.push_back('d');
+    return target.size();
 }
 
 template <>
-constexpr void get_spec(size_t i, mrb_int, char* data)
+inline size_t get_spec(
+    std::vector<char>& target, std::vector<void*>& ptrs, mrb_int* p)
 {
-    data[i] = 'i';
+    ptrs.push_back(p);
+    target.push_back('i');
+    return target.size();
 }
 
 template <>
-constexpr void get_spec(size_t i, mrb_float, char* data)
+inline size_t get_spec(
+    std::vector<char>& target, std::vector<void*>& ptrs, mrb_float* p)
 {
-    data[i] = 'f';
+    ptrs.push_back(p);
+    target.push_back('f');
+    return target.size();
 }
 
 template <>
-inline void get_spec(size_t i, const char*, char* data)
+inline size_t get_spec(
+    std::vector<char>& target, std::vector<void*>& ptrs, const char** p)
 {
-    data[i] = 'z';
+    ptrs.push_back(p);
+    target.push_back('z');
+    return target.size();
 }
 
 template <>
-inline void get_spec(size_t i, mrb_value, char* data)
+inline size_t get_spec(
+    std::vector<char>& target, std::vector<void*>& ptrs, mrb_value* p)
 {
-    data[i] = 'o';
+    ptrs.push_back(p);
+    target.push_back('o');
+    return target.size();
 }
 
 template <>
-inline void get_spec(size_t i, mrb_bool, char* data)
+inline size_t get_spec(
+    std::vector<char>& target, std::vector<void*>& ptrs, mrb_bool* p)
 {
-    data[i] = 'b';
+    ptrs.push_back(p);
+    target.push_back('b');
+    return target.size();
 }
+
+
+template <typename VAL, size_t N>
+inline size_t get_spec(
+    std::vector<char>& target, std::vector<void*>& ptrs, std::array<VAL, N>* p)
+{
+    fmt::print("#### NOT HERE\n");
+    ptrs.push_back(p);
+    target.push_back('o');
+    return target.size();
+}
+
 
 template <typename T>
 struct ToMrb
@@ -107,28 +205,42 @@ struct ToMrb<unsigned int>
     using To = mrb_int;
 };
 
+template <typename T, size_t N>
+struct ToMrb<std::array<T, N>>
+{
+    using To = mrb_value;
+};
+
 template <class... ARGS, size_t... A>
-auto get_args(
-    mrb_state* mrb, std::vector<mrb_value>* restv, std::index_sequence<A...>)
+auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
+    std::index_sequence<A...>)
 {
     // A tuple to store the arguments. Types are converted to mruby
-    std::tuple<typename ToMrb<ARGS>::To...> input;
+    std::tuple<typename ToMrb<ARGS>::To...> target;
 
     // Build spec string, one character per type, plus a trailing '*' to capture
     // remaining arguments
-    std::array<char, sizeof...(ARGS) + 2> spec;
-    spec[sizeof...(ARGS)] = '*';
-    spec[sizeof...(ARGS) + 1] = 0;
-    (void)std::tuple{(get_spec(A, std::get<A>(input), spec.data()), 0)...};
 
-    // TODO
-    // Put arguments on heap
-    // Needs recursive template calls
-
+    std::vector<char> v;
+    std::vector<void*> arg_ptrs;
     mrb_int n = 0;
     mrb_value* rest{};
-    mrb_get_args(mrb, spec.data(), &std::get<A>(input)..., &rest, &n);
-    std::tuple<ARGS...> converted{static_cast<ARGS>(std::get<A>(input))...};
+
+    auto arg_count = mrb_get_argc(mrb);
+    if (num) { *num = arg_count; }
+
+    ((get_spec(v, arg_ptrs, &std::get<A>(target))), ...);
+    if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
+    v.push_back('*');
+    v.push_back(0);
+    arg_ptrs.push_back(&rest);
+    arg_ptrs.push_back(&n);
+
+    // fmt::print("ARG: {}\n", v.data());
+
+    mrb_get_args_a(mrb, v.data(), arg_ptrs.data());
+
+    std::tuple<ARGS...> converted{to<ARGS>(std::get<A>(target), mrb)...};
     if (n > 0 && restv != nullptr) {
         for (int i = 0; i < n; i++) {
             restv->push_back(rest[i]);
@@ -147,14 +259,23 @@ template <class... ARGS>
 auto get_args(mrb_state* mrb)
 {
     return get_args<ARGS...>(
-        mrb, nullptr, std::make_index_sequence<sizeof...(ARGS)>());
+        mrb, nullptr, nullptr, std::make_index_sequence<sizeof...(ARGS)>());
+}
+
+template <class... ARGS>
+auto get_args_n(mrb_state* mrb)
+{
+    int n = 0;
+    auto res = get_args<ARGS...>(
+        mrb, nullptr, &n, std::make_index_sequence<sizeof...(ARGS)>());
+    return std::tuple_cat(std::make_tuple(n), res);
 }
 
 template <class... ARGS>
 auto get_args(mrb_state* mrb, std::vector<mrb_value>& rest)
 {
     return get_args<ARGS...>(
-        mrb, &rest, std::make_index_sequence<sizeof...(ARGS)>());
+        mrb, &rest, nullptr, std::make_index_sequence<sizeof...(ARGS)>());
 }
 
 //! Convert native type to ruby (mrb_value)
@@ -199,30 +320,11 @@ mrb_value to_value(std::array<ELEM, N> const& r, mrb_state* mrb)
         mrb, static_cast<mrb_int>(output.size()), output.data());
 }
 
-//! Convert ruby (mrb_value) type to native
-template <typename TARGET>
-TARGET to(mrb_value obj)
-{
-    if constexpr (std::is_same_v<TARGET, std::string_view>) {
-        return std::string_view(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
-    } else if constexpr (std::is_same_v<TARGET, std::string>) {
-        return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
-    } else if constexpr (std::is_arithmetic_v<TARGET>) {
-        if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
-        if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
-        throw std::exception();
-    } else {
-        throw std::exception();
-    }
-}
-
 template <typename T, size_t N>
 std::array<T, N> to_array(mrb_value ary, mrb_state* mrb)
 {
     std::array<T, N> result{};
-    if (!mrb_array_p(ary)) { 
-        ary = mrb_funcall(mrb, ary, "to_a", 0);
-    }
+    if (!mrb_array_p(ary)) { ary = mrb_funcall(mrb, ary, "to_a", 0); }
     if (mrb_array_p(ary)) {
         auto sz = ARY_LEN(mrb_ary_ptr(ary));
         if (sz != N) {
@@ -256,7 +358,7 @@ RET method(RET (CLASS::*f)(ARGS...), mrb_state* mrb, mrb_value self,
     std::index_sequence<A...> is)
 {
     auto* ptr = static_cast<CLASS*>(DATA_PTR(self));
-    auto input = get_args<ARGS...>(mrb, nullptr, is);
+    auto input = get_args<ARGS...>(mrb, nullptr, nullptr, is);
     return (ptr->*f)(std::get<A>(input)...);
 }
 
@@ -265,7 +367,7 @@ RET method(RET (CLASS::*f)(ARGS...) const, mrb_state* mrb, mrb_value self,
     std::index_sequence<A...> is)
 {
     auto* ptr = static_cast<CLASS*>(DATA_PTR(self));
-    auto input = get_args<ARGS...>(mrb, nullptr, is);
+    auto input = get_args<ARGS...>(mrb, nullptr, nullptr, is);
     return (ptr->*f)(std::get<A>(input)...);
 }
 
@@ -373,13 +475,12 @@ struct RubyPtr
     void clear() { ptr = nullptr; }
 };
 
-using FNP = void(*)();
+using FNP = void (*)();
 
 template <typename CLASS, FNP FN>
 void make_attribute(mrb_state* mrb, std::string const& name)
 {
-    mrb_define_method(
-        mrb, CLASS::rclass, name.c_str(),
+    mrb_define_method(mrb, CLASS::rclass, name.c_str(),
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<CLASS>(self);
             FN();
@@ -387,4 +488,103 @@ void make_attribute(mrb_state* mrb, std::string const& name)
         });
 }
 
+class ScriptInterface
+{
+    mrb_state* ruby;
+
+public:
+    explicit ScriptInterface(mrb_state* _ruby) : ruby{_ruby} {}
+
+    template <typename FX, typename RET, typename... ARGS>
+    void gf(std::string const& name, FX const& fn, RET (FX::*)(ARGS...) const)
+    {
+        static FX _fn{fn};
+        mrb_define_module_function(
+            ruby, ruby->kernel_module, name.c_str(),
+            [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+                FX fn{_fn};
+                auto args = mrb::get_args<ARGS...>(mrb);
+                auto res = std::apply(fn, args);
+                return mrb::to_value(res, mrb);
+            },
+            MRB_ARGS_REQ(sizeof...(ARGS)));
+    }
+
+    template <typename FN>
+    void global_function(std::string const& name, FN const& fn)
+    {
+        gf(name, fn, &FN::operator());
+    }
+};
+
+template <typename CLASS>
+class ScriptClass
+{
+    mrb_state* ruby;
+public:
+    static inline RClass* rclass = nullptr;
+    static inline mrb_data_type dt{nullptr, nullptr};
+
+public:
+    ScriptClass(mrb_state* _ruby, std::string const& name) : ruby{_ruby}
+    {
+        rclass = mrb_define_class(ruby, name.c_str(), nullptr);
+        MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
+        assert(dt.struct_name == nullptr);
+        dt = {name.c_str(),
+            [](mrb_state*, void* data) { delete static_cast<CLASS*>(data); }};
+    }
+
+    template <typename FX, typename RET, typename... ARGS>
+    void m(std::string const& name, FX const& fn,
+        RET (FX::*)(CLASS*, ARGS...) const)
+    {
+        static FX _fn{fn};
+        mrb_define_method(
+            ruby, rclass, name.c_str(),
+            [](mrb_state* mrb, mrb_value self) -> mrb_value {
+                FX fn{_fn};
+                auto args = mrb::get_args<ARGS...>(mrb);
+                auto* ptr = mrb::self_to<CLASS>(self);
+                if constexpr (std::is_same<RET, void>()) {
+                    std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args));
+                    return mrb_nil_value();
+                } else {
+                    auto res = std::apply(
+                        fn, std::tuple_cat(std::make_tuple(ptr), args));
+                    return mrb::to_value(res, mrb);
+                }
+            },
+            MRB_ARGS_REQ(sizeof...(ARGS)));
+    }
+
+    template <typename FN>
+    void method(std::string const& name, FN const& fn)
+    {
+        m(name, fn, &FN::operator());
+    }
+
+    template <typename FX, typename... ARGS>
+    void i(FX const& fn, void (FX::*)(CLASS*, ARGS...) const)
+    {
+        static FX _fn{fn};
+        mrb_define_method(
+            ruby, rclass, "initialize",
+            [](mrb_state* mrb, mrb_value self) -> mrb_value {
+                FX fn{_fn};
+                auto args = mrb::get_args<ARGS...>(mrb);
+                auto* cls = new CLASS();
+                DATA_PTR(self) = (void*)cls; // NOLINT
+                DATA_TYPE(self) = &dt;       // NOLINT
+                std::apply(fn, std::tuple_cat(std::make_tuple(cls), args));
+                return mrb_nil_value();
+            },
+            MRB_ARGS_REQ(sizeof...(ARGS)));
+    }
+    template <typename FN>
+    void initialize(FN const& fn)
+    {
+        i(fn, &FN::operator());
+    }
+};
 } // namespace mrb
