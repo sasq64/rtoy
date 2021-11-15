@@ -72,7 +72,7 @@ void RLayer::reg_class(mrb_state* ruby)
     rclass = mrb_define_class(ruby, "Layer", ruby->object_class);
     MRB_SET_INSTANCE_TT(RLayer::rclass, MRB_TT_DATA);
 
-    mrb::ScriptClass<RStyle> style(ruby, "Style");
+    mrb::ScriptClass<RStyle> style(ruby);
     RStyle::rclass = style.rclass;
     // RSTYLE
     //
@@ -96,7 +96,7 @@ void RLayer::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rstyle = mrb::self_to<RStyle>(self);
-            rstyle->fg = mrb::to_array<float, 4>(av, mrb);
+            rstyle->fg = mrb::value_to<std::array<float, 4>>(av, mrb);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -113,7 +113,7 @@ void RLayer::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rstyle = mrb::self_to<RStyle>(self);
-            rstyle->bg = mrb::to_array<float, 4>(av, mrb);
+            rstyle->bg = mrb::value_to<std::array<float, 4>>(av, mrb);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -248,7 +248,8 @@ void RLayer::reg_class(mrb_state* ruby)
             fmt::print("SET_SCALE\n");
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->scale = mrb::to_array<float, 2>(av, mrb);
+            mrb::copy_value_to(&rlayer->scale, av, mrb);
+            //rlayer->scale = mrb::to_array<float, 2>(av, mrb);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));

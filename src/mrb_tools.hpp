@@ -243,22 +243,28 @@ public:
 };
 
 template <typename CLASS>
+constexpr const char* class_name()
+{
+    return CLASS::class_name();
+}
+
+template <typename CLASS>
 class ScriptClass
 {
     mrb_state* ruby;
 
-public:
-    static inline RClass* rclass = nullptr;
-    static inline mrb_data_type dt{nullptr, nullptr};
+    static constexpr const char* Name = class_name<CLASS>();
 
 public:
-    ScriptClass(mrb_state* _ruby, std::string const& name) : ruby{_ruby}
+    static inline RClass* rclass = nullptr;
+    static inline mrb_data_type dt = {
+        Name, [](mrb_state*, void* data) { delete static_cast<CLASS*>(data); }};
+
+    explicit ScriptClass(mrb_state* _ruby) : ruby{_ruby}
     {
-        rclass = mrb_define_class(ruby, name.c_str(), nullptr);
+        rclass = mrb_define_class(ruby, Name, nullptr);
         MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
         assert(dt.struct_name == nullptr);
-        dt = {name.c_str(),
-            [](mrb_state*, void* data) { delete static_cast<CLASS*>(data); }};
     }
 
     template <typename FX, typename RET, typename... ARGS>

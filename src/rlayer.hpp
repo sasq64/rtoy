@@ -16,6 +16,7 @@ enum BlendMode
 
 struct RStyle
 {
+    static constexpr const char* class_name() { return "Style"; }
     std::array<float, 4> fg{1, 1, 1, 1};
     std::array<float, 4> bg{0, 0, 0, 0};
     float line_width = 2.0F;
@@ -33,6 +34,9 @@ protected:
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 public:
+
+    static constexpr const char* class_name() { return "Layer"; }
+
     std::array<float, 2> trans = {0.0F, 0.0F};
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0.0;

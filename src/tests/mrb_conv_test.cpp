@@ -4,36 +4,9 @@
 
 using namespace std::string_literals;
 
-void ruby_check(mrb_state* ruby, const char* code, const char* fn, int line)
-{
-    static bool assert_defined = false;
-    if (!assert_defined) {
-        mrb_define_module_function(
-            ruby, ruby->kernel_module, "assert",
-            [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-                mrb_bool what = false;
-                const char* fn = nullptr;
-                int line = 0;
-                mrb_get_args(mrb, "bzi", &what, &fn, &line);
-                if (!what) {
-                    char temp[1024];
-                    sprintf(temp, "\n>> Ruby assertion in %s:%d\n", fn, line);
-                    //puts(temp);
-                    FAIL(temp);
-                }
-                return mrb_nil_value();
-            },
-            MRB_ARGS_REQ(01));
-    }
+#define RUBY_CHECK(code) CHECK(mrb::value_to<bool>(mrb_load_string(ruby, code)))
 
-    char temp[1024];
-    sprintf(temp, "assert(%s, '%s', %d)", code, fn, line);
-    mrb_load_string(ruby, temp);
-}
-
-#define RUBY_CHECK(s) ruby_check(ruby, s, __FILE__, __LINE__)
-
-TEST_CASE("mrb conversions")
+TEST_CASE("value_to")
 {
     auto* ruby = mrb_open();
     mrb_value v;
@@ -42,6 +15,11 @@ TEST_CASE("mrb conversions")
     CHECK(mrb::value_to<int>(v) == 3);
     CHECK(mrb::value_to<float>(v) == 3.0F);
     CHECK_THROWS(mrb::value_to<std::string>(v));
+
+    auto f = mrb_load_string(ruby, "1 == 2");
+    auto t = mrb_load_string(ruby, "3 == 3");
+    CHECK(mrb::value_to<bool>(f) == false);
+    CHECK(mrb::value_to<bool>(t) == true);
 
     v = mrb_load_string(ruby, "4.3");
     CHECK(mrb::value_to<float>(v) == 4.3F);
@@ -67,12 +45,32 @@ TEST_CASE("mrb conversions")
     CHECK(mrb::value_to<std::vector<std::string>>(v, ruby) ==
           std::vector{"a"s, "b"s, "c"s});
 
-    mrb_define_global_const(ruby, "THREE", mrb::to_value(3));
-    RUBY_CHECK("THREE == 2");
+    mrb_close(ruby);
+}
 
-    mrb_define_global_const(ruby, "A", mrb::to_value(std::array{5,4,3}));
+TEST_CASE("to_value")
+{
+    auto* ruby = mrb_open();
+    mrb_define_global_const(ruby, "THREE", mrb::to_value(3));
+    RUBY_CHECK("THREE == 3");
+
+    mrb_define_global_const(ruby, "STRING", mrb::to_value("hello", ruby));
+    RUBY_CHECK("STRING == 'hello'");
+
+    std::string h = "people";
+    mrb_define_global_const(ruby, "STRING", mrb::to_value(h, ruby));
+    RUBY_CHECK("STRING == 'people'");
+
+    mrb_define_global_const(
+        ruby, "A", mrb::to_value(std::array{5, 4, 3}, ruby));
     RUBY_CHECK("A == [5,4,3]");
 
+    std::vector<std::string> names;
+    names.emplace_back("Alex");
+    names.emplace_back("Bjarne");
+    mrb_define_global_const(
+        ruby, "NAMES", mrb::to_value(names, ruby));
+    RUBY_CHECK("NAMES == ['Alex', 'Bjarne']");
 
-
+    mrb_close(ruby);
 }

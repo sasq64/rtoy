@@ -83,6 +83,8 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
             return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
         }
         throw std::exception();
+    } else if constexpr (std::is_same_v<TARGET, bool>) {
+        return mrb_bool(obj);
     } else if constexpr (std::is_arithmetic_v<TARGET>) {
         if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
         if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
@@ -93,7 +95,19 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
     }
 }
 
+
+template <typename TARGET>
+void copy_value_to(TARGET* target, mrb_value v, mrb_state* mrb)
+{
+    *target = value_to<TARGET>(v, mrb);
+}
+
 //! Convert native type to ruby (mrb_value)
+inline mrb_value to_value(const char *r,  mrb_state* mrb = nullptr)
+{
+    return mrb_str_new_cstr(mrb, r);
+}
+
 template <typename RET>
 mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
 {
@@ -107,14 +121,13 @@ mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
         return mrb_int_value(mrb, r);
     } else if constexpr (std::is_same_v<RET, std::string>) {
         return mrb_str_new_cstr(mrb, r.c_str());
-    } else if constexpr (std::is_same_v<RET, const char*>) {
-        return mrb_str_new_cstr(mrb, r);
     } else if constexpr (std::is_same_v<RET, mrb_sym>) {
         return mrb_sym_str(mrb, r);
     } else {
         return RET::can_not_convert;
     }
 }
+
 template <typename ELEM>
 mrb_value to_value(std::vector<ELEM> const& r, mrb_state* mrb)
 {
@@ -134,6 +147,8 @@ mrb_value to_value(std::array<ELEM, N> const& r, mrb_state* mrb)
     return mrb_ary_new_from_values(
         mrb, static_cast<mrb_int>(output.size()), output.data());
 }
+
+
 
 template <typename T, size_t N>
 std::array<T, N> to_array(mrb_value ary, mrb_state* mrb)
@@ -156,6 +171,7 @@ std::array<T, N> to_array(mrb_value ary, mrb_state* mrb)
     return result;
 }
 
+/*
 template <typename T>
 std::vector<T> to_vector(mrb_value ary)
 {
@@ -167,5 +183,6 @@ std::vector<T> to_vector(mrb_value ary)
     }
     return result;
 }
+*/
 
 } // namespace mrb

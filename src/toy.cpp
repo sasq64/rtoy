@@ -66,6 +66,8 @@ fs::path find_data_root()
 
 struct Dummy
 {
+    static constexpr const char* class_name() { return "Dummy"; }
+
     std::string name;
     int age;
 };
@@ -117,7 +119,8 @@ void Toy::init()
     mrb::ScriptInterface si{ruby};
     si.global_function("test_me", [](int x) { return 3 + x; });
 
-    mrb::ScriptClass<Dummy> dummy{ruby, "Dummy"};
+    mrb::ScriptClass<Dummy> dummy{ruby};
+
     dummy.initialize([](Dummy* d) {
         d->name = "default";
         d->age = 100;
