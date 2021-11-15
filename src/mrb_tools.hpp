@@ -1,6 +1,7 @@
 #pragma once
 
 #include "conv.hpp"
+#include "get_args.hpp"
 
 extern "C"
 {
@@ -33,190 +34,6 @@ struct mrb_exception : public std::exception
     std::string msg;
     char const* what() const noexcept override { return msg.c_str(); }
 };
-template <typename ARG>
-constexpr size_t get_spec(std::vector<char>&, std::vector<void*>&, ARG*);
-
-/* template <typename PTR> */
-/* constexpr void get_spec(size_t i, PTR*, char* data) */
-/* { */
-/*     data[i] = 'p'; */
-/* } */
-
-template <typename OBJ>
-constexpr inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, OBJ** p)
-{
-    ptrs.push_back(p);
-    ptrs.push_back(&OBJ::dt);
-    target.push_back('d');
-    return target.size();
-}
-
-template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, mrb_int* p)
-{
-    ptrs.push_back(p);
-    target.push_back('i');
-    return target.size();
-}
-
-template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, mrb_float* p)
-{
-    ptrs.push_back(p);
-    target.push_back('f');
-    return target.size();
-}
-
-template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, const char** p)
-{
-    ptrs.push_back(p);
-    target.push_back('z');
-    return target.size();
-}
-
-template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, mrb_value* p)
-{
-    ptrs.push_back(p);
-    target.push_back('o');
-    return target.size();
-}
-
-template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, mrb_bool* p)
-{
-    ptrs.push_back(p);
-    target.push_back('b');
-    return target.size();
-}
-
-
-template <typename VAL, size_t N>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, std::array<VAL, N>* p)
-{
-    fmt::print("#### NOT HERE\n");
-    ptrs.push_back(p);
-    target.push_back('o');
-    return target.size();
-}
-
-
-template <typename T>
-struct to_mrb
-{
-    using type = T;
-};
-
-template <>
-struct to_mrb<std::string>
-{
-    using type = const char*;
-};
-
-template <>
-struct to_mrb<std::string const&>
-{
-    using type = const char*;
-};
-
-template <>
-struct to_mrb<float>
-{
-    using type = mrb_float;
-};
-
-template <>
-struct to_mrb<int>
-{
-    using type = mrb_int;
-};
-
-template <>
-struct to_mrb<unsigned int>
-{
-    using type = mrb_int;
-};
-
-template <typename T, size_t N>
-struct to_mrb<std::array<T, N>>
-{
-    using type = mrb_value;
-};
-
-template <class... ARGS, size_t... A>
-auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
-    std::index_sequence<A...>)
-{
-    // A tuple to store the arguments. Types are converted to mruby
-    std::tuple<typename to_mrb<ARGS>::type...> target;
-
-
-    std::vector<char> v;
-    std::vector<void*> arg_ptrs;
-    mrb_int n = 0;
-    mrb_value* rest{};
-
-    auto arg_count = mrb_get_argc(mrb);
-    if (num) { *num = arg_count; }
-
-    // Build spec string, one character per type, plus a trailing '*' to capture
-    // remaining arguments
-    ((get_spec(v, arg_ptrs, &std::get<A>(target))), ...);
-    if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
-    v.push_back('*');
-    v.push_back(0);
-    arg_ptrs.push_back(&rest);
-    arg_ptrs.push_back(&n);
-
-    // fmt::print("ARG: {}\n", v.data());
-
-    mrb_get_args_a(mrb, v.data(), arg_ptrs.data());
-
-    std::tuple<ARGS...> converted{value_to<ARGS>(std::get<A>(target), mrb)...};
-    if (n > 0 && restv != nullptr) {
-        for (int i = 0; i < n; i++) {
-            restv->push_back(rest[i]);
-        }
-    }
-    return converted;
-}
-
-//! Get function args according to type list
-//! ex
-//!
-//! auto [x,y, txt] = get_args<float, float, std::string>(mrb);
-//! draw_text(x,y, txt);
-//
-template <class... ARGS>
-auto get_args(mrb_state* mrb)
-{
-    return get_args<ARGS...>(
-        mrb, nullptr, nullptr, std::make_index_sequence<sizeof...(ARGS)>());
-}
-
-template <class... ARGS>
-auto get_args_n(mrb_state* mrb)
-{
-    int n = 0;
-    auto res = get_args<ARGS...>(
-        mrb, nullptr, &n, std::make_index_sequence<sizeof...(ARGS)>());
-    return std::tuple_cat(std::make_tuple(n), res);
-}
-
-template <class... ARGS>
-auto get_args(mrb_state* mrb, std::vector<mrb_value>& rest)
-{
-    return get_args<ARGS...>(
-        mrb, &rest, nullptr, std::make_index_sequence<sizeof...(ARGS)>());
-}
 
 template <class CLASS, class RET, class... ARGS, size_t... A>
 RET method(RET (CLASS::*f)(ARGS...), mrb_state* mrb, mrb_value self,
@@ -399,13 +216,15 @@ public:
         mrb_parser_parse(parser, ctx);
 
         if (parser->nwarn > 0) {
-            char* msg = mrb_locale_from_utf8(parser->warn_buffer[0].message, -1);
+            char* msg =
+                mrb_locale_from_utf8(parser->warn_buffer[0].message, -1);
             printf("line %d: %s\n", parser->warn_buffer[0].lineno, msg);
             mrb_locale_free(msg);
             return RET{};
         }
         if (parser->nerr > 0) {
-            char* msg = mrb_locale_from_utf8(parser->error_buffer[0].message, -1);
+            char* msg =
+                mrb_locale_from_utf8(parser->error_buffer[0].message, -1);
             printf("line %d: %s\n", parser->error_buffer[0].lineno, msg);
             mrb_locale_free(msg);
             return RET{};
@@ -427,6 +246,7 @@ template <typename CLASS>
 class ScriptClass
 {
     mrb_state* ruby;
+
 public:
     static inline RClass* rclass = nullptr;
     static inline mrb_data_type dt{nullptr, nullptr};

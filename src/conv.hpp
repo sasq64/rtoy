@@ -93,16 +93,9 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
     }
 }
 
-template <typename Target>
-Target* self_to(mrb_value self)
-{
-    return static_cast<Target*>(
-        (static_cast<struct RData*>(mrb_ptr(self)))->data);
-}
-
 //! Convert native type to ruby (mrb_value)
 template <typename RET>
-mrb_value to_value(RET const& r, mrb_state* const mrb)
+mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
 {
     if constexpr (std::is_same_v<RET, mrb_value>) {
         return r;

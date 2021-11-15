@@ -144,7 +144,7 @@ void Toy::init()
             // TODO: Dont call if already string
             auto sval = mrb_funcall(mrb, val, "to_s", 0);
 
-            auto text = mrb::to<std::string>(sval) + "\n";
+            auto text = mrb::value_to<std::string>(sval) + "\n";
             Display::default_display->console->text(text);
             return mrb_nil_value();
         },
