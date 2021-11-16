@@ -1,5 +1,5 @@
 #include "rconsole.hpp"
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "rimage.hpp"
 
 #include <coreutils/utf8.h>

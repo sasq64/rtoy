@@ -3,14 +3,14 @@
 
 #include "mruby/value.h"
 
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 
 #include <gl/program_cache.hpp>
 
 #include <mruby.h>
 #include <mruby/class.h>
 
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include <array>
 #include <memory>
 

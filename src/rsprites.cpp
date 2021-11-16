@@ -2,7 +2,7 @@
 #include "rsprites.hpp"
 #include "error.hpp"
 #include "gl/buffer.hpp"
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "mruby/value.h"
 #include "rimage.hpp"
 

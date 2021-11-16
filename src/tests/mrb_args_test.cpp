@@ -1,7 +1,9 @@
 
 #include <doctest/doctest.h>
 
-#include "../get_args.hpp"
+#include <mrb/conv.hpp>
+#include <mrb/get_args.hpp>
+#include <mrb/class.hpp>
 
 using namespace std::string_literals;
 
@@ -22,149 +24,65 @@ TEST_CASE("get_args")
 
     RUBY_CHECK("test(false, 'hello', 3.14) == 'false/hello/3.14'");
 }
-
 namespace mrb {
-template <typename CLASS>
-constexpr const char* class_name()
+struct rptr
 {
-    return CLASS::class_name();
-}
+    std::shared_ptr<void> ptr;
+    mrb_value val;
 
-template <typename CLASS>
-class ScriptClass
-{
-    mrb_state* ruby;
-
-    static constexpr const char* Name = class_name<CLASS>();
-
-public:
-    RClass* rclass = nullptr;
-    mrb_data_type dt = {
-        Name, [](mrb_state*, void* data) { delete static_cast<CLASS*>(data); }};
-
-    explicit ScriptClass(mrb_state* _ruby, std::string const& name)
-        : ruby{_ruby}
+    operator mrb_value() const // NOLINT
     {
-        rclass = mrb_define_class(ruby, name.c_str(), nullptr);
-        MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
-        dt = {name.c_str(),
-            [](mrb_state*, void* data) { delete static_cast<CLASS*>(data); }};
+        return mrb_obj_value(ptr.get());
     }
 
-    template <typename FX, typename RET, typename... ARGS>
-    void m(std::string const& name, FX const& fn,
-        RET (FX::*)(CLASS*, ARGS...) const)
+    explicit operator bool() const { return ptr.operator bool(); }
+
+    rptr() = default;
+
+    rptr(mrb_state* mrb, mrb_value mv) : val(mv)
     {
-        static FX _fn{fn};
-        mrb_define_method(
-            ruby, rclass, name.c_str(),
-            [](mrb_state* mrb, mrb_value self) -> mrb_value {
-                FX fn{_fn};
-                auto args = mrb::get_args<ARGS...>(mrb);
-                auto* ptr = mrb::self_to<CLASS>(self);
-                if constexpr (std::is_same<RET, void>()) {
-                    std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args));
-                    return mrb_nil_value();
-                } else {
-                    auto res = std::apply(
-                        fn, std::tuple_cat(std::make_tuple(ptr), args));
-                    return mrb::to_value(res, mrb);
-                }
-            },
-            MRB_ARGS_REQ(sizeof...(ARGS)));
+        // Check that mrb_value holds a pointer
+        assert((mv.w & 7) == 0); // TODO: Use macro
+        // Store the mrb_value pointer as a shared_ptr
+        ptr = std::shared_ptr<void>(mrb_ptr(mv),
+            [mrb](void* t) { mrb_gc_unregister(mrb, mrb_obj_value(t)); });
+        // Stop value from being garbage collected
+        mrb_gc_register(mrb, mv);
     }
 
-    template <typename FN>
-    void method(std::string const& name, FN const& fn)
+    template <typename T>
+    T* as()
     {
-        m(name, fn, &FN::operator());
+        return self_to<T>(mrb_obj_value(ptr.get()));
     }
 
-    template <typename FX, typename... ARGS>
-    void i(FX const& fn, void (FX::*)(CLASS*, ARGS...) const)
-    {
-        static FX _fn{fn};
-        mrb_define_method(
-            ruby, rclass, "initialize",
-            [](mrb_state* mrb, mrb_value self) -> mrb_value {
-                FX fn{_fn};
-                auto args = mrb::get_args<ARGS...>(mrb);
-                auto* cls = new CLASS();
-                DATA_PTR(self) = (void*)cls; // NOLINT
-                DATA_TYPE(self) = &dt;       // NOLINT
-                std::apply(fn, std::tuple_cat(std::make_tuple(cls), args));
-                return mrb_nil_value();
-            },
-            MRB_ARGS_REQ(sizeof...(ARGS)));
-    }
-    template <typename FN>
-    void initialize(FN const& fn)
-    {
-        i(fn, &FN::operator());
-    }
-
-
-
-
+    void clear() { ptr = nullptr; }
 };
 
-
-template <typename CLASS>
-struct Lookup
+}; // namespace mrb
+struct Person
 {
-    static mrb_state* ruby;
-    static inline RClass* rclass = nullptr;
-    static inline mrb_data_type dt = {
-        nullptr, [](mrb_state*, void* data) { delete static_cast<CLASS*>(data); }};
+    std::string name;
+    int age{};
 };
-
-
-template <typename T>
-RClass* make_class(mrb_state* mrb)
-{
-    Lookup<T>::rclass = mrb_define_class(mrb, class_name<T>(), nullptr);
-    MRB_SET_INSTANCE_TT(Lookup<T>::rclass, MRB_TT_DATA);
-    return Lookup<T>::rclass;
-
-}
-
-template <typename CLASS, typename FX, typename RET, typename... ARGS>
-void m(std::string const& name, FX const& fn,
-    RET (FX::*)(CLASS*, ARGS...) const)
-{
-    static FX _fn{fn};
-    mrb_define_method(
-        Lookup<CLASS>::ruby, Lookup<CLASS>::rclass, name.c_str(),
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            FX fn{_fn};
-            auto args = mrb::get_args<ARGS...>(mrb);
-            auto* ptr = mrb::self_to<CLASS>(self);
-            if constexpr (std::is_same<RET, void>()) {
-                std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args));
-                return mrb_nil_value();
-            } else {
-                auto res = std::apply(
-                    fn, std::tuple_cat(std::make_tuple(ptr), args));
-                return mrb::to_value(res, mrb);
-            }
-        },
-        MRB_ARGS_REQ(sizeof...(ARGS)));
-}
-
-template <typename CLASS, typename FN>
-void add_method(std::string const& name, FN const& fn)
-{
-    m<CLASS>(name, fn, &FN::operator());
-}
-
-
-
-
-} // namespace mrb
 
 TEST_CASE("class")
 {
     auto* ruby = mrb_open();
 
+    auto* person_class = mrb::make_class<Person>(ruby, "Person");
+    mrb::add_method<Person>(
+        ruby, "age=", [](Person* p, int age) { p->age = age; });
+    mrb::add_method<Person>(ruby, "age", [](Person* p) { return p->age; });
+
+    auto f = mrb_load_string(
+        ruby, "person = Person.new ; person.age = 5 ; person.age");
+
+    // Creates an mrb_value referencing Person.
+    // Does gc_register to prevent collection
+    // When obj goes out of scope on native side we unregister
+    // Means gc can collect and free
+
+    CHECK(mrb::value_to<int>(f) == 5);
 }
 

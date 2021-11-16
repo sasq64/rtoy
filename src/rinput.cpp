@@ -2,7 +2,7 @@
 
 #include "error.hpp"
 #include "keycodes.h"
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "settings.hpp"
 
 #include <coreutils/utf8.h>

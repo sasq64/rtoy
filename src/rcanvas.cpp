@@ -1,6 +1,6 @@
 #include "rcanvas.hpp"
 
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "rimage.hpp"
 
 #include <gl/gl.hpp>
@@ -216,8 +216,9 @@ void RCanvas::init(mrb_state* mrb)
 
 void RCanvas::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Canvas", RLayer::rclass);
-    MRB_SET_INSTANCE_TT(RCanvas::rclass, MRB_TT_DATA);
+    // rclass = mrb_define_class(ruby, "Canvas", RLayer::rclass);
+    // MRB_SET_INSTANCE_TT(RCanvas::rclass, MRB_TT_DATA);
+    rclass = mrb::make_noinit_class<RCanvas>(ruby, "Canvas", RLayer::rclass);
 
     mrb_define_method(
         ruby, RCanvas::rclass, "copy",
@@ -262,6 +263,19 @@ void RCanvas::reg_class(mrb_state* ruby)
         },
         MRB_ARGS_REQ(0));
 
+    mrb::add_method_n<RCanvas>(ruby, "rect",
+        [](RCanvas* canvas, int n, float x, float y, float w, float h,
+            RStyle* style) {
+            if (n < 5) { style = &canvas->current_style; }
+            if (n < 3) {
+                w = canvas->last_point.first;
+                h = canvas->last_point.second;
+            }
+            canvas->draw_quad(x, y, w, h, style);
+            canvas->last_point = {w, h};
+        });
+
+#if 0
     mrb_define_method(
         ruby, RCanvas::rclass, "rect",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -284,7 +298,7 @@ void RCanvas::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
-
+#endif
     mrb_define_method(
         ruby, RCanvas::rclass, "line",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -310,24 +324,19 @@ void RCanvas::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(2));
-    
-    mrb_define_method(
-        ruby, RCanvas::rclass, "circle",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            auto [na, x, y, r, style] =
-                mrb::get_args_n<double, double, double, RStyle*>(mrb);
-            if (na < 4) { style = &rcanvas->current_style; }
-            if (na == 1) {
+
+    mrb::add_method_n<RCanvas>(ruby, "circle",
+        [](RCanvas* canvas, int n, double x, double y, double r,
+            RStyle* style) {
+            if (n < 4) { style = &canvas->current_style; }
+            if (n == 1) {
                 r = x;
-                x = rcanvas->last_point.first;
-                y = rcanvas->last_point.second;
+                x = canvas->last_point.first;
+                y = canvas->last_point.second;
             }
-            rcanvas->last_point = {x, y};
-            rcanvas->draw_circle(x, y, r, style);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+            canvas->last_point = {x, y};
+            canvas->draw_circle(x, y, r, style);
+        });
 
     mrb_define_method(
         ruby, RCanvas::rclass, "text",

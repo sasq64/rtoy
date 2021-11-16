@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
 
-#include "../conv.hpp"
+#include <mrb/conv.hpp>
 
 using namespace std::string_literals;
 

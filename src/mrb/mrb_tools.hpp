@@ -2,6 +2,7 @@
 
 #include "conv.hpp"
 #include "get_args.hpp"
+#include "class.hpp"
 
 extern "C"
 {
@@ -27,13 +28,6 @@ extern "C"
 #include <vector>
 
 namespace mrb {
-
-struct mrb_exception : public std::exception
-{
-    explicit mrb_exception(std::string const& text) : msg(text) {}
-    std::string msg;
-    char const* what() const noexcept override { return msg.c_str(); }
-};
 
 template <class CLASS, class RET, class... ARGS, size_t... A>
 RET method(RET (CLASS::*f)(ARGS...), mrb_state* mrb, mrb_value self,
@@ -157,6 +151,8 @@ struct RubyPtr
     void clear() { ptr = nullptr; }
 };
 
+
+#if 0
 using FNP = void (*)();
 
 template <typename CLASS, FNP FN>
@@ -319,4 +315,7 @@ public:
         i(fn, &FN::operator());
     }
 };
+
+#endif
+
 } // namespace mrb

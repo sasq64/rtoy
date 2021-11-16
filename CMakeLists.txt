@@ -193,6 +193,7 @@ if(EMSCRIPTEN OR RASPBERRY_PI)
 endif()
 
 add_executable(mrbtest src/tests/testmain.cpp src/tests/mrb_conv_test.cpp src/tests/mrb_args_test.cpp)
+target_include_directories(mrbtest PRIVATE src)
 target_link_libraries(mrbtest PRIVATE Warnings mruby fmt::fmt doctest)
 
 ############## MAIN TARGET ###################################################

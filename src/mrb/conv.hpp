@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base.hpp"
+
 extern "C"
 {
 #include <mruby.h>
@@ -40,11 +42,26 @@ template <typename Item>
 struct is_std_vector<std::vector<Item>> : std::true_type
 {};
 
+template <typename CLASS>
+struct Lookup
+{
+    static inline std::unordered_map<mrb_state*, RClass*> rclasses;
+    static inline std::unordered_map<mrb_state*, mrb_data_type> dts;
+};
+
+
 //! Convert ruby (mrb_value) type to native
 template <typename TARGET>
 TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
 {
-    if constexpr (is_std_vector<TARGET>()) {
+    if constexpr (std::is_pointer_v<TARGET>) {
+        auto* res = DATA_PTR(obj);
+        if (res == nullptr) {
+            throw mrb_exception("nullptr");
+        }
+        return res;
+
+    } else if constexpr (is_std_vector<TARGET>()) {
         TARGET result;
         using VAL = typename TARGET::value_type;
         if (!mrb_array_p(obj)) { obj = mrb_funcall(mrb, obj, "to_a", 0); }
@@ -111,7 +128,9 @@ inline mrb_value to_value(const char *r,  mrb_state* mrb = nullptr)
 template <typename RET>
 mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
 {
-    if constexpr (std::is_same_v<RET, mrb_value>) {
+    if constexpr (std::is_pointer_v<RET>) {
+
+    } else if constexpr (std::is_same_v<RET, mrb_value>) {
         return r;
     } else if constexpr (std::is_same_v<RET, bool>) {
         return mrb_bool_value(r);

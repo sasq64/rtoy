@@ -1,6 +1,6 @@
 #include "rfont.hpp"
 
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "rimage.hpp"
 
 mrb_data_type RFont::dt{"Font", [](mrb_state*, void* data) {

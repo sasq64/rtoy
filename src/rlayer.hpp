@@ -3,7 +3,7 @@
 #include <array>
 #include <cstdint>
 
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 
 struct RClass;
 struct mrb_state;

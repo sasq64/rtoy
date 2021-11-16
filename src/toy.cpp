@@ -2,7 +2,7 @@
 #include "toy.hpp"
 
 #include "error.hpp"
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "raudio.hpp"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
@@ -115,25 +115,6 @@ void Toy::init()
         ruby, rclass, "BOOT_CMD", mrb::to_value(settings.boot_cmd, ruby));
     mrb_define_const(ruby, rclass, "CONSOLE_FONT",
         mrb::to_value(settings.console_font.string(), ruby));
-
-    mrb::ScriptInterface si{ruby};
-    si.global_function("test_me", [](int x) { return 3 + x; });
-
-    mrb::ScriptClass<Dummy> dummy{ruby};
-
-    dummy.initialize([](Dummy* d) {
-        d->name = "default";
-        d->age = 100;
-    });
-
-    dummy.method("age", [](Dummy* d) {
-        fmt::print("age\n");
-        return d->age;
-    });
-    dummy.method("age=", [](Dummy* d, int a) {
-        fmt::print("age=\n");
-        d->age = a;
-    });
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",

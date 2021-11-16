@@ -6,7 +6,7 @@
 #include <mruby/array.h>
 #include <mruby/class.h>
 
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
@@ -72,13 +72,16 @@ void RLayer::reg_class(mrb_state* ruby)
     rclass = mrb_define_class(ruby, "Layer", ruby->object_class);
     MRB_SET_INSTANCE_TT(RLayer::rclass, MRB_TT_DATA);
 
-    mrb::ScriptClass<RStyle> style(ruby);
-    RStyle::rclass = style.rclass;
-    // RSTYLE
+    RStyle::rclass = mrb::make_class<RStyle>(ruby, "Style");
+    RStyle::dt = mrb::get_data_type<RStyle>(ruby);
+    // mrb::ScriptClass<RStyle> style(ruby);
+    // RStyle::rclass = style.rclass;
+    //  RSTYLE
     //
-    style.initialize([](RStyle* style) {});
+    // style.initialize([](RStyle* style) {});
 
-    style.method("fg=", [](RStyle* s, std::array<float, 4> fg) { s->fg = fg; });
+    mrb::add_method<RStyle>(
+        ruby, "fg=", [](RStyle* s, std::array<float, 4> fg) { s->fg = fg; });
 
 #if 0
     mrb_define_method(
@@ -249,7 +252,7 @@ void RLayer::reg_class(mrb_state* ruby)
             auto [av] = mrb::get_args<mrb_value>(mrb);
             auto* rlayer = mrb::self_to<RLayer>(self);
             mrb::copy_value_to(&rlayer->scale, av, mrb);
-            //rlayer->scale = mrb::to_array<float, 2>(av, mrb);
+            // rlayer->scale = mrb::to_array<float, 2>(av, mrb);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
