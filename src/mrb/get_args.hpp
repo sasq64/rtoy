@@ -1,6 +1,6 @@
 
 /* template <typename PTR> */
-/* constexpr void get_spec(size_t i, PTR*, char* data) */
+/* constexpr void get_spec(mrb_state* mrb, size_t i, PTR*, char* data) */
 /* { */
 /*     data[i] = 'p'; */
 /* } */
@@ -34,21 +34,30 @@ extern "C"
 namespace mrb {
 
 template <typename ARG>
-constexpr size_t get_spec(std::vector<char>&, std::vector<void*>&, ARG*);
+constexpr size_t get_spec(
+    mrb_state* mrb, std::vector<char>&, std::vector<void*>&, ARG*);
 
-template <typename OBJ>
+template <>
 constexpr inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, OBJ** p)
+    mrb_state* mrb, std::vector<char>& target, std::vector<void*>&, mrb_state**)
+{
+    // Skip mrb_state, we provide it ourselves
+    return target.size();
+}
+template <typename OBJ>
+constexpr inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+    std::vector<void*>& ptrs, OBJ** p)
 {
     ptrs.push_back(p);
-    ptrs.push_back(&OBJ::dt);
+    ptrs.push_back(&Lookup<OBJ>::dts[mrb]);
+    // ptrs.push_back(&OBJ::dt);
     target.push_back('d');
     return target.size();
 }
 
 template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, mrb_int* p)
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+    std::vector<void*>& ptrs, mrb_int* p)
 {
     ptrs.push_back(p);
     target.push_back('i');
@@ -56,8 +65,8 @@ inline size_t get_spec(
 }
 
 template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, mrb_float* p)
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+    std::vector<void*>& ptrs, mrb_float* p)
 {
     ptrs.push_back(p);
     target.push_back('f');
@@ -65,8 +74,8 @@ inline size_t get_spec(
 }
 
 template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, const char** p)
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+    std::vector<void*>& ptrs, const char** p)
 {
     ptrs.push_back(p);
     target.push_back('z');
@@ -74,8 +83,8 @@ inline size_t get_spec(
 }
 
 template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, mrb_value* p)
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+    std::vector<void*>& ptrs, mrb_value* p)
 {
     ptrs.push_back(p);
     target.push_back('o');
@@ -83,8 +92,8 @@ inline size_t get_spec(
 }
 
 template <>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, mrb_bool* p)
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+    std::vector<void*>& ptrs, mrb_bool* p)
 {
     ptrs.push_back(p);
     target.push_back('b');
@@ -92,8 +101,8 @@ inline size_t get_spec(
 }
 
 template <typename VAL, size_t N>
-inline size_t get_spec(
-    std::vector<char>& target, std::vector<void*>& ptrs, std::array<VAL, N>* p)
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+    std::vector<void*>& ptrs, std::array<VAL, N>* p)
 {
     fmt::print("#### NOT HERE\n");
     ptrs.push_back(p);
@@ -146,7 +155,9 @@ struct to_mrb<std::array<T, N>>
 template <typename TARGET, typename SOURCE>
 TARGET mrb_to(SOURCE const& s, mrb_state* mrb)
 {
-    if constexpr (std::is_same_v<mrb_value, SOURCE>) {
+    if constexpr (std::is_same_v<mrb_state*, SOURCE>) {
+        return mrb;
+    } else if constexpr (std::is_same_v<mrb_value, SOURCE>) {
         return value_to<TARGET>(s, mrb);
     } else {
         return static_cast<TARGET>(s);
@@ -178,7 +189,7 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
 
     // Build spec string, one character per type, plus a trailing '*' to capture
     // remaining arguments
-    ((get_spec(v, arg_ptrs, &std::get<A>(target))), ...);
+    ((get_spec(mrb, v, arg_ptrs, &std::get<A>(target))), ...);
     if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
     v.push_back('*');
     v.push_back(0);

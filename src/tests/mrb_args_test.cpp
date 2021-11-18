@@ -2,7 +2,9 @@
 #include <doctest/doctest.h>
 
 #include <mrb/conv.hpp>
+
 #include <mrb/get_args.hpp>
+
 #include <mrb/class.hpp>
 
 using namespace std::string_literals;
@@ -45,7 +47,9 @@ struct rptr
         assert((mv.w & 7) == 0); // TODO: Use macro
         // Store the mrb_value pointer as a shared_ptr
         ptr = std::shared_ptr<void>(mrb_ptr(mv),
-            [mrb](void* t) { mrb_gc_unregister(mrb, mrb_obj_value(t)); });
+            [mrb](void* t) {
+            fmt::print("UNREG\n");
+            mrb_gc_unregister(mrb, mrb_obj_value(t)); });
         // Stop value from being garbage collected
         mrb_gc_register(mrb, mv);
     }
@@ -64,6 +68,10 @@ struct Person
 {
     std::string name;
     int age{};
+    static inline mrb::rptr instance;
+    static inline int counter = 0;
+    Person() { counter++; }
+    ~Person() { counter--; }
 };
 
 TEST_CASE("class")
@@ -75,14 +83,34 @@ TEST_CASE("class")
         ruby, "age=", [](Person* p, int age) { p->age = age; });
     mrb::add_method<Person>(ruby, "age", [](Person* p) { return p->age; });
 
-    auto f = mrb_load_string(
-        ruby, "person = Person.new ; person.age = 5 ; person.age");
+    mrb::add_method<Person>(ruby, "copy_from", [](Person* p, Person* src) {
+        p->name = src->name;
+        p->age = src->age;
+    });
 
-    // Creates an mrb_value referencing Person.
-    // Does gc_register to prevent collection
-    // When obj goes out of scope on native side we unregister
-    // Means gc can collect and free
+    mrb::add_method<Person>(ruby, "dup", [](Person* p, mrb_state* mrb) {
+        auto* np = new Person(*p);
+        Person::instance = mrb::rptr(mrb, mrb::to_value(np, mrb));
+        return (mrb_value)Person::instance;
+    });
+
+    auto f = mrb_load_string(
+        ruby, "person = Person.new ; person.age = 5 ; other = Person.new ; other.copy_from(person) ; other.age");
+
+    fmt::print("Counter {}\n", Person::counter);
+    mrb_load_string(ruby, "GC.start");
+    fmt::print("Counter {}\n", Person::counter);
 
     CHECK(mrb::value_to<int>(f) == 5);
+
+    f = mrb_load_string(
+        ruby, "person = Person.new ; person.age = 3 ; other = person.dup ; p other ; other.age");
+
+    CHECK(mrb::value_to<int>(f) == 3);
+
+    mrb_close(ruby);
+
+    CHECK(Person::counter == 0);
+
 }
 

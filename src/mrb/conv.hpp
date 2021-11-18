@@ -22,6 +22,7 @@ extern "C"
 #include <cassert>
 #include <string>
 #include <tuple>
+#include <typeinfo>
 #include <vector>
 
 namespace mrb {
@@ -49,16 +50,13 @@ struct Lookup
     static inline std::unordered_map<mrb_state*, mrb_data_type> dts;
 };
 
-
 //! Convert ruby (mrb_value) type to native
 template <typename TARGET>
 TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
 {
     if constexpr (std::is_pointer_v<TARGET>) {
         auto* res = DATA_PTR(obj);
-        if (res == nullptr) {
-            throw mrb_exception("nullptr");
-        }
+        if (res == nullptr) { throw mrb_exception("nullptr"); }
         return res;
 
     } else if constexpr (is_std_vector<TARGET>()) {
@@ -112,7 +110,6 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
     }
 }
 
-
 template <typename TARGET>
 void copy_value_to(TARGET* target, mrb_value v, mrb_state* mrb)
 {
@@ -120,7 +117,7 @@ void copy_value_to(TARGET* target, mrb_value v, mrb_state* mrb)
 }
 
 //! Convert native type to ruby (mrb_value)
-inline mrb_value to_value(const char *r,  mrb_state* mrb = nullptr)
+inline mrb_value to_value(const char* r, mrb_state* mrb = nullptr)
 {
     return mrb_str_new_cstr(mrb, r);
 }
@@ -128,8 +125,13 @@ inline mrb_value to_value(const char *r,  mrb_state* mrb = nullptr)
 template <typename RET>
 mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
 {
+    //fmt::print("toval {}\n", typeid(RET).name());
     if constexpr (std::is_pointer_v<RET>) {
-
+        using LU = Lookup<typename std::remove_pointer<RET>::type>;
+        auto obj = mrb_obj_new(mrb, LU::rclasses[mrb], 0, nullptr);
+        DATA_PTR(obj) = r;
+        DATA_TYPE(obj) = &LU::dts[mrb];
+        return obj;
     } else if constexpr (std::is_same_v<RET, mrb_value>) {
         return r;
     } else if constexpr (std::is_same_v<RET, bool>) {
@@ -152,7 +154,7 @@ mrb_value to_value(std::vector<ELEM> const& r, mrb_state* mrb)
 {
     std::vector<mrb_value> output(r.size());
     std::transform(r.begin(), r.end(), output.begin(),
-                   [&](ELEM const& e) { return to_value(e, mrb); });
+        [&](ELEM const& e) { return to_value(e, mrb); });
     return mrb_ary_new_from_values(
         mrb, static_cast<mrb_int>(output.size()), output.data());
 }
@@ -162,12 +164,10 @@ mrb_value to_value(std::array<ELEM, N> const& r, mrb_state* mrb)
 {
     std::vector<mrb_value> output(r.size());
     std::transform(r.begin(), r.end(), output.begin(),
-                   [&](ELEM const& e) { return to_value(e, mrb); });
+        [&](ELEM const& e) { return to_value(e, mrb); });
     return mrb_ary_new_from_values(
         mrb, static_cast<mrb_int>(output.size()), output.data());
 }
-
-
 
 template <typename T, size_t N>
 std::array<T, N> to_array(mrb_value ary, mrb_state* mrb)
