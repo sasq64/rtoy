@@ -33,6 +33,12 @@ extern "C"
 
 namespace mrb {
 
+struct ArgN
+{
+    int n;
+    operator int() const { return n; }
+};
+
 template <typename ARG>
 constexpr size_t get_spec(
     mrb_state* mrb, std::vector<char>&, std::vector<void*>&, ARG*);
@@ -42,8 +48,16 @@ constexpr inline size_t get_spec(
     mrb_state* mrb, std::vector<char>& target, std::vector<void*>&, mrb_state**)
 {
     // Skip mrb_state, we provide it ourselves
-    return target.size();
+    return 0; // target.size();
 }
+
+template <>
+constexpr inline size_t get_spec(
+    mrb_state* mrb, std::vector<char>& target, std::vector<void*>&, ArgN*)
+{
+    return 0; // target.size();
+}
+
 template <typename OBJ>
 constexpr inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, OBJ** p)
@@ -157,6 +171,8 @@ TARGET mrb_to(SOURCE const& s, mrb_state* mrb)
 {
     if constexpr (std::is_same_v<mrb_state*, SOURCE>) {
         return mrb;
+    } else if constexpr (std::is_same_v<ArgN, SOURCE>) {
+        return {mrb_get_argc(mrb)};
     } else if constexpr (std::is_same_v<mrb_value, SOURCE>) {
         return value_to<TARGET>(s, mrb);
     } else {
@@ -190,11 +206,15 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
     // Build spec string, one character per type, plus a trailing '*' to capture
     // remaining arguments
     ((get_spec(mrb, v, arg_ptrs, &std::get<A>(target))), ...);
+    std::string x{v.begin(), v.end()};
+    fmt::print("SIZE {} {} {}\n", x, v.size(), arg_count);
+    // TODO: If we cap format string we cant add rest args to arg_ptrs
     if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
-    v.push_back('*');
+    //v.push_back('*');
     v.push_back(0);
-    arg_ptrs.push_back(&rest);
-    arg_ptrs.push_back(&n);
+    fmt::print("SPEC {} ({})\n", v.data(), sizeof...(ARGS));
+    //arg_ptrs.push_back(&rest);
+    //arg_ptrs.push_back(&n);
 
     // fmt::print("ARG: {}\n", v.data());
 
@@ -202,11 +222,12 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
 
     std::tuple<ARGS...> converted{mrb_to<ARGS>(std::get<A>(target), mrb)...};
 
-    if (n > 0 && restv != nullptr) {
-        for (int i = 0; i < n; i++) {
-            restv->push_back(rest[i]);
-        }
-    }
+    //if (n > 0 && restv != nullptr) {
+    //    for (int i = 0; i < n; i++) {
+    //        restv->push_back(rest[i]);
+    //    }
+   // }
+
     return converted;
 }
 
@@ -237,6 +258,32 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>& rest)
 {
     return get_args<ARGS...>(
         mrb, &rest, nullptr, std::make_index_sequence<sizeof...(ARGS)>());
+}
+template <typename FX, typename RET, typename... ARGS>
+void gf(mrb_state* ruby, std::string const& name, FX const& fn,
+    RET (FX::*)(ARGS...) const)
+{
+    static FX _fn{fn};
+    mrb_define_module_function(
+        ruby, ruby->kernel_module, name.c_str(),
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            FX fn{_fn};
+            auto args = mrb::get_args<ARGS...>(mrb);
+            if constexpr (std::is_same<RET, void>()) {
+                std::apply(fn, args);
+                return mrb_nil_value();
+            } else {
+                auto res = std::apply(fn, args);
+                return mrb::to_value(res, mrb);
+            }
+        },
+        MRB_ARGS_REQ(sizeof...(ARGS)));
+}
+
+template <typename FN>
+void add_function(mrb_state* ruby, std::string const& name, FN const& fn)
+{
+    gf(ruby, name, fn, &FN::operator());
 }
 
 } // namespace mrb

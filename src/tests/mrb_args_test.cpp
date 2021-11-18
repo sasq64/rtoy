@@ -46,10 +46,10 @@ struct rptr
         // Check that mrb_value holds a pointer
         assert((mv.w & 7) == 0); // TODO: Use macro
         // Store the mrb_value pointer as a shared_ptr
-        ptr = std::shared_ptr<void>(mrb_ptr(mv),
-            [mrb](void* t) {
+        ptr = std::shared_ptr<void>(mrb_ptr(mv), [mrb](void* t) {
             fmt::print("UNREG\n");
-            mrb_gc_unregister(mrb, mrb_obj_value(t)); });
+            mrb_gc_unregister(mrb, mrb_obj_value(t));
+        });
         // Stop value from being garbage collected
         mrb_gc_register(mrb, mv);
     }
@@ -62,6 +62,13 @@ struct rptr
 
     void clear() { ptr = nullptr; }
 };
+
+template <typename T>
+rptr new_obj(mrb_state* mrb)
+{
+    auto obj = mrb_obj_new(mrb, get_class<T>(mrb), 0, nullptr);
+    return rptr(mrb, obj);
+}
 
 }; // namespace mrb
 struct Person
@@ -91,26 +98,39 @@ TEST_CASE("class")
     mrb::add_method<Person>(ruby, "dup", [](Person* p, mrb_state* mrb) {
         auto* np = new Person(*p);
         Person::instance = mrb::rptr(mrb, mrb::to_value(np, mrb));
-        return (mrb_value)Person::instance;
+        return mrb_value(Person::instance);
     });
 
-    auto f = mrb_load_string(
-        ruby, "person = Person.new ; person.age = 5 ; other = Person.new ; other.copy_from(person) ; other.age");
+    auto f = mrb_load_string(ruby,
+        "person = Person.new ; person.age = 5 ; other = "
+        "Person.new ; other.copy_from(person) ; other.age");
+    CHECK(mrb::value_to<int>(f) == 5);
 
     fmt::print("Counter {}\n", Person::counter);
     mrb_load_string(ruby, "GC.start");
     fmt::print("Counter {}\n", Person::counter);
 
-    CHECK(mrb::value_to<int>(f) == 5);
+    auto p = mrb::new_obj<Person>(ruby);
+    mrb_define_global_const(ruby, "PERSON", p);
+    RUBY_CHECK("PERSON.age == 0");
 
-    f = mrb_load_string(
-        ruby, "person = Person.new ; person.age = 3 ; other = person.dup ; p other ; other.age");
+    // mrb::add_function(ruby, "save", [](Person* person) {
+    // });
+
+    f = mrb_load_string(ruby, "person = Person.new ; person.age = 3 ; other = "
+                              "person.dup ; p other ; other.age");
 
     CHECK(mrb::value_to<int>(f) == 3);
+
+    mrb::add_function(
+        ruby, "test_fn", [](mrb::ArgN n, int x, int y, int z, mrb_state* ruby) {
+            fmt::print("{} arg {} {} {}\n", n,x,y,z);
+            return x + y + z;
+        });
+
+    RUBY_CHECK("test_fn(1,2) == 3");
 
     mrb_close(ruby);
 
     CHECK(Person::counter == 0);
-
 }
-
