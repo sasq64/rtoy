@@ -22,8 +22,6 @@ struct RStyle
     float line_width = 2.0F;
     BlendMode blend_mode = BlendMode::Blend;
 
-    static inline RClass* rclass = nullptr;
-    //static mrb_data_type dt;
     static void reg_class(mrb_state* ruby);
     static inline mrb_state* ruby = nullptr;
 };
@@ -55,20 +53,18 @@ protected:
     RStyle& current_style;
 
 public:
-    virtual void handle_enable() {}
     // Reset all state of the layer to default.
     virtual void reset();
     // Clear the layer
     virtual void clear() {};
 
-    static inline RClass* rclass = nullptr;
     static void reg_class(mrb_state* ruby);
 
     RLayer(int w, int h)
         : width(w),
           height(h),
           stylep{mrb::RubyPtr{RStyle::ruby,
-              mrb_obj_new(RStyle::ruby, RStyle::rclass, 0, nullptr)}},
+              mrb_obj_new(RStyle::ruby, mrb::get_class<RStyle>(RStyle::ruby), 0, nullptr)}},
           current_style{*stylep.as<RStyle>()}
     {}
 

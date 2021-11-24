@@ -28,14 +28,6 @@
 using namespace std::chrono_literals;
 using clk = std::chrono::steady_clock;
 
-mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
-                              auto* display = static_cast<Display*>(data);
-                              // SET_NIL_VALUE(display->draw_handler);
-                              if (display != Display::default_display) {
-                                  delete display;
-                              }
-                          }};
-
 Display::Display(mrb_state* state, System& system, Settings const& _settings)
     : RLayer(0, 0), ruby(state), settings{_settings}
 {
@@ -127,9 +119,9 @@ void Display::end_draw()
     glScissor(scissor[0], scissor[1], width - scissor[2] * 2,
         height - scissor[3] * 2);
 
-
     auto rt = clk::now() - t;
-    long clear_t = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
+    long clear_t =
+        std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -183,8 +175,13 @@ void Display::reset()
 void Display::reg_class(
     mrb_state* ruby, System& system, Settings const& settings)
 {
-    Display::rclass = mrb_define_class(ruby, "Display", RLayer::rclass);
-    MRB_SET_INSTANCE_TT(Display::rclass, MRB_TT_DATA);
+    Display::rclass = mrb::make_noinit_class<Display>(
+        ruby, "Display", mrb::get_class<RLayer>(ruby));
+
+    mrb::set_deleter<Display>(ruby, [](mrb_state* /*mrb*/, void* data) {
+        auto* display = static_cast<Display*>(data);
+        if (display != Display::default_display) { delete display; }
+    });
 
     if (Display::default_display == nullptr) {
         Display::default_display = new Display(ruby, system, settings);
@@ -196,12 +193,16 @@ void Display::reg_class(
         mrb::new_data_obj(ruby, Display::default_display);
     mrb_gc_register(ruby, Display::default_display->disp_obj);
 
-    mrb_define_class_method(
-        ruby, Display::rclass, "default",
-        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value {
-            return Display::default_display->disp_obj;
-        },
-        MRB_ARGS_NONE());
+    mrb::add_class_method<Display>(ruby, "default", [] {
+        return Display::default_display->disp_obj;
+    });
+
+//    mrb_define_class_method(
+//        ruby, Display::rclass, "default",
+//        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value {
+//            return Display::default_display->disp_obj;
+//        },
+//        MRB_ARGS_NONE());
 
     mrb_define_method(
         ruby, Display::rclass, "mouse_ptr",
@@ -214,29 +215,13 @@ void Display::reg_class(
         },
         MRB_ARGS_REQ(3));
 
-    mrb_define_method(
-        ruby, Display::rclass, "width",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::to_value(display->width, mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, Display::rclass, "height",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::to_value(display->height, mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, Display::rclass, "on_draw",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
+    mrb::add_method<Display>(ruby, "on_draw",
+        [](Display* display, mrb_state* mrb) -> mrb_value {
             mrb_get_args(mrb, "&!", &display->draw_handler);
             mrb_gc_register(mrb, display->draw_handler);
             return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
+        });
+//        MRB_ARGS_BLOCK());
 
     mrb_define_method(
         ruby, Display::rclass, "console",

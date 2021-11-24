@@ -56,6 +56,7 @@ template <typename T>
 RClass* make_noinit_class(mrb_state* mrb, const char* name = class_name<T>(),
     RClass* parent = nullptr)
 {
+    if (parent == nullptr) { parent = mrb->object_class; }
     auto* rclass = mrb_define_class(mrb, name, parent);
     Lookup<T>::rclasses[mrb] = rclass;
     Lookup<T>::dts[mrb] = {
@@ -89,6 +90,33 @@ mrb_value new_data_obj(mrb_state* mrb)
 }
 
 template <typename CLASS, typename FX, typename RET, typename... ARGS>
+void add_class_method(mrb_state* ruby, std::string const& name, FX const& fn,
+    RET (FX::*)(ARGS...) const)
+{
+    static FX _fn{fn};
+    mrb_define_class_method(
+        ruby, Lookup<CLASS>::rclasses[ruby], name.c_str(),
+        [](mrb_state* mrb, mrb_value) -> mrb_value {
+            FX fn{_fn};
+            auto args = mrb::get_args<ARGS...>(mrb);
+            if constexpr (std::is_same<RET, void>()) {
+                std::apply(fn, args);
+                return mrb_nil_value();
+            } else {
+                auto res = std::apply(fn, args);
+                return mrb::to_value(res, mrb);
+            }
+        },
+        MRB_ARGS_REQ(sizeof...(ARGS)));
+}
+
+template <typename CLASS, typename FN>
+void add_class_method(mrb_state* ruby, std::string const& name, FN const& fn)
+{
+    add_class_method<CLASS>(ruby, name, fn, &FN::operator());
+}
+
+template <typename CLASS, typename FX, typename RET, typename... ARGS>
 void add_method(mrb_state* ruby, std::string const& name, FX const& fn,
     RET (FX::*)(CLASS*, ARGS...) const)
 {
@@ -115,6 +143,31 @@ template <typename CLASS, typename FN>
 void add_method(mrb_state* ruby, std::string const& name, FN const& fn)
 {
     add_method<CLASS>(ruby, name, fn, &FN::operator());
+}
+
+template <auto PTR, typename CLASS, typename M>
+void attr_accessor(mrb_state* ruby, std::string const& name, M CLASS::*)
+{
+    add_method<CLASS>(ruby, name, [](CLASS* c) { return c->*PTR; });
+    add_method<CLASS>(ruby, name + "=", [](CLASS* c, M v) { c->*PTR = v; });
+}
+
+template <auto PTR>
+void attr_accessor(mrb_state* ruby, std::string const& name)
+{
+    attr_accessor<PTR>(ruby, name, PTR);
+}
+
+template <auto PTR, typename CLASS, typename M>
+void attr_reader(mrb_state* ruby, std::string const& name, M CLASS::*)
+{
+    add_method<CLASS>(ruby, name, [](CLASS* c) { return c->*PTR; });
+}
+
+template <auto PTR>
+void attr_reader(mrb_state* ruby, std::string const& name)
+{
+    attr_reader<PTR>(ruby, name, PTR);
 }
 
 template <typename CLASS, typename FX, typename RET, typename... ARGS>

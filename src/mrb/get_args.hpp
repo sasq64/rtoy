@@ -231,12 +231,10 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
     // remaining arguments
     ((get_spec(mrb, v, arg_ptrs, &std::get<A>(target))), ...);
     std::string x{v.begin(), v.end()};
-    fmt::print("SIZE {} {} {}\n", x, v.size(), arg_count);
     // TODO: If we cap format string we cant add rest args to arg_ptrs
     if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
     //v.push_back('*');
     v.push_back(0);
-    fmt::print("SPEC {} ({})\n", v.data(), sizeof...(ARGS));
     //arg_ptrs.push_back(&rest);
     //arg_ptrs.push_back(&n);
 

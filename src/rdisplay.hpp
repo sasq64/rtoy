@@ -51,7 +51,7 @@ public:
     mrb_value sprite_fields{};
     mrb_value canvases{};
     static inline RClass* rclass;
-    static mrb_data_type dt;
+    //static mrb_data_type dt;
     static inline Display* default_display = nullptr;
     explicit Display(
         mrb_state* state, System& system, Settings const& _settings);

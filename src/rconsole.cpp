@@ -104,57 +104,34 @@ uint32_t RConsole::get(int x, int y) const
 
 void RConsole::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Console", RLayer::rclass);
+    RConsole::rclass = mrb::make_noinit_class<RConsole>(
+        ruby, "Console", mrb::get_class<RLayer>(ruby));
+    mrb::set_deleter<RConsole>(ruby, [](mrb_state* /*mrb*/, void* data) {});
 
-    MRB_SET_INSTANCE_TT(RConsole::rclass, MRB_TT_DATA);
-
-    mrb_define_method(
-        ruby, RConsole::rclass, "print",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto n = mrb_get_argc(mrb);
-            RStyle* style = &ptr->current_style;
-            const char* text;
-            if (n == 1) {
-                mrb_get_args(mrb, "z", &text);
-            } else {
-                mrb_get_args(mrb, "zd", &text, &style, mrb::get_data_type<RStyle>(mrb));
-            }
+    mrb::add_method<RConsole>(ruby, "print",
+        [](RConsole* ptr, std::string text, RStyle* style) {
+            if (style == nullptr) { style = &ptr->current_style; }
             ptr->text(text);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+        });
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "clear",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto n = mrb_get_argc(mrb);
-            RStyle* style = &ptr->current_style;
-            if (n == 1) { mrb_get_args(mrb, "d", &style, mrb::get_data_type<RStyle>(mrb)); }
+    mrb::add_method<RConsole>(
+        ruby, "clear", [](RConsole* ptr, RStyle* style) {
+            if (style == nullptr) { style = &ptr->current_style; }
             ptr->current_style.fg = style->fg;
             ptr->current_style.bg = style->bg;
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
             ptr->console->fill(fg, bg);
             ptr->xpos = ptr->ypos = 0;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+        });
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "fill",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto n = mrb_get_argc(mrb);
-            RStyle* style = &ptr->current_style;
-            if (n == 1) { mrb_get_args(mrb, "d", &style, mrb::get_data_type<RStyle>(mrb)); }
+    mrb::add_method<RConsole>(
+        ruby, "fill", [](RConsole* ptr, RStyle* style) {
+            if (style == nullptr) { style = &ptr->current_style; }
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
             ptr->console->fill(fg, bg);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+        });
 
     mrb_define_method(
         ruby, RConsole::rclass, "scroll",
@@ -168,7 +145,7 @@ void RConsole::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1) | MRB_ARGS_REST());
-
+/*
     mrb_define_method(
         ruby, RConsole::rclass, "print",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -180,7 +157,8 @@ void RConsole::reg_class(mrb_state* ruby)
             if (n == 1) {
                 mrb_get_args(mrb, "z", &text);
             } else if (n == 2) {
-                mrb_get_args(mrb, "zd", &text, &style, mrb::get_data_type<RStyle>(mrb));
+                mrb_get_args(
+                    mrb, "zd", &text, &style, mrb::get_data_type<RStyle>(mrb));
             } else if (n == 3) {
                 mrb_value fg;
                 mrb_value bg;
@@ -193,7 +171,7 @@ void RConsole::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1) | MRB_ARGS_REST());
-
+*/
     mrb_define_method(
         ruby, RConsole::rclass, "text",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -207,7 +185,8 @@ void RConsole::reg_class(mrb_state* ruby)
             if (n == 3) {
                 mrb_get_args(mrb, "iiz", &x, &y, &text);
             } else if (n == 4) {
-                mrb_get_args(mrb, "iizd", &x, &y, &text, &style, mrb::get_data_type<RStyle>(mrb));
+                mrb_get_args(mrb, "iizd", &x, &y, &text, &style,
+                    mrb::get_data_type<RStyle>(mrb));
             } else if (n == 5) {
                 mrb_value fg;
                 mrb_value bg;
@@ -249,7 +228,7 @@ void RConsole::reg_class(mrb_state* ruby)
         MRB_ARGS_REQ(1));
 
     mrb_define_method(
-        ruby, RLayer::rclass, "get_tile_size",
+        ruby, RConsole::rclass, "get_tile_size",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RConsole>(self);
             auto [tw, th] = ptr->console->get_char_size();
@@ -265,8 +244,8 @@ void RConsole::reg_class(mrb_state* ruby)
             auto [x, y] = mrb::get_args<int, int>(mrb);
             ptr->xpos = x;
             ptr->ypos = y;
-            //fmt::print("Goto {} {}\n", x, y);
-            // ptr->console->set_cursor(x, y);
+            // fmt::print("Goto {} {}\n", x, y);
+            //  ptr->console->set_cursor(x, y);
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
@@ -291,7 +270,8 @@ void RConsole::reg_class(mrb_state* ruby)
             if (n == 1) {
                 mrb_get_args(mrb, "i", &y);
             } else {
-                mrb_get_args(mrb, "id", &y, &style, mrb::get_data_type<RStyle>(mrb));
+                mrb_get_args(
+                    mrb, "id", &y, &style, mrb::get_data_type<RStyle>(mrb));
             }
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
@@ -315,7 +295,8 @@ void RConsole::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             uint32_t index = 0;
             RImage* image = nullptr;
-            mrb_get_args(mrb, "id", &index, &image, mrb::get_data_type<RImage>(mrb));
+            mrb_get_args(
+                mrb, "id", &index, &image, mrb::get_data_type<RImage>(mrb));
             auto* rconsole = mrb::self_to<RConsole>(self);
             rconsole->console->set_tile_image(index, image->texture);
             return mrb_nil_value();

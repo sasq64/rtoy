@@ -269,7 +269,7 @@ void RSprites::remove_sprite(RSprite* spr)
 void RSprites::reg_class(mrb_state* ruby)
 {
 
-    rclass = mrb::make_noinit_class<RSprites>(ruby, "Sprites", RLayer::rclass);
+    rclass = mrb::make_noinit_class<RSprites>(ruby, "Sprites", mrb::get_class<RLayer>(ruby));
     mrb::set_deleter<RSprites>(ruby, [](mrb_state*, void*) {});
 
     RSprite::rclass = mrb::make_noinit_class<RSprite>(ruby, "Sprite");

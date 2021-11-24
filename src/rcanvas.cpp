@@ -218,7 +218,8 @@ void RCanvas::reg_class(mrb_state* ruby)
 {
     // rclass = mrb_define_class(ruby, "Canvas", RLayer::rclass);
     // MRB_SET_INSTANCE_TT(RCanvas::rclass, MRB_TT_DATA);
-    rclass = mrb::make_noinit_class<RCanvas>(ruby, "Canvas", RLayer::rclass);
+    rclass = mrb::make_noinit_class<RCanvas>(ruby, "Canvas", mrb::get_class<RLayer>(ruby));
+
     mrb::set_deleter<RCanvas>(ruby, [](mrb_state*, void*){});
 
     mrb_define_method(
