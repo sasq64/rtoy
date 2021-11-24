@@ -11,9 +11,6 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 
-mrb_data_type RStyle::dt{"RStyle",
-    [](mrb_state*, void* data) { delete static_cast<RStyle*>(data); }};
-
 void RLayer::update_tx(RLayer const* parent)
 {
     glm::mat4x4 m(1.0F);
@@ -73,7 +70,7 @@ void RLayer::reg_class(mrb_state* ruby)
     MRB_SET_INSTANCE_TT(RLayer::rclass, MRB_TT_DATA);
 
     RStyle::rclass = mrb::make_class<RStyle>(ruby, "Style");
-    RStyle::dt = mrb::get_data_type<RStyle>(ruby);
+    // RStyle::dt = mrb::get_data_type<RStyle>(ruby);
     // mrb::ScriptClass<RStyle> style(ruby);
     // RStyle::rclass = style.rclass;
     //  RSTYLE
@@ -82,7 +79,16 @@ void RLayer::reg_class(mrb_state* ruby)
 
     mrb::add_method<RStyle>(
         ruby, "fg=", [](RStyle* s, std::array<float, 4> fg) { s->fg = fg; });
+    mrb::add_method<RStyle>(ruby, "fg", [](RStyle* s) { return s->fg; });
 
+    mrb::add_method<RStyle>(
+        ruby, "bg=", [](RStyle* s, std::array<float, 4> bg) { s->bg = bg; });
+    mrb::add_method<RStyle>(ruby, "bg", [](RStyle* s) { return s->bg; });
+
+    mrb::add_method<RStyle>(
+        ruby, "line_width=", [](RStyle* s, float lw) { s->line_width = lw; });
+    mrb::add_method<RStyle>(
+        ruby, "line_width", [](RStyle* s) { return s->line_width; });
 #if 0
     mrb_define_method(
         ruby, RStyle::rclass, "initialize",
@@ -103,50 +109,79 @@ void RLayer::reg_class(mrb_state* ruby)
             return mrb_nil_value();
         },
         MRB_ARGS_REQ(1));
+mrb_define_method(
+    ruby, RStyle::rclass, "fg",
+    [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        auto* rstyle = mrb::self_to<RStyle>(self);
+        return mrb::to_value(rstyle->fg, mrb);
+    },
+    MRB_ARGS_NONE());
+mrb_define_method(
+    ruby, RStyle::rclass, "bg=",
+    [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        auto [av] = mrb::get_args<mrb_value>(mrb);
+        auto* rstyle = mrb::self_to<RStyle>(self);
+        rstyle->bg = mrb::value_to<std::array<float, 4>>(av, mrb);
+        return mrb_nil_value();
+    },
+    MRB_ARGS_REQ(1));
+
+mrb_define_method(
+    ruby, RStyle::rclass, "bg",
+    [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        auto* rstyle = mrb::self_to<RStyle>(self);
+        return mrb::to_value(rstyle->bg, mrb);
+    },
+    MRB_ARGS_NONE());
+
+mrb_define_method(
+    ruby, RStyle::rclass, "line_width=",
+    [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        auto [lw] = mrb::get_args<float>(mrb);
+        auto* style = mrb::self_to<RStyle>(self);
+        style->line_width = lw;
+        return mrb_nil_value();
+    },
+    MRB_ARGS_REQ(1));
+mrb_define_method(
+    ruby, RStyle::rclass, "line_width",
+    [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        auto* style = mrb::self_to<RStyle>(self);
+        return mrb::to_value(style->line_width, mrb);
+    },
+    MRB_ARGS_NONE());
+
+
+mrb_define_method(
+    ruby, RStyle::rclass, "blend_mode=",
+    [](mrb_state* mrb, mrb_value self) -> mrb_value {
+        auto* style = mrb::self_to<RStyle>(self);
+        mrb_sym sym{};
+        mrb_get_args(mrb, "n", &sym);
+        std::string s{mrb_sym_name(mrb, sym)};
+        fmt::print("{}\n", s);
+        if (s == "blend") {
+            style->blend_mode = BlendMode::Blend;
+        } else if (s == "add") {
+            style->blend_mode = BlendMode::Add;
+        } else {
+            throw std::exception();
+        }
+        return mrb_nil_value();
+    },
+    MRB_ARGS_REQ(1));
 #endif
-    mrb_define_method(
-        ruby, RStyle::rclass, "fg",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rstyle = mrb::self_to<RStyle>(self);
-            return mrb::to_value(rstyle->fg, mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, RStyle::rclass, "bg=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [av] = mrb::get_args<mrb_value>(mrb);
-            auto* rstyle = mrb::self_to<RStyle>(self);
-            rstyle->bg = mrb::value_to<std::array<float, 4>>(av, mrb);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
 
-    mrb_define_method(
-        ruby, RStyle::rclass, "bg",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rstyle = mrb::self_to<RStyle>(self);
-            return mrb::to_value(rstyle->bg, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RStyle::rclass, "blend_mode=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* style = mrb::self_to<RStyle>(self);
-            mrb_sym sym{};
-            mrb_get_args(mrb, "n", &sym);
-            std::string s{mrb_sym_name(mrb, sym)};
-            fmt::print("{}\n", s);
-            if (s == "blend") {
-                style->blend_mode = BlendMode::Blend;
-            } else if (s == "add") {
-                style->blend_mode = BlendMode::Add;
-            } else {
-                throw std::exception();
-            }
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    mrb::add_method<RStyle>(
+        ruby, "blend_mode=", [](RStyle* style, mrb::Symbol s) {
+          if (s == "blend") {
+              style->blend_mode = BlendMode::Blend;
+          } else if (s == "add") {
+              style->blend_mode = BlendMode::Add;
+          } else {
+              //throw std::exception();
+          }
+        });
     mrb_define_method(
         ruby, RStyle::rclass, "blend_mode",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
@@ -155,23 +190,6 @@ void RLayer::reg_class(mrb_state* ruby)
                               ? mrb_intern_lit(mrb, "blend")
                               : mrb_intern_lit(mrb, "add");
             return mrb_symbol_value(sym);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RStyle::rclass, "line_width=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [lw] = mrb::get_args<float>(mrb);
-            auto* style = mrb::self_to<RStyle>(self);
-            style->line_width = lw;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, RStyle::rclass, "line_width",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* style = mrb::self_to<RStyle>(self);
-            return mrb::to_value(style->line_width, mrb);
         },
         MRB_ARGS_NONE());
 

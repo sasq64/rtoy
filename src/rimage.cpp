@@ -16,13 +16,15 @@
 
 //#include <jpeg_decoder.h>
 
-mrb_data_type RImage::dt{
-    "Image", [](mrb_state*, void* data) { delete static_cast<RImage*>(data); }};
+//mrb_data_type RImage::dt{
+//    "Image", [](mrb_state*, void* data) { delete static_cast<RImage*>(data); }};
 
 void RImage::reg_class(mrb_state* ruby)
 {
-    RImage::rclass = mrb_define_class(ruby, "Image", ruby->object_class);
-    MRB_SET_INSTANCE_TT(RImage::rclass, MRB_TT_DATA);
+    RImage::rclass = mrb::make_noinit_class<RImage>(ruby, "Image");
+  //  RImage::dt = mrb::get_data_type<RImage>(ruby);
+//    RImage::rclass = mrb_define_class(ruby, "Image", ruby->object_class);
+//    MRB_SET_INSTANCE_TT(RImage::rclass, MRB_TT_DATA);
 
     mrb_define_class_method(
         ruby, RImage::rclass, "from_file",

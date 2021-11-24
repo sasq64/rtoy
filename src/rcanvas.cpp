@@ -219,6 +219,7 @@ void RCanvas::reg_class(mrb_state* ruby)
     // rclass = mrb_define_class(ruby, "Canvas", RLayer::rclass);
     // MRB_SET_INSTANCE_TT(RCanvas::rclass, MRB_TT_DATA);
     rclass = mrb::make_noinit_class<RCanvas>(ruby, "Canvas", RLayer::rclass);
+    mrb::set_deleter<RCanvas>(ruby, [](mrb_state*, void*){});
 
     mrb_define_method(
         ruby, RCanvas::rclass, "copy",
@@ -247,7 +248,7 @@ void RCanvas::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rcanvas = mrb::self_to<RCanvas>(self);
             RImage* image{};
-            mrb_get_args(mrb, "d", &image, &RImage::dt);
+            mrb_get_args(mrb, "d", &image, mrb::get_data_type<RImage>(mrb));
             rcanvas->canvas = image->texture.tex;
             return mrb_nil_value();
         },
@@ -287,7 +288,7 @@ void RCanvas::reg_class(mrb_state* ruby)
             mrb_float y = 0;
             RStyle* style = &rcanvas->current_style;
             if (n == 5) {
-                mrb_get_args(mrb, "ffffd", &x, &y, &w, &h, &style, &RStyle::dt);
+                mrb_get_args(mrb, "ffffd", &x, &y, &w, &h, &style, mrb::get_data_type<RStyle>(mrb));
             } else if (n == 4) {
                 mrb_get_args(mrb, "ffff", &x, &y, &w, &h);
             } else if (n == 2) {
@@ -311,7 +312,7 @@ void RCanvas::reg_class(mrb_state* ruby)
             RStyle* style = &rcanvas->current_style;
             if (n == 5) {
                 mrb_get_args(
-                    mrb, "ffffd", &x0, &y0, &x1, &y1, &style, &RStyle::dt);
+                    mrb, "ffffd", &x0, &y0, &x1, &y1, &style, mrb::get_data_type<RStyle>(mrb));
             } else if (n == 4) {
                 mrb_get_args(mrb, "ffff", &x0, &y0, &x1, &y1);
             } else if (n == 2) {
@@ -360,7 +361,7 @@ void RCanvas::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rcanvas = mrb::self_to<RCanvas>(self);
             auto [na, x, y, image, scale, style] =
-                mrb::get_args_n<double, double, RImage*, double, RStyle*>(mrb);
+                mrb::get_args<mrb::ArgN, double, double, RImage*, double, RStyle*>(mrb);
 
             if (na < 5) { style = &rcanvas->current_style; }
             if (na < 4) { scale = 1.0F; }

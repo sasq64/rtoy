@@ -36,7 +36,14 @@ namespace mrb {
 struct ArgN
 {
     int n;
-    operator int() const { return n; }
+    operator int() const { return n; } // NOLINT
+};
+
+struct Symbol
+{
+    std::string sym;
+    bool operator==(const char*t) const { return std::string(t) == sym; }
+    operator std::string() { return sym; } // NOLINT
 };
 
 template <typename ARG>
@@ -66,6 +73,15 @@ constexpr inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     ptrs.push_back(&Lookup<OBJ>::dts[mrb]);
     // ptrs.push_back(&OBJ::dt);
     target.push_back('d');
+    return target.size();
+}
+
+template <>
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+                       std::vector<void*>& ptrs, mrb_sym* p)
+{
+    ptrs.push_back(p);
+    target.push_back('n');
     return target.size();
 }
 
@@ -160,6 +176,12 @@ struct to_mrb<unsigned int>
     using type = mrb_int;
 };
 
+template <>
+struct to_mrb<Symbol>
+{
+    using type = mrb_sym;
+};
+
 template <typename T, size_t N>
 struct to_mrb<std::array<T, N>>
 {
@@ -171,6 +193,8 @@ TARGET mrb_to(SOURCE const& s, mrb_state* mrb)
 {
     if constexpr (std::is_same_v<mrb_state*, SOURCE>) {
         return mrb;
+    } else if constexpr (std::is_same_v<Symbol, TARGET>) {
+        return Symbol{std::string{mrb_sym_name(mrb, s)}};
     } else if constexpr (std::is_same_v<ArgN, SOURCE>) {
         return {mrb_get_argc(mrb)};
     } else if constexpr (std::is_same_v<mrb_value, SOURCE>) {
@@ -224,7 +248,7 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
 
     //if (n > 0 && restv != nullptr) {
     //    for (int i = 0; i < n; i++) {
-    //        restv->push_back(rest[i]);
+    //        restv->yush_back(rest[i]);
     //    }
    // }
 

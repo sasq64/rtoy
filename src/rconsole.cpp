@@ -118,7 +118,7 @@ void RConsole::reg_class(mrb_state* ruby)
             if (n == 1) {
                 mrb_get_args(mrb, "z", &text);
             } else {
-                mrb_get_args(mrb, "zd", &text, &style, &RStyle::dt);
+                mrb_get_args(mrb, "zd", &text, &style, mrb::get_data_type<RStyle>(mrb));
             }
             ptr->text(text);
             return mrb_nil_value();
@@ -131,7 +131,7 @@ void RConsole::reg_class(mrb_state* ruby)
             auto* ptr = mrb::self_to<RConsole>(self);
             auto n = mrb_get_argc(mrb);
             RStyle* style = &ptr->current_style;
-            if (n == 1) { mrb_get_args(mrb, "d", &style, &RStyle::dt); }
+            if (n == 1) { mrb_get_args(mrb, "d", &style, mrb::get_data_type<RStyle>(mrb)); }
             ptr->current_style.fg = style->fg;
             ptr->current_style.bg = style->bg;
             auto fg = gl::Color(style->fg).to_rgba();
@@ -148,7 +148,7 @@ void RConsole::reg_class(mrb_state* ruby)
             auto* ptr = mrb::self_to<RConsole>(self);
             auto n = mrb_get_argc(mrb);
             RStyle* style = &ptr->current_style;
-            if (n == 1) { mrb_get_args(mrb, "d", &style, &RStyle::dt); }
+            if (n == 1) { mrb_get_args(mrb, "d", &style, mrb::get_data_type<RStyle>(mrb)); }
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
             ptr->console->fill(fg, bg);
@@ -180,7 +180,7 @@ void RConsole::reg_class(mrb_state* ruby)
             if (n == 1) {
                 mrb_get_args(mrb, "z", &text);
             } else if (n == 2) {
-                mrb_get_args(mrb, "zd", &text, &style, &RStyle::dt);
+                mrb_get_args(mrb, "zd", &text, &style, mrb::get_data_type<RStyle>(mrb));
             } else if (n == 3) {
                 mrb_value fg;
                 mrb_value bg;
@@ -207,7 +207,7 @@ void RConsole::reg_class(mrb_state* ruby)
             if (n == 3) {
                 mrb_get_args(mrb, "iiz", &x, &y, &text);
             } else if (n == 4) {
-                mrb_get_args(mrb, "iizd", &x, &y, &text, &style, &RStyle::dt);
+                mrb_get_args(mrb, "iizd", &x, &y, &text, &style, mrb::get_data_type<RStyle>(mrb));
             } else if (n == 5) {
                 mrb_value fg;
                 mrb_value bg;
@@ -291,7 +291,7 @@ void RConsole::reg_class(mrb_state* ruby)
             if (n == 1) {
                 mrb_get_args(mrb, "i", &y);
             } else {
-                mrb_get_args(mrb, "id", &y, &style, &RStyle::dt);
+                mrb_get_args(mrb, "id", &y, &style, mrb::get_data_type<RStyle>(mrb));
             }
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
@@ -315,7 +315,7 @@ void RConsole::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             uint32_t index = 0;
             RImage* image = nullptr;
-            mrb_get_args(mrb, "id", &index, &image, &RImage::dt);
+            mrb_get_args(mrb, "id", &index, &image, mrb::get_data_type<RImage>(mrb));
             auto* rconsole = mrb::self_to<RConsole>(self);
             rconsole->console->set_tile_image(index, image->texture);
             return mrb_nil_value();

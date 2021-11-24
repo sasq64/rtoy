@@ -208,7 +208,7 @@ void Display::reg_class(
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* display = mrb::self_to<Display>(self);
             RImage* image = nullptr;
-            mrb_get_args(mrb, "d", &image, &RImage::dt);
+            mrb_get_args(mrb, "d", &image, mrb::get_data_type<RImage>(mrb));
             display->mouse_cursor = display->sprite_field->add_sprite(image, 1);
             return mrb_nil_value();
         },

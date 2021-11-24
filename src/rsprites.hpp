@@ -50,7 +50,7 @@ public:
     mrb_value value{};
 
     static inline RClass* rclass;
-    static mrb_data_type dt;
+    //static mrb_data_type dt;
 
     ~RSprite() { delete collider; }
 

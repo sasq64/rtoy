@@ -13,7 +13,7 @@ class RImage
 {
 public:
     static inline RClass* rclass = nullptr;
-    static mrb_data_type dt;
+    //static mrb_data_type dt;
     gl::TexRef texture;
 
     double width() const { return texture.width(); }
@@ -21,6 +21,7 @@ public:
     double x() const { return texture.x(); }
     double y() const { return texture.y(); }
 
+    RImage() = default;
     explicit RImage(pix::Image const& img);
     explicit RImage(gl::TexRef const& tex) : texture(tex) {}
 

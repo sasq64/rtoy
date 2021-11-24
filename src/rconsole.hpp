@@ -48,7 +48,7 @@ public:
     void render(RLayer const* parent) override;
 
     static inline RClass* rclass = nullptr;
-    static inline mrb_data_type dt{"Console", [](mrb_state*, void* data) {}};
+    //static inline mrb_data_type dt{"Console", [](mrb_state*, void* data) {}};
 
     static void reg_class(mrb_state* ruby);
 };

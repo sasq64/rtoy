@@ -42,17 +42,6 @@ static std::string fragment_shader{R"gl(
             gl_FragColor = texture2D(in_tex, out_uv) * in_color;
         })gl"};
 
-mrb_data_type RSprite::dt{"Sprite", [](mrb_state*, void* data) {
-                              auto* sprite = static_cast<RSprite*>(data);
-                              // fmt::print("free {} {}\n", data, sprite->held);
-                              if (sprite->held) {
-                                  sprite->held = false;
-                              } else {
-                                  delete sprite;
-                              }
-                          }};
-
-mrb_data_type RSprites::dt{"Sprites", [](mrb_state*, void* data) {}};
 
 void RSprite::update_tx(double screen_width, double screen_height)
 {
@@ -279,18 +268,34 @@ void RSprites::remove_sprite(RSprite* spr)
 
 void RSprites::reg_class(mrb_state* ruby)
 {
-    RSprites::rclass = mrb_define_class(ruby, "Sprites", RLayer::rclass);
-    MRB_SET_INSTANCE_TT(RSprites::rclass, MRB_TT_DATA);
 
-    RSprite::rclass = mrb_define_class(ruby, "Sprite", ruby->object_class);
-    MRB_SET_INSTANCE_TT(RSprite::rclass, MRB_TT_DATA);
+    rclass = mrb::make_noinit_class<RSprites>(ruby, "Sprites", RLayer::rclass);
+    mrb::set_deleter<RSprites>(ruby, [](mrb_state*, void*) {});
+
+    RSprite::rclass = mrb::make_noinit_class<RSprite>(ruby, "Sprite");
+    mrb::set_deleter<RSprite>(ruby, [](mrb_state*, void* data) {
+        auto* sprite = static_cast<RSprite*>(data);
+        // fmt::print("free {} {}\n", data, sprite->held);
+        if (sprite->held) {
+            sprite->held = false;
+        } else {
+            delete sprite;
+        }
+    });
+
+    //    RSprites::rclass = mrb_define_class(ruby, "Sprites", RLayer::rclass);
+    //    MRB_SET_INSTANCE_TT(RSprites::rclass, MRB_TT_DATA);
+    //
+    //    RSprite::rclass = mrb_define_class(ruby, "Sprite",
+    //    ruby->object_class); MRB_SET_INSTANCE_TT(RSprite::rclass,
+    //    MRB_TT_DATA);
 
     mrb_define_method(
         ruby, RSprites::rclass, "add_sprite",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RSprites>(self);
             RImage* image = nullptr;
-            mrb_get_args(mrb, "d", &image, &RImage::dt);
+            mrb_get_args(mrb, "d", &image, mrb::get_data_type<RImage>(mrb));
             auto* spr = ptr->add_sprite(image, 0);
             spr->value = mrb::new_data_obj(mrb, spr);
             return spr->value;
@@ -325,7 +330,7 @@ void RSprites::reg_class(mrb_state* ruby)
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* ptr = mrb::self_to<RSprites>(self);
             RSprite* spr = nullptr;
-            mrb_get_args(mrb, "d", &spr, &RSprite::dt);
+            mrb_get_args(mrb, "d", &spr, mrb::get_data_type<RSprite>(mrb));
             ptr->remove_sprite(spr);
             return mrb_nil_value();
         },

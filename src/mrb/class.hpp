@@ -34,6 +34,7 @@ template <typename T>
 RClass* make_class(mrb_state* mrb, const char* name = class_name<T>(),
     RClass* parent = nullptr)
 {
+    if (parent == nullptr) { parent = mrb->object_class; }
     auto* rclass = mrb_define_class(mrb, name, parent);
     Lookup<T>::rclasses[mrb] = rclass;
     Lookup<T>::dts[mrb] = {
@@ -63,10 +64,16 @@ RClass* make_noinit_class(mrb_state* mrb, const char* name = class_name<T>(),
     return rclass;
 }
 
-template <typename T>
-mrb_data_type& get_data_type(mrb_state* mrb)
+template <typename T, typename FN>
+void set_deleter(mrb_state* mrb, FN const& f)
 {
-    return Lookup<T>::dts[mrb];
+    Lookup<T>::dts[mrb].dfree = f;
+}
+
+template <typename T>
+mrb_data_type* get_data_type(mrb_state* mrb)
+{
+    return &Lookup<T>::dts[mrb];
 }
 
 template <typename T>
@@ -140,4 +147,3 @@ void add_method_n(mrb_state* ruby, std::string const& name, FN const& fn)
 }
 
 } // namespace mrb
-

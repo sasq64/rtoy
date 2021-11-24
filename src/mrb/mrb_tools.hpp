@@ -75,11 +75,11 @@ RClass* get_rclass()
 
 // Get corresponding mrb_data_type from a data class. Default: The data class
 // must have a static member called 'dt'. Specialize for custom types.
-template <typename C>
-mrb_data_type* get_data_type()
-{
-    return &C::dt;
-}
+//template <typename C>
+//mrb_data_type* get_data_type()
+//{
+//    return &C::dt;
+//}
 
 // Create a new instance of a data class `D`
 template <typename D>
@@ -87,7 +87,7 @@ mrb_value new_data_obj(mrb_state* mrb, D* data)
 {
     auto obj = mrb_obj_new(mrb, get_rclass<D>(), 0, nullptr);
     DATA_PTR(obj) = data;
-    DATA_TYPE(obj) = get_data_type<D>();
+    DATA_TYPE(obj) = get_data_type<D>(mrb);
     return obj;
 }
 

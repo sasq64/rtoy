@@ -96,8 +96,10 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
     } else if constexpr (std::is_same_v<TARGET, std::string>) {
         if (mrb_string_p(obj)) {
             return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
+        } else if (mrb_symbol_p(obj)) {
+            return "SYM";
         }
-        throw std::exception();
+         throw std::exception();
     } else if constexpr (std::is_same_v<TARGET, bool>) {
         return mrb_bool(obj);
     } else if constexpr (std::is_arithmetic_v<TARGET>) {
@@ -125,7 +127,7 @@ inline mrb_value to_value(const char* r, mrb_state* mrb = nullptr)
 template <typename RET>
 mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
 {
-    //fmt::print("toval {}\n", typeid(RET).name());
+    // fmt::print("toval {}\n", typeid(RET).name());
     if constexpr (std::is_pointer_v<RET>) {
         using LU = Lookup<typename std::remove_pointer<RET>::type>;
         auto obj = mrb_obj_new(mrb, LU::rclasses[mrb], 0, nullptr);
