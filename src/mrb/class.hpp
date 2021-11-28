@@ -43,6 +43,7 @@ RClass* make_class(mrb_state* mrb, const char* name = class_name<T>(),
     mrb_define_method(
         mrb, rclass, "initialize",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
+            fmt::print("Initialize\n");
             auto* cls = new T();
             DATA_PTR(self) = (void*)cls;            // NOLINT
             DATA_TYPE(self) = &Lookup<T>::dts[mrb]; // NOLINT
@@ -116,9 +117,9 @@ void add_class_method(mrb_state* ruby, std::string const& name, FN const& fn)
     add_class_method<CLASS>(ruby, name, fn, &FN::operator());
 }
 
-template <typename CLASS, typename FX, typename RET, typename... ARGS>
+template <typename CLASS, typename SELF, typename FX, typename RET, typename... ARGS>
 void add_method(mrb_state* ruby, std::string const& name, FX const& fn,
-    RET (FX::*)(CLASS*, ARGS...) const)
+    RET (FX::*)(SELF, ARGS...) const)
 {
     static FX _fn{fn};
     mrb_define_method(
@@ -126,14 +127,13 @@ void add_method(mrb_state* ruby, std::string const& name, FX const& fn,
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             FX fn{_fn};
             auto args = mrb::get_args<ARGS...>(mrb);
-            auto* ptr = mrb::self_to<CLASS>(self);
+            auto ptr = mrb::self_to<SELF>(self);
             if constexpr (std::is_same<RET, void>()) {
                 std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args));
                 return mrb_nil_value();
             } else {
-                auto res =
-                    std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args));
-                return mrb::to_value(res, mrb);
+                return mrb::to_value(
+                    std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args)), mrb);
             }
         },
         MRB_ARGS_REQ(sizeof...(ARGS)));
@@ -143,6 +143,22 @@ template <typename CLASS, typename FN>
 void add_method(mrb_state* ruby, std::string const& name, FN const& fn)
 {
     add_method<CLASS>(ruby, name, fn, &FN::operator());
+}
+
+template <auto PTR, typename CLASS, typename M, typename... ARGS>
+void add_method2(
+    mrb_state* ruby, std::string const& name, M (CLASS::*)(ARGS...) const)
+{
+    add_method<CLASS>(ruby, name, [](CLASS* c, ARGS... args) {
+        // return c->*PTR(args...);
+        return std::invoke(PTR, c, args...);
+    });
+}
+
+template <auto PTR>
+void add_method2(mrb_state* ruby, std::string const& name)
+{
+    add_method2<PTR>(ruby, name, PTR);
 }
 
 template <auto PTR, typename CLASS, typename M>
@@ -168,35 +184,6 @@ template <auto PTR>
 void attr_reader(mrb_state* ruby, std::string const& name)
 {
     attr_reader<PTR>(ruby, name, PTR);
-}
-
-template <typename CLASS, typename FX, typename RET, typename... ARGS>
-void add_method_n(mrb_state* ruby, std::string const& name, FX const& fn,
-    RET (FX::*)(CLASS*, int, ARGS...) const)
-{
-    static FX _fn{fn};
-    mrb_define_method(
-        ruby, Lookup<CLASS>::rclasses[ruby], name.c_str(),
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            FX fn{_fn};
-            auto args = mrb::get_args_n<ARGS...>(mrb);
-            auto* ptr = mrb::self_to<CLASS>(self);
-            if constexpr (std::is_same<RET, void>()) {
-                std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args));
-                return mrb_nil_value();
-            } else {
-                auto res =
-                    std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args));
-                return mrb::to_value(res, mrb);
-            }
-        },
-        MRB_ARGS_REQ(sizeof...(ARGS)));
-}
-
-template <typename CLASS, typename FN>
-void add_method_n(mrb_state* ruby, std::string const& name, FN const& fn)
-{
-    add_method_n<CLASS>(ruby, name, fn, &FN::operator());
 }
 
 } // namespace mrb

@@ -136,7 +136,7 @@ def mkstyle(ostyle = nil, **kwargs)
             style.fg = ostyle.fg
             style.bg = ostyle.bg
         end
-        kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
+        kwargs.each { |a,b| style.send((a.to_s + '=').to_sym, b) }
         return style
     end
     nil

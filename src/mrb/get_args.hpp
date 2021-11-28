@@ -42,7 +42,7 @@ struct ArgN
 struct Symbol
 {
     std::string sym;
-    bool operator==(const char*t) const { return std::string(t) == sym; }
+    bool operator==(const char* t) const { return std::string(t) == sym; }
     operator std::string() { return sym; } // NOLINT
 };
 
@@ -78,7 +78,7 @@ constexpr inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
 
 template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
-                       std::vector<void*>& ptrs, mrb_sym* p)
+    std::vector<void*>& ptrs, mrb_sym* p)
 {
     ptrs.push_back(p);
     target.push_back('n');
@@ -189,25 +189,42 @@ struct to_mrb<std::array<T, N>>
 };
 
 template <typename TARGET, typename SOURCE>
-TARGET mrb_to(SOURCE const& s, mrb_state* mrb)
+auto mrb_to(SOURCE const& s, mrb_state* mrb)
 {
     if constexpr (std::is_same_v<mrb_state*, SOURCE>) {
         return mrb;
     } else if constexpr (std::is_same_v<Symbol, TARGET>) {
         return Symbol{std::string{mrb_sym_name(mrb, s)}};
     } else if constexpr (std::is_same_v<ArgN, SOURCE>) {
-        return {mrb_get_argc(mrb)};
+        return TARGET{mrb_get_argc(mrb)};
     } else if constexpr (std::is_same_v<mrb_value, SOURCE>) {
         return value_to<TARGET>(s, mrb);
     } else {
-        return static_cast<TARGET>(s);
+        return static_cast<typename std::remove_reference<TARGET>::type>(s);
     }
 }
 
-template <typename Target>
+/* template <typename Target, */
+/*     std::enable_if_t<std::is_reference_v<Target>, bool> = true> */
+/* Target self_to(mrb_value self) */
+/* { */
+/*     return *static_cast<std::remove_reference_t<Target>*>( */
+/*         (static_cast<struct RData*>(mrb_ptr(self)))->data); */
+/* } */
+
+template <typename Target,
+    std::enable_if_t<!std::is_pointer_v<Target>, bool> = true>
 Target* self_to(mrb_value self)
 {
     return static_cast<Target*>(
+        (static_cast<struct RData*>(mrb_ptr(self)))->data);
+}
+
+template <typename Target,
+    std::enable_if_t<std::is_pointer_v<Target>, bool> = true>
+Target self_to(mrb_value self)
+{
+    return static_cast<Target>(
         (static_cast<struct RData*>(mrb_ptr(self)))->data);
 }
 
@@ -227,28 +244,27 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
     auto arg_count = mrb_get_argc(mrb);
     if (num) { *num = arg_count; }
 
-    // Build spec string, one character per type, plus a trailing '*' to capture
-    // remaining arguments
+    // Build spec string, one character per type, plus a trailing '*' to
+    // capture remaining arguments
     ((get_spec(mrb, v, arg_ptrs, &std::get<A>(target))), ...);
     std::string x{v.begin(), v.end()};
     // TODO: If we cap format string we cant add rest args to arg_ptrs
     if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
-    //v.push_back('*');
+    // v.push_back('*');
     v.push_back(0);
-    //arg_ptrs.push_back(&rest);
-    //arg_ptrs.push_back(&n);
+    // arg_ptrs.push_back(&rest);
+    // arg_ptrs.push_back(&n);
 
     // fmt::print("ARG: {}\n", v.data());
 
     mrb_get_args_a(mrb, v.data(), arg_ptrs.data());
+    auto converted = std::tuple{mrb_to<ARGS>(std::get<A>(target), mrb)...};
 
-    std::tuple<ARGS...> converted{mrb_to<ARGS>(std::get<A>(target), mrb)...};
-
-    //if (n > 0 && restv != nullptr) {
-    //    for (int i = 0; i < n; i++) {
-    //        restv->yush_back(rest[i]);
-    //    }
-   // }
+    // if (n > 0 && restv != nullptr) {
+    //     for (int i = 0; i < n; i++) {
+    //         restv->yush_back(rest[i]);
+    //     }
+    // }
 
     return converted;
 }

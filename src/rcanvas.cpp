@@ -218,9 +218,10 @@ void RCanvas::reg_class(mrb_state* ruby)
 {
     // rclass = mrb_define_class(ruby, "Canvas", RLayer::rclass);
     // MRB_SET_INSTANCE_TT(RCanvas::rclass, MRB_TT_DATA);
-    rclass = mrb::make_noinit_class<RCanvas>(ruby, "Canvas", mrb::get_class<RLayer>(ruby));
+    rclass = mrb::make_noinit_class<RCanvas>(
+        ruby, "Canvas", mrb::get_class<RLayer>(ruby));
 
-    mrb::set_deleter<RCanvas>(ruby, [](mrb_state*, void*){});
+    mrb::set_deleter<RCanvas>(ruby, [](mrb_state*, void*) {});
 
     mrb_define_method(
         ruby, RCanvas::rclass, "copy",
@@ -265,8 +266,8 @@ void RCanvas::reg_class(mrb_state* ruby)
         },
         MRB_ARGS_REQ(0));
 
-    mrb::add_method_n<RCanvas>(ruby, "rect",
-        [](RCanvas* canvas, int n, float x, float y, float w, float h,
+    mrb::add_method<RCanvas>(ruby, "rect",
+        [](RCanvas* canvas, mrb::ArgN n, float x, float y, float w, float h,
             RStyle* style) {
             if (n < 5) { style = &canvas->current_style; }
             if (n < 3) {
@@ -312,8 +313,8 @@ void RCanvas::reg_class(mrb_state* ruby)
             mrb_float y1 = 0;
             RStyle* style = &rcanvas->current_style;
             if (n == 5) {
-                mrb_get_args(
-                    mrb, "ffffd", &x0, &y0, &x1, &y1, &style, mrb::get_data_type<RStyle>(mrb));
+                mrb_get_args(mrb, "ffffd", &x0, &y0, &x1, &y1, &style,
+                    mrb::get_data_type<RStyle>(mrb));
             } else if (n == 4) {
                 mrb_get_args(mrb, "ffff", &x0, &y0, &x1, &y1);
             } else if (n == 2) {
@@ -327,8 +328,8 @@ void RCanvas::reg_class(mrb_state* ruby)
         },
         MRB_ARGS_REQ(2));
 
-    mrb::add_method_n<RCanvas>(ruby, "circle",
-        [](RCanvas* canvas, int n, double x, double y, double r,
+    mrb::add_method<RCanvas>(ruby, "circle",
+        [](RCanvas* canvas, mrb::ArgN n, double x, double y, double r,
             RStyle* style) {
             if (n < 4) { style = &canvas->current_style; }
             if (n == 1) {
@@ -361,8 +362,8 @@ void RCanvas::reg_class(mrb_state* ruby)
         ruby, RCanvas::rclass, "draw",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* rcanvas = mrb::self_to<RCanvas>(self);
-            auto [na, x, y, image, scale, style] =
-                mrb::get_args<mrb::ArgN, double, double, RImage*, double, RStyle*>(mrb);
+            auto [na, x, y, image, scale, style] = mrb::get_args<mrb::ArgN,
+                double, double, RImage*, double, RStyle*>(mrb);
 
             if (na < 5) { style = &rcanvas->current_style; }
             if (na < 4) { scale = 1.0F; }

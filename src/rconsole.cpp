@@ -109,104 +109,49 @@ void RConsole::reg_class(mrb_state* ruby)
     mrb::set_deleter<RConsole>(ruby, [](mrb_state* /*mrb*/, void* data) {});
 
     mrb::add_method<RConsole>(ruby, "print",
-        [](RConsole* ptr, std::string text, RStyle* style) {
-            if (style == nullptr) { style = &ptr->current_style; }
-            ptr->text(text);
+        [](RConsole* console, std::string const& text, RStyle* style) {
+            if (style == nullptr) { style = &console->current_style; }
+            console->text(text, style);
         });
 
     mrb::add_method<RConsole>(
-        ruby, "clear", [](RConsole* ptr, RStyle* style) {
-            if (style == nullptr) { style = &ptr->current_style; }
-            ptr->current_style.fg = style->fg;
-            ptr->current_style.bg = style->bg;
+        ruby, "clear", [](RConsole* console, RStyle* style) {
+            if (style == nullptr) { style = &console->current_style; }
+            console->current_style.fg = style->fg;
+            console->current_style.bg = style->bg;
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
-            ptr->console->fill(fg, bg);
-            ptr->xpos = ptr->ypos = 0;
+            console->console->fill(fg, bg);
+            console->xpos = console->ypos = 0;
         });
 
     mrb::add_method<RConsole>(
-        ruby, "fill", [](RConsole* ptr, RStyle* style) {
-            if (style == nullptr) { style = &ptr->current_style; }
+        ruby, "fill", [](RConsole* console, RStyle* style) {
+            if (style == nullptr) { style = &console->current_style; }
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
-            ptr->console->fill(fg, bg);
+            console->console->fill(fg, bg);
         });
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "scroll",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            int dx = 0;
-            std::vector<mrb_value> rest;
-            auto [dy] = mrb::get_args<int>(mrb, rest);
-            if (!rest.empty()) { dx = mrb_fixnum(rest[0]); }
-            ptr->scroll(dy, dx);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1) | MRB_ARGS_REST());
-/*
-    mrb_define_method(
-        ruby, RConsole::rclass, "print",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto n = mrb_get_argc(mrb);
-            auto* ptr = mrb::self_to<RConsole>(self);
-            const char* text = nullptr;
-            RStyle* style = &ptr->current_style;
-            RStyle temp_style;
-            if (n == 1) {
-                mrb_get_args(mrb, "z", &text);
-            } else if (n == 2) {
-                mrb_get_args(
-                    mrb, "zd", &text, &style, mrb::get_data_type<RStyle>(mrb));
-            } else if (n == 3) {
-                mrb_value fg;
-                mrb_value bg;
-                mrb_get_args(mrb, "zoo", &text, &fg, &bg);
-                style = &temp_style;
-                style->fg = mrb::to_array<float, 4>(fg, mrb);
-                style->bg = mrb::to_array<float, 4>(bg, mrb);
-            }
-            ptr->text(text, style);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1) | MRB_ARGS_REST());
-*/
-    mrb_define_method(
-        ruby, RConsole::rclass, "text",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto n = mrb_get_argc(mrb);
-            auto* ptr = mrb::self_to<RConsole>(self);
-            int x = 0;
-            int y = 0;
-            const char* text = nullptr;
-            RStyle* style = &ptr->current_style;
-            RStyle temp_style;
-            if (n == 3) {
-                mrb_get_args(mrb, "iiz", &x, &y, &text);
-            } else if (n == 4) {
-                mrb_get_args(mrb, "iizd", &x, &y, &text, &style,
-                    mrb::get_data_type<RStyle>(mrb));
-            } else if (n == 5) {
-                mrb_value fg;
-                mrb_value bg;
-                mrb_get_args(mrb, "iizoo", &x, &y, &text, &fg, &bg);
-                style = &temp_style;
-                style->fg = mrb::to_array<float, 4>(fg, mrb);
-                style->bg = mrb::to_array<float, 4>(bg, mrb);
-            }
-            if (text != nullptr) { ptr->text(x, y, text, style); }
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(3) | MRB_ARGS_REST());
+    mrb::add_method<RConsole>(ruby, "scroll",
+        [](RConsole* console, int dy, int dx) { console->scroll(dy, dx); });
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "get_tile",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto chr = mrb::method(&RConsole::get, mrb, self);
-            return mrb::to_value(static_cast<int>(chr), mrb);
-        },
-        MRB_ARGS_REQ(2));
+    mrb::add_method<RConsole>(ruby, "text",
+        [](RConsole* console, int x, int y, std::string const& text,
+            RStyle* style) {
+            if (style == nullptr) { style = &console->current_style; }
+            console->text(x, y, text, style);
+        });
+
+    mrb::add_method2<&RConsole::get>(ruby, "get_tile");
+
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "get_tile", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto chr = mrb::method(&RConsole::get, mrb, self); */
+    /*         return mrb::to_value(static_cast<int>(chr), mrb); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(2)); */
 
     mrb_define_method(
         ruby, RConsole::rclass, "get_char",

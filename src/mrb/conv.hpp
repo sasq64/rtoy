@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base.hpp"
+#include <type_traits>
 
 extern "C"
 {
@@ -99,7 +100,7 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
         } else if (mrb_symbol_p(obj)) {
             return "SYM";
         }
-         throw std::exception();
+        throw std::exception();
     } else if constexpr (std::is_same_v<TARGET, bool>) {
         return mrb_bool(obj);
     } else if constexpr (std::is_arithmetic_v<TARGET>) {
@@ -124,17 +125,27 @@ inline mrb_value to_value(const char* r, mrb_state* mrb = nullptr)
     return mrb_str_new_cstr(mrb, r);
 }
 
-template <typename RET>
-mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
+template <typename RET,
+    std::enable_if_t<std::is_pointer<RET>::value, bool> = true>
+mrb_value to_value(RET&& r, mrb_state* const mrb = nullptr)
 {
-    // fmt::print("toval {}\n", typeid(RET).name());
-    if constexpr (std::is_pointer_v<RET>) {
+    if constexpr (std::is_rvalue_reference_v<decltype(r)>) {
         using LU = Lookup<typename std::remove_pointer<RET>::type>;
         auto obj = mrb_obj_new(mrb, LU::rclasses[mrb], 0, nullptr);
         DATA_PTR(obj) = r;
         DATA_TYPE(obj) = &LU::dts[mrb];
         return obj;
-    } else if constexpr (std::is_same_v<RET, mrb_value>) {
+    } else {
+        return RET::pointers_must_be_moved;
+    }
+}
+
+template <typename RET,
+    std::enable_if_t<!std::is_pointer<RET>::value, bool> = true>
+mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
+{
+    // fmt::print("toval {}\n", typeid(RET).name());
+    if constexpr (std::is_same_v<RET, mrb_value>) {
         return r;
     } else if constexpr (std::is_same_v<RET, bool>) {
         return mrb_bool_value(r);
@@ -142,7 +153,9 @@ mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
         return mrb_float_value(mrb, r);
     } else if constexpr (std::is_integral_v<RET>) {
         return mrb_int_value(mrb, r);
-    } else if constexpr (std::is_same_v<RET, std::string>) {
+    } else if constexpr (std::is_same_v<
+                             typename std::remove_reference<RET>::type,
+                             std::string>) {
         return mrb_str_new_cstr(mrb, r.c_str());
     } else if constexpr (std::is_same_v<RET, mrb_sym>) {
         return mrb_sym_str(mrb, r);
