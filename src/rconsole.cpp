@@ -143,7 +143,7 @@ void RConsole::reg_class(mrb_state* ruby)
             console->text(x, y, text, style);
         });
 
-    mrb::add_method2<&RConsole::get>(ruby, "get_tile");
+    mrb::add_method<&RConsole::get>(ruby, "get_tile");
 
     /* mrb_define_method( */
     /*     ruby, RConsole::rclass, "get_tile", */
@@ -153,100 +153,144 @@ void RConsole::reg_class(mrb_state* ruby)
     /*     }, */
     /*     MRB_ARGS_REQ(2)); */
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "get_char",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto chr = mrb::method(&RConsole::get, mrb, self);
-            auto str = utils::utf8_encode({chr, 0});
-            return mrb::to_value(str, mrb);
-        },
-        MRB_ARGS_REQ(2));
+    mrb::add_method<RConsole>(
+        ruby, "get_char", [](RConsole* console, int x, int y) {
+            auto chr = console->get(x, y);
+            return utils::utf8_encode({chr, 0});
+        });
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "set_tile_size",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto [x, y] = mrb::get_args<int, int>(mrb);
-            ptr->console->set_tile_size(x, y);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    mrb::add_method<RConsole>(
+        ruby, "set_tile_size", [](RConsole* console, int w, int h) {
+            console->console->set_tile_size(w, h);
+        });
+    mrb::add_method<RConsole>(ruby, "get_tile_size", [](RConsole* console) {
+        auto [tw, th] = console->console->get_char_size();
+        return std::array<int, 2>{tw, th};
+    });
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "get_char", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto chr = mrb::method(&RConsole::get, mrb, self); */
+    /*         auto str = utils::utf8_encode({chr, 0}); */
+    /*         return mrb::to_value(str, mrb); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(2)); */
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "get_tile_size",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto [tw, th] = ptr->console->get_char_size();
-            std::array<int, 2> data{tw, th};
-            return mrb::to_value(data, mrb);
-        },
-        MRB_ARGS_NONE());
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "set_tile_size", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* ptr = mrb::self_to<RConsole>(self); */
+    /*         auto [x, y] = mrb::get_args<int, int>(mrb); */
+    /*         ptr->console->set_tile_size(x, y); */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(1)); */
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "goto_xy",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto [x, y] = mrb::get_args<int, int>(mrb);
-            ptr->xpos = x;
-            ptr->ypos = y;
-            // fmt::print("Goto {} {}\n", x, y);
-            //  ptr->console->set_cursor(x, y);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "get_tile_size", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* ptr = mrb::self_to<RConsole>(self); */
+    /*         auto [tw, th] = ptr->console->get_char_size(); */
+    /*         std::array<int, 2> data{tw, th}; */
+    /*         return mrb::to_value(data, mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "put_char",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto [x, y, c] = mrb::get_args<int, int, int>(mrb);
-            ptr->console->put_char(x, y, c);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(3));
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "goto_xy", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* ptr = mrb::self_to<RConsole>(self); */
+    /*         auto [x, y] = mrb::get_args<int, int>(mrb); */
+    /*         ptr->xpos = x; */
+    /*         ptr->ypos = y; */
+    /*         // fmt::print("Goto {} {}\n", x, y); */
+    /*         //  ptr->console->set_cursor(x, y); */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(1)); */
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "clear_line",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            auto n = mrb_get_argc(mrb);
-            int y = 0;
-            RStyle* style = &ptr->current_style;
-            if (n == 1) {
-                mrb_get_args(mrb, "i", &y);
-            } else {
-                mrb_get_args(
-                    mrb, "id", &y, &style, mrb::get_data_type<RStyle>(mrb));
-            }
+    mrb::add_method<RConsole>(
+        ruby, "goto_xy", [](RConsole* console, int x, int y) {
+            console->xpos = x;
+            console->ypos = y;
+        });
+
+    mrb::add_method<RConsole>(
+        ruby, "put_char", [](RConsole* console, int c, int x, int y) {
+            console->console->put_char(x, y, c);
+        });
+
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "put_char", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* ptr = mrb::self_to<RConsole>(self); */
+    /*         auto [x, y, c] = mrb::get_args<int, int, int>(mrb); */
+    /*         ptr->console->put_char(x, y, c); */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(3)); */
+
+    mrb::add_method<RConsole>(
+        ruby, "clear_line", [](RConsole* console, int y, RStyle* style) {
+            if (style == nullptr) { style = &console->current_style; }
             auto fg = gl::Color(style->fg).to_rgba();
             auto bg = gl::Color(style->bg).to_rgba();
-            ptr->console->clear_area(0, y, -1, 1, fg, bg);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+            console->console->clear_area(0, y, -1, 1, fg, bg);
+        });
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "get_xy",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* ptr = mrb::self_to<RConsole>(self);
-            std::array values{
-                mrb::to_value(ptr->xpos, mrb), mrb::to_value(ptr->ypos, mrb)};
-            return mrb_ary_new_from_values(mrb, 2, values.data());
-        },
-        MRB_ARGS_REQ(3));
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "clear_line", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* ptr = mrb::self_to<RConsole>(self); */
+    /*         auto n = mrb_get_argc(mrb); */
+    /*         int y = 0; */
+    /*         RStyle* style = &ptr->current_style; */
+    /*         if (n == 1) { */
+    /*             mrb_get_args(mrb, "i", &y); */
+    /*         } else { */
+    /*             mrb_get_args( */
+    /*                 mrb, "id", &y, &style, mrb::get_data_type<RStyle>(mrb));
+     */
+    /*         } */
+    /*         auto fg = gl::Color(style->fg).to_rgba(); */
+    /*         auto bg = gl::Color(style->bg).to_rgba(); */
+    /*         ptr->console->clear_area(0, y, -1, 1, fg, bg); */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(1)); */
 
-    mrb_define_method(
-        ruby, RConsole::rclass, "set_tile_image",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            uint32_t index = 0;
-            RImage* image = nullptr;
-            mrb_get_args(
-                mrb, "id", &index, &image, mrb::get_data_type<RImage>(mrb));
-            auto* rconsole = mrb::self_to<RConsole>(self);
-            rconsole->console->set_tile_image(index, image->texture);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(2));
+    mrb::add_method<RConsole>(ruby, "get_xy", [](RConsole* console) {
+        return std::array<int, 2>{console->xpos, console->ypos};
+    });
+
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "get_xy", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* ptr = mrb::self_to<RConsole>(self); */
+    /*         std::array values{ */
+    /*             mrb::to_value(ptr->xpos, mrb), mrb::to_value(ptr->ypos,
+     * mrb)}; */
+    /*         return mrb_ary_new_from_values(mrb, 2, values.data()); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(3)); */
+
+    mrb::add_method<RConsole>(ruby, "set_tile_image",
+        [](RConsole* console, int index, RImage* image) {
+            console->console->set_tile_image(index, image->texture);
+        });
+
+    /* mrb_define_method( */
+    /*     ruby, RConsole::rclass, "set_tile_image", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         uint32_t index = 0; */
+    /*         RImage* image = nullptr; */
+    /*         mrb_get_args( */
+    /*             mrb, "id", &index, &image, mrb::get_data_type<RImage>(mrb)); */
+    /*         auto* rconsole = mrb::self_to<RConsole>(self); */
+    /*         rconsole->console->set_tile_image(index, image->texture); */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(2)); */
 }
 
 void RConsole::reset()

@@ -16,7 +16,7 @@ class RCanvas : public RLayer
 {
     std::shared_ptr<gl_wrap::Texture> canvas;
 
-    mrb::RubyPtr current_font;
+    mrb::Value current_font;
 
     //std::array<double, 16> const Id = {
     //    1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};

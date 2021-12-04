@@ -24,6 +24,12 @@ extern "C"
 #include <vector>
 
 namespace mrb {
+template <typename T, typename... ARGS>
+Value new_obj(mrb_state* mrb, ARGS... args)
+{
+    return Value(mrb, new T(args...));
+}
+
 template <typename CLASS>
 constexpr const char* class_name()
 {
@@ -155,8 +161,19 @@ void add_method2(
     });
 }
 
+template <auto PTR, typename CLASS, typename M, typename... ARGS>
+void add_method2(
+    mrb_state* ruby, std::string const& name, M (CLASS::*)(ARGS...))
+{
+    add_method<CLASS>(ruby, name, [](CLASS* c, ARGS... args) {
+        // return c->*PTR(args...);
+        return std::invoke(PTR, c, args...);
+    });
+}
+
+
 template <auto PTR>
-void add_method2(mrb_state* ruby, std::string const& name)
+void add_method(mrb_state* ruby, std::string const& name)
 {
     add_method2<PTR>(ruby, name, PTR);
 }

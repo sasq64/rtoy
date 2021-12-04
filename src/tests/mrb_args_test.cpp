@@ -26,48 +26,7 @@ TEST_CASE("get_args")
 
     RUBY_CHECK("test(false, 'hello', 3.14) == 'false/hello/3.14'");
 }
-namespace mrb {
-struct Value
-{
-    std::shared_ptr<void> ptr;
-    mrb_state* mrb;
-    mrb_value val{};
 
-    operator mrb_value() const // NOLINT
-    {
-        return val;
-    }
-
-    Value() = default;
-
-    template <typename T>
-    Value(mrb_state* _mrb, T* p)
-        : mrb{_mrb}, val(mrb::to_value(std::move(p), mrb))
-    {
-        ptr = std::shared_ptr<void>(mrb_ptr(val), [this](void*) {
-            fmt::print("UNREG\n");
-            mrb_gc_unregister(mrb, val);
-        });
-        // Stop value from being garbage collected
-        mrb_gc_register(mrb, val);
-    }
-
-    template <typename T>
-    T as()
-    {
-        return value_to<T>();
-    }
-
-    void clear() { ptr = nullptr; }
-};
-
-template <typename T, typename... ARGS>
-Value new_obj(mrb_state* mrb, ARGS... args)
-{
-    return Value(mrb, new T(args...));
-}
-
-}; // namespace mrb
 struct Person
 {
     std::string name;
@@ -107,7 +66,50 @@ TEST_CASE("class")
     mrb_close(ruby);
 }
 
-TEST_CASE("retain") {}
+TEST_CASE("shared_ptr")
+{
+    bool deleter_called = false;
+    auto p = std::shared_ptr<void>(nullptr, [&](void*) {
+            deleter_called = true;});
+    auto p2 = p;
+    p = nullptr;
+    CHECK(!deleter_called);
+    p2 = nullptr;
+    CHECK(deleter_called);
+
+}
+
+TEST_CASE("retain") {
+
+    auto* ruby = mrb_open();
+    auto* person_class = mrb::make_class<Person>(ruby, "Person");
+    mrb::add_method<Person>(
+        ruby, "age", [](Person const* p) { return 99; });
+    
+    auto f = mrb_load_string(ruby, "p = Person.new() ; p.age");
+    CHECK(Person::counter == 1);
+    mrb_load_string(ruby, "GC.start");
+    CHECK(Person::counter == 0);
+
+    mrb::Value v { ruby, new Person() };
+    CHECK(Person::counter == 1);
+    //mrb_load_string(ruby, "p = Person.new() ; p.age");
+    //CHECK(Person::counter == 2);
+    //mrb_load_string(ruby, "GC.start");
+    //CHECK(Person::counter == 1);
+
+//mrb_define_global_const(ruby, "PERSON", v);
+  //      RUBY_CHECK("PERSON.age == 99");
+
+    v.clear();
+    mrb_load_string(ruby, "GC.start ; 3");
+    CHECK(Person::counter == 1);
+    mrb_close(ruby);
+    fmt::print("Closed\n");
+    CHECK(Person::counter == 0);
+
+
+}
 
 #if 0
 

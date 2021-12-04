@@ -62,7 +62,7 @@ struct CollisionGroup
 {
     uint32_t from = 0;
     uint32_t to = 0;
-    mrb::RubyPtr handler;
+    mrb::Value handler;
 };
 
 struct SpriteBatch
@@ -79,7 +79,7 @@ class RSprites : public RLayer
     SpriteBatch fixed_batch;
     SpriteBatch particle_batch;
     gl_wrap::Program program;
-    mrb_state* ruby;
+    //mrb_state* ruby;
     void purge();
     void collide();
     bool draw_batch(SpriteBatch& batch);

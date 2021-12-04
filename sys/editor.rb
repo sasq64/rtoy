@@ -205,17 +205,17 @@ class Editor
             i = y + @scrollpos
             break if i >= @lines.length
             fg = @lines[i][0] == '#'.ord ? Color::LIGHT_BLUE : Color::WHITE
-            @con.text(0, y, @lines[i].pack('U*'), fg, Color::BLUE) if i < @lines.length
+            @con.text(0, y, @lines[i].pack('U*'), fg: fg, bg: Color::BLUE) if i < @lines.length
         end 
 
         if @ypos >= @scrollpos
             @con.text(@xpos, @ypos - @scrollpos, @xpos >= @line.length ? " " :
-                      @line[@xpos..@xpos].pack('U'), Color::WHITE, Color::ORANGE)
+                      @line[@xpos..@xpos].pack('U'), fg: Color::WHITE, bg: Color::ORANGE)
         end
 
         @con.clear_line(count, bg: Color::RED)
         @con.text(0, count, "LINE:#{@ypos+1} - F5 = Run - ESC = Exit",
-                  Color::WHITE, Color::RED);
+                  fg: Color::WHITE, bg: Color::RED);
     end
 
     def set_text(text)

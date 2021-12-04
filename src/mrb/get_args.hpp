@@ -33,6 +33,63 @@ extern "C"
 
 namespace mrb {
 
+
+struct Value
+{
+    static inline int dummy{};
+    std::shared_ptr<void> ptr;
+    mrb_state* mrb{};
+    mrb_value val{};
+
+    operator bool() const { return ptr != nullptr; }
+
+    operator mrb_value() const // NOLINT
+    {
+        return val;
+    }
+
+    template <typename ... ARGS>
+    void operator()(ARGS... args) {
+        call_proc(mrb, val, args...);
+    }
+
+    Value() = default;
+
+    template <typename T>
+    Value(mrb_state* _mrb, T* p)
+        : mrb{_mrb}, val(mrb::to_value(std::move(p), mrb))
+    {
+        ptr = std::shared_ptr<void>(&dummy, [this](void*) {
+            fmt::print("UNREG\n");
+            mrb_gc_unregister(mrb, val);
+        });
+        // Stop value from being garbage collected
+        fmt::print("REG\n");
+        mrb_gc_register(mrb, val);
+    }
+
+    Value(mrb_state* _mrb, mrb_value v)
+        : mrb{_mrb}, val(v)
+    {
+        ptr = std::shared_ptr<void>(&dummy, [this](void*) {
+            fmt::print("UNREG\n");
+            mrb_gc_unregister(mrb, val);
+        });
+        // Stop value from being garbage collected
+        fmt::print("REG\n");
+        mrb_gc_register(mrb, val);
+    }
+
+    template <typename T>
+    T as()
+    {
+        return value_to<T>(val, mrb);
+    }
+
+    void clear() { ptr = nullptr; val = mrb_value{}; }
+};
+
+
 struct ArgN
 {
     int n;
@@ -182,6 +239,12 @@ struct to_mrb<Symbol>
     using type = mrb_sym;
 };
 
+template <>
+struct to_mrb<Value>
+{
+    using type = mrb_value;
+};
+
 template <typename T, size_t N>
 struct to_mrb<std::array<T, N>>
 {
@@ -197,6 +260,8 @@ auto mrb_to(SOURCE const& s, mrb_state* mrb)
         return Symbol{std::string{mrb_sym_name(mrb, s)}};
     } else if constexpr (std::is_same_v<ArgN, SOURCE>) {
         return TARGET{mrb_get_argc(mrb)};
+    } else if constexpr (std::is_same_v<Value, TARGET>) {
+        return Value{mrb, s};
     } else if constexpr (std::is_same_v<mrb_value, SOURCE>) {
         return value_to<TARGET>(s, mrb);
     } else {

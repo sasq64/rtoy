@@ -172,6 +172,15 @@ class Console
         end
     end
 
+    alias _text text
+    def text(*args, **kwargs)
+        if style = mkstyle(self.style, **kwargs)
+            _text(*args, style)
+        else
+            _text(*args)
+        end
+    end
+
     alias _print print
     def print(*args, **kwargs)
         if style = mkstyle(self.style, **kwargs)

@@ -42,7 +42,6 @@ static std::string fragment_shader{R"gl(
             gl_FragColor = texture2D(in_tex, out_uv) * in_color;
         })gl"};
 
-
 void RSprite::update_tx(double screen_width, double screen_height)
 {
     glm::mat4x4 m(1.0F);
@@ -59,7 +58,7 @@ void RSprite::update_tx(double screen_width, double screen_height)
     memcpy(transform.data(), glm::value_ptr(m), sizeof(float) * 16);
 }
 
-RSprites::RSprites(mrb_state* _ruby, int w, int h) : RLayer{w, h}, ruby{_ruby}
+RSprites::RSprites(mrb_state* /*_ruby*/, int w, int h) : RLayer{w, h}
 {
     program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
         gl_wrap::FragmentShader{fragment_shader});
@@ -126,8 +125,7 @@ void RSprites::collide()
                 auto r = (coll1->radius * s1 + coll2->radius * s2);
                 if (d2 < r * r) {
                     if (group.handler) {
-                        call_proc(ruby, group.handler, sprite1->value,
-                            sprite2->value);
+                        group.handler(sprite1->value, sprite2->value);
                     }
                 }
                 ++it2;
@@ -269,7 +267,8 @@ void RSprites::remove_sprite(RSprite* spr)
 void RSprites::reg_class(mrb_state* ruby)
 {
 
-    rclass = mrb::make_noinit_class<RSprites>(ruby, "Sprites", mrb::get_class<RLayer>(ruby));
+    rclass = mrb::make_noinit_class<RSprites>(
+        ruby, "Sprites", mrb::get_class<RLayer>(ruby));
     mrb::set_deleter<RSprites>(ruby, [](mrb_state*, void*) {});
 
     RSprite::rclass = mrb::make_noinit_class<RSprite>(ruby, "Sprite");
@@ -320,7 +319,7 @@ void RSprites::reg_class(mrb_state* ruby)
             if (group == nullptr) { group = &sprites->groups.emplace_back(); }
             group->from = g0;
             group->to = g1;
-            if (!mrb_nil_p(blk)) { group->handler = mrb::RubyPtr{mrb, blk}; }
+            if (!mrb_nil_p(blk)) { group->handler = mrb::Value{mrb, blk}; }
             return mrb_nil_value();
         },
         MRB_ARGS_BLOCK() | MRB_ARGS_REQ(1));

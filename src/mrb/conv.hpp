@@ -58,7 +58,7 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
     if constexpr (std::is_pointer_v<TARGET>) {
         auto* res = DATA_PTR(obj);
         if (res == nullptr) { throw mrb_exception("nullptr"); }
-        return res;
+        return static_cast<TARGET>(res);
 
     } else if constexpr (is_std_vector<TARGET>()) {
         TARGET result;
@@ -130,8 +130,10 @@ template <typename RET,
 mrb_value to_value(RET&& r, mrb_state* const mrb = nullptr)
 {
     if constexpr (std::is_rvalue_reference_v<decltype(r)>) {
-        using LU = Lookup<typename std::remove_pointer<RET>::type>;
-        auto obj = mrb_obj_new(mrb, LU::rclasses[mrb], 0, nullptr);
+        using T = typename std::remove_pointer<RET>::type;
+        using LU = Lookup<T>;
+        auto* o = mrb_obj_alloc(mrb, MRB_TT_DATA, LU::rclasses[mrb]);
+        auto obj = mrb_obj_value(o);
         DATA_PTR(obj) = r;
         DATA_TYPE(obj) = &LU::dts[mrb];
         return obj;
@@ -159,6 +161,9 @@ mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
         return mrb_str_new_cstr(mrb, r.c_str());
     } else if constexpr (std::is_same_v<RET, mrb_sym>) {
         return mrb_sym_str(mrb, r);
+    } else if constexpr (std::is_convertible_v<RET, mrb_value>) {
+        fmt::print("Converting {}\n", (void*)r.ptr.get());
+        return r;
     } else {
         return RET::can_not_convert;
     }

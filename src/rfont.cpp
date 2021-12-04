@@ -22,8 +22,9 @@ RImage* RFont::render(std::string const& txt, uint32_t color, int n)
 
 void RFont::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Font", ruby->object_class);
-    MRB_SET_INSTANCE_TT(RFont::rclass, MRB_TT_DATA);
+    rclass = mrb::make_noinit_class<RFont>(ruby, "Font");
+    //rclass = mrb_define_class(ruby, "Font", ruby->object_class);
+    //MRB_SET_INSTANCE_TT(RFont::rclass, MRB_TT_DATA);
 
     mrb_define_class_method(
         ruby, RFont::rclass, "from_file",

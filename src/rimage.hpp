@@ -13,10 +13,14 @@ class RImage
 {
 public:
     static inline RClass* rclass = nullptr;
-    //static mrb_data_type dt;
+    // static mrb_data_type dt;
     gl::TexRef texture;
 
-    double width() const { return texture.width(); }
+    double width() const
+    {
+        fmt::print("{} {}\n", (void*)this, (void*)texture.tex.get());
+        return texture.width();
+    }
     double height() const { return texture.height(); }
     double x() const { return texture.x(); }
     double y() const { return texture.y(); }

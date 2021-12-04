@@ -18,7 +18,7 @@ void RTimer::update()
     auto now = clk::now();
     auto seconds = get_seconds();
     while (now >= next_timer) {
-        if (timer_handler) { call_proc(ruby, timer_handler, seconds); }
+        if (timer_handler) { timer_handler(seconds); }
         next_timer += 1ms * timer_interval;
     }
 }
@@ -53,7 +53,7 @@ void RTimer::reg_class(mrb_state* ruby)
             mrb_get_args(mrb, "i&", &n, &blk);
             timer->timer_interval = n;
             if (!mrb_nil_p(blk)) {
-                timer->timer_handler = mrb::RubyPtr{mrb, blk};
+                timer->timer_handler = mrb::Value{mrb, blk};
             }
             return mrb_nil_value();
         },
@@ -65,7 +65,7 @@ void RTimer::reset()
     timer_handler.clear();
 }
 
-RTimer::RTimer(mrb_state* _ruby) : ruby{_ruby}
+RTimer::RTimer(mrb_state*)
 {
     start_t = clk::now();
     next_timer = start_t + 500ms;

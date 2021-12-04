@@ -124,7 +124,7 @@ void RAudio::reg_class(
             mrb_value blk;
             mrb_get_args(mrb, "&", &blk);
             if (!mrb_nil_p(blk)) {
-                audio->audio_handler = mrb::RubyPtr{mrb, blk};
+                audio->audio_handler = mrb::Value{mrb, blk};
             }
             return mrb_nil_value();
         },

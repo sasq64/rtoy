@@ -49,7 +49,7 @@ protected:
 
     BlendMode blend_mode = BlendMode::Blend;
 
-    mrb::RubyPtr stylep;
+    mrb::Value stylep;
     RStyle& current_style;
 
 public:
@@ -63,9 +63,8 @@ public:
     RLayer(int w, int h)
         : width(w),
           height(h),
-          stylep{mrb::RubyPtr{RStyle::ruby,
-              mrb_obj_new(RStyle::ruby, mrb::get_class<RStyle>(RStyle::ruby), 0, nullptr)}},
-          current_style{*stylep.as<RStyle>()}
+          stylep{RStyle::ruby, new RStyle()},
+          current_style{*stylep.as<RStyle*>()}
     {}
 
     virtual ~RLayer() = default;
