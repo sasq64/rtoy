@@ -34,6 +34,13 @@ extern "C"
 namespace mrb {
 
 
+struct Block
+{
+    mrb_value val;
+    mrb_state* mrb;
+    operator mrb_value() const { return val; }
+};
+
 struct Value
 {
     static inline int dummy{};
@@ -180,6 +187,17 @@ inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
 
 template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+                       std::vector<void*>& ptrs, Block* p)
+{
+    ptrs.push_back(&p->val);
+    fmt::print("{} spec\n", (void*)p);
+    target.push_back('&');
+    target.push_back('!');
+    return target.size();
+}
+
+template <>
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, mrb_bool* p)
 {
     ptrs.push_back(p);
@@ -245,6 +263,13 @@ struct to_mrb<Value>
     using type = mrb_value;
 };
 
+//template <>
+//struct to_mrb<Block>
+//{
+//    using type = Block;
+//};
+//
+
 template <typename T, size_t N>
 struct to_mrb<std::array<T, N>>
 {
@@ -260,6 +285,9 @@ auto mrb_to(SOURCE const& s, mrb_state* mrb)
         return Symbol{std::string{mrb_sym_name(mrb, s)}};
     } else if constexpr (std::is_same_v<ArgN, SOURCE>) {
         return TARGET{mrb_get_argc(mrb)};
+    } else if constexpr (std::is_same_v<Block, TARGET>) {
+        fmt::print("TO BLOCK {} {}\n", (void*)&s, (void*)s.val.w);
+        return Block{s.val, mrb};
     } else if constexpr (std::is_same_v<Value, TARGET>) {
         return Value{mrb, s};
     } else if constexpr (std::is_same_v<mrb_value, SOURCE>) {

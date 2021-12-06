@@ -48,6 +48,6 @@ public:
     void render(RLayer const* parent) override;
     void reset() override;
 
-    static void reg_class(mrb_state* ruby);
+    static void reg_class(mrb_state* self);
 };
 

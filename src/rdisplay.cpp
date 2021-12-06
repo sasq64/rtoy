@@ -103,6 +103,7 @@ void Display::setup()
 bool Display::begin_draw()
 {
     pix::set_transform(Id);
+    //draw_handler();
     call_proc(ruby, draw_handler, 0);
     return false;
 }
@@ -169,7 +170,7 @@ void Display::reset()
     canvas->enable(true);
     sprite_field->enable(true);
 
-    SET_NIL_VALUE(draw_handler);
+    SET_NIL_VALUE(draw_handler.val);
 }
 
 void Display::reg_class(
@@ -216,10 +217,13 @@ void Display::reg_class(
         MRB_ARGS_REQ(3));
 
     mrb::add_method<Display>(ruby, "on_draw",
-        [](Display* display, mrb_state* mrb) -> mrb_value {
-            mrb_get_args(mrb, "&!", &display->draw_handler);
-            mrb_gc_register(mrb, display->draw_handler);
-            return mrb_nil_value();
+        [](Display* display, mrb::Block block) {
+
+        fmt::print("### ON DRAW {} {}\n", (void*)block.mrb, (void*)block.val.w);
+        display->draw_handler = mrb::Value{block.mrb, block};
+            //mrb_get_args(mrb, "&!", &display->draw_handler);
+            //mrb_gc_register(mrb, display->draw_handler);
+            //return mrb_nil_value();
         });
 //        MRB_ARGS_BLOCK());
 

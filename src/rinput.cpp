@@ -193,7 +193,7 @@ void RInput::reg_class(mrb_state* ruby, System& system)
         ruby, rclass, "on_key",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&!", &input->key_handler);
+            mrb_get_args(mrb, "&", &input->key_handler);
             mrb_gc_register(mrb, input->key_handler);
             return mrb_nil_value();
         },
@@ -202,7 +202,7 @@ void RInput::reg_class(mrb_state* ruby, System& system)
         ruby, rclass, "on_drag",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&!", &input->drag_handler);
+            mrb_get_args(mrb, "&", &input->drag_handler);
             mrb_gc_register(mrb, input->drag_handler);
             return mrb_nil_value();
         },
@@ -211,7 +211,7 @@ void RInput::reg_class(mrb_state* ruby, System& system)
         ruby, rclass, "on_click",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
             auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&!", &input->click_handler);
+            mrb_get_args(mrb, "&", &input->click_handler);
             mrb_gc_register(mrb, input->click_handler);
             return mrb_nil_value();
         },

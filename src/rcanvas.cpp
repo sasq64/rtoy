@@ -223,231 +223,90 @@ void RCanvas::reg_class(mrb_state* ruby)
     mrb::set_deleter<RCanvas>(ruby, [](mrb_state*, void*) {});
 
     mrb::add_method<RCanvas>(
-        ruby, "copy", [](RCanvas* canvas, int x, int y, int w, int h) {
-            canvas->set_target();
-            auto img = canvas->read_image(x, y, w, h);
+        ruby, "copy", [](RCanvas* self, int x, int y, int w, int h) {
+            self->set_target();
+            auto img = self->read_image(x, y, w, h);
             pix::save_png(img, "copy.png");
             return new RImage(img);
         });
 
     mrb::add_method<RCanvas>(
-        ruby, "backing=", [](RCanvas* canvas, RImage* image) {
-            canvas->canvas = image->texture.tex;
+        ruby, "backing=", [](RCanvas* self, RImage* image) {
+            self->canvas = image->texture.tex;
         });
 
-    mrb::add_method<RCanvas>(ruby, "backing", [](RCanvas* canvas) {
-        canvas->set_target();
-        return new RImage(gl_wrap::TexRef{canvas->canvas});
+    mrb::add_method<RCanvas>(ruby, "backing", [](RCanvas* self) {
+        self->set_target();
+        return new RImage(gl_wrap::TexRef{self->canvas});
     });
 
-    mrb::add_method<RCanvas>(ruby, "as_image", [](RCanvas* canvas) {
-        canvas->set_target();
-        auto* image = new RImage(gl_wrap::TexRef{canvas->canvas});
+    mrb::add_method<RCanvas>(ruby, "as_image", [](RCanvas* self) {
+        self->set_target();
+        auto* image = new RImage(gl_wrap::TexRef{self->canvas});
         image->texture.yflip();
         return image;
     });
 
     mrb::add_method<RCanvas>(ruby, "rect",
-        [](RCanvas* canvas, mrb::ArgN n, double x, double y, double w, double h,
-            RStyle* style) {
-            if (n < 5) { style = &canvas->current_style; }
+        [](RCanvas* self, mrb::ArgN n, double x, double y, double w, double h,
+           RStyle* style) {
+            if (n < 5) { style = &self->current_style; }
             if (n < 3) {
-                w = canvas->last_point.first;
-                h = canvas->last_point.second;
+                w = self->last_point.first;
+                h = self->last_point.second;
             }
-            canvas->draw_quad(x, y, w, h, style);
-            canvas->last_point = {w, h};
+            self->draw_quad(x, y, w, h, style);
+            self->last_point = {w, h};
         });
 
     mrb::add_method<RCanvas>(ruby, "line",
-        [](RCanvas* canvas, mrb::ArgN n, double x0, double y0, double x1,
-            double y1, RStyle* style) {
-            if (n < 5) { style = &canvas->current_style; }
+        [](RCanvas* self, mrb::ArgN n, double x0, double y0, double x1,
+           double y1, RStyle* style) {
+            if (n < 5) { style = &self->current_style; }
             if (n < 3) {
-                mrb_float x1 = canvas->last_point.first;
-                mrb_float y1 = canvas->last_point.second;
+                x1 = self->last_point.first;
+                y1 = self->last_point.second;
             }
             if (x0 != x1 || y0 != y1) {
-                canvas->draw_line(x0, y0, x1, y1, style);
+                self->draw_line(x0, y0, x1, y1, style);
             }
-            canvas->last_point = {x1, y1};
+            self->last_point = {x1, y1};
         });
 
     mrb::add_method<RCanvas>(ruby, "circle",
-        [](RCanvas* canvas, mrb::ArgN n, double x, double y, double r,
-            RStyle* style) {
-            if (n < 4) { style = &canvas->current_style; }
+        [](RCanvas* self, mrb::ArgN n, double x, double y, double r,
+           RStyle* style) {
+            if (n < 4) { style = &self->current_style; }
             if (n == 1) {
                 r = x;
-                x = canvas->last_point.first;
-                y = canvas->last_point.second;
+                x = self->last_point.first;
+                y = self->last_point.second;
             }
-            canvas->last_point = {x, y};
-            canvas->draw_circle(x, y, r, style);
+            self->last_point = {x, y};
+            self->draw_circle(x, y, r, style);
         });
 
     mrb::add_method<RCanvas>(ruby, "text",
-        [](RCanvas* canvas, mrb::ArgN n, double x, double y,
-            std::string const& text, double size, RStyle* style) {
-            if (n < 5) { style = &canvas->current_style; }
-            canvas->last_point = {x, y};
+        [](RCanvas* self, mrb::ArgN n, double x, double y,
+           std::string const& text, double size, RStyle* style) {
+            if (n < 5) { style = &self->current_style; }
+            self->last_point = {x, y};
             auto fg = gl::Color(style->fg).to_rgba();
             // TODO: Text image cache
-            auto* rimage = canvas->current_font.as<RFont*>()->render(
+            auto* rimage = self->current_font.as<RFont*>()->render(
                 text, fg, static_cast<int>(size));
-            canvas->draw_image(x, y, rimage);
+            self->draw_image(x, y, rimage);
             delete rimage;
         });
 
     mrb::add_method<RCanvas>(ruby, "draw",
-        [](RCanvas* canvas, mrb::ArgN n, double x, double y, RImage* image,
-            double scale) {
+        [](RCanvas* self, mrb::ArgN n, double x, double y, RImage* image,
+           double scale) {
             if (n < 4) { scale = 1.0F; }
-            canvas->last_point = {x, y};
-            canvas->draw_image(x, y, image, scale);
+            self->last_point = {x, y};
+            self->draw_image(x, y, image, scale);
         });
 
     mrb::add_method<&RCanvas::clear>(ruby, "clear");
     mrb::attr_accessor<&RCanvas::current_font>(ruby, "font");
 }
-
-#if 0
-
-    mrb_define_method(
-        ruby, RCanvas::rclass, "copy",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x, y, w, h] = mrb::get_args<int, int, int, int>(mrb);
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            auto img = rcanvas->read_image(x, y, w, h);
-            pix::save_png(img, "copy.png");
-            auto* image = new RImage(img);
-            return mrb::new_data_obj(mrb, image);
-        },
-        MRB_ARGS_REQ(4));
-
-    mrb_define_method(
-        ruby, RCanvas::rclass, "backing",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            rcanvas->set_target();
-            auto* image = new RImage(gl_wrap::TexRef{rcanvas->canvas});
-            return mrb::new_data_obj(mrb, image);
-        },
-        MRB_ARGS_REQ(0));
-
-    mrb_define_method(
-        ruby, RCanvas::rclass, "backing=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            RImage* image{};
-            mrb_get_args(mrb, "d", &image, mrb::get_data_type<RImage>(mrb));
-            rcanvas->canvas = image->texture.tex;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, RCanvas::rclass, "rect",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto n = mrb_get_argc(mrb);
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            mrb_float w = rcanvas->last_point.first;
-            mrb_float h = rcanvas->last_point.second;
-            mrb_float x = 0;
-            mrb_float y = 0;
-            RStyle* style = &rcanvas->current_style;
-            if (n == 5) {
-                mrb_get_args(mrb, "ffffd", &x, &y, &w, &h, &style, mrb::get_data_type<RStyle>(mrb));
-            } else if (n == 4) {
-                mrb_get_args(mrb, "ffff", &x, &y, &w, &h);
-            } else if (n == 2) {
-                mrb_get_args(mrb, "ff", &x, &y);
-            }
-            rcanvas->draw_quad(x, y, w, h, style);
-            rcanvas->last_point = {w, h};
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(2));
-    mrb_define_method(
-        ruby, RCanvas::rclass, "line",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto n = mrb_get_argc(mrb);
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            mrb_float x0 = rcanvas->last_point.first;
-            mrb_float y0 = rcanvas->last_point.second;
-            mrb_float x1 = 0;
-            mrb_float y1 = 0;
-            RStyle* style = &rcanvas->current_style;
-            if (n == 5) {
-                mrb_get_args(mrb, "ffffd", &x0, &y0, &x1, &y1, &style,
-                    mrb::get_data_type<RStyle>(mrb));
-            } else if (n == 4) {
-                mrb_get_args(mrb, "ffff", &x0, &y0, &x1, &y1);
-            } else if (n == 2) {
-                mrb_get_args(mrb, "ff", &x1, &y1);
-            }
-            if (x0 != x1 || y0 != y1) {
-                rcanvas->draw_line(x0, y0, x1, y1, style);
-            }
-            rcanvas->last_point = {x1, y1};
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(2));
-    mrb_define_method(
-        ruby, RCanvas::rclass, "text",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x, y, text, size] =
-                mrb::get_args<double, double, std::string, int>(mrb);
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-
-            auto fg = gl::Color(rcanvas->current_style.fg).to_rgba();
-            // TODO: Text image cache
-            auto* rimage =
-                rcanvas->current_font.as<RFont*>()->render(text, fg, size);
-            rcanvas->draw_image(x, y, rimage);
-            delete rimage;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(3));
-
-
-    mrb_define_method(
-        ruby, RCanvas::rclass, "draw",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            auto [na, x, y, image, scale, style] = mrb::get_args<mrb::ArgN,
-                double, double, RImage*, double, RStyle*>(mrb);
-
-            if (na < 5) { style = &rcanvas->current_style; }
-            if (na < 4) { scale = 1.0F; }
-            rcanvas->draw_image(x, y, image, scale);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(3));
-
-    mrb_define_method(
-        ruby, RCanvas::rclass, "clear",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            mrb::self_to<RCanvas>(self)->clear();
-            return mrb_nil_value();
-        },
-        MRB_ARGS_NONE());
-
-
-    mrb_define_method(
-        ruby, RCanvas::rclass, "font=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            auto [font] = mrb::get_args<mrb_value>(mrb);
-            rcanvas->current_font = mrb::Value{mrb, font};
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, RCanvas::rclass, "font",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            auto* rcanvas = mrb::self_to<RCanvas>(self);
-            return rcanvas->current_font;
-        },
-        MRB_ARGS_NONE());
-#endif
-
