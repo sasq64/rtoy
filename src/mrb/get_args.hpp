@@ -1,9 +1,3 @@
-
-/* template <typename PTR> */
-/* constexpr void get_spec(mrb_state* mrb, size_t i, PTR*, char* data) */
-/* { */
-/*     data[i] = 'p'; */
-/* } */
 #pragma once
 
 #include "conv.hpp"
@@ -33,12 +27,11 @@ extern "C"
 
 namespace mrb {
 
-
 struct Block
 {
     mrb_value val;
     mrb_state* mrb;
-    operator mrb_value() const { return val; }
+    operator mrb_value() const { return val; } // NOLINT
 };
 
 struct Value
@@ -48,6 +41,17 @@ struct Value
     mrb_state* mrb{};
     mrb_value val{};
 
+    Value& operator=(Block const& b)
+    {
+        set_from_val(b.mrb, b.val);
+        return *this;
+    }
+
+    Value(Block const& b) // NOLINT
+    {
+        set_from_val(b.mrb, b.val);
+    }
+
     operator bool() const { return ptr != nullptr; }
 
     operator mrb_value() const // NOLINT
@@ -55,13 +59,26 @@ struct Value
         return val;
     }
 
-    template <typename ... ARGS>
-    void operator()(ARGS... args) {
+    template <typename... ARGS>
+    void operator()(ARGS... args)
+    {
         call_proc(mrb, val, args...);
     }
 
     Value() = default;
 
+    void set_from_val(mrb_state* _mrb, mrb_value v)
+    {
+        ptr = std::shared_ptr<void>(&dummy, [this](void*) {
+            fmt::print("UNREG\n");
+            mrb_gc_unregister(mrb, val);
+        });
+        mrb = _mrb;
+        val = v;
+        // Stop value from being garbage collected
+        fmt::print("REG\n");
+        mrb_gc_register(mrb, val);
+    }
     template <typename T>
     Value(mrb_state* _mrb, T* p)
         : mrb{_mrb}, val(mrb::to_value(std::move(p), mrb))
@@ -75,17 +92,7 @@ struct Value
         mrb_gc_register(mrb, val);
     }
 
-    Value(mrb_state* _mrb, mrb_value v)
-        : mrb{_mrb}, val(v)
-    {
-        ptr = std::shared_ptr<void>(&dummy, [this](void*) {
-            fmt::print("UNREG\n");
-            mrb_gc_unregister(mrb, val);
-        });
-        // Stop value from being garbage collected
-        fmt::print("REG\n");
-        mrb_gc_register(mrb, val);
-    }
+    Value(mrb_state* _mrb, mrb_value v) { set_from_val(_mrb, v); }
 
     template <typename T>
     T as()
@@ -93,9 +100,12 @@ struct Value
         return value_to<T>(val, mrb);
     }
 
-    void clear() { ptr = nullptr; val = mrb_value{}; }
+    void clear()
+    {
+        ptr = nullptr;
+        val = mrb_value{};
+    }
 };
-
 
 struct ArgN
 {
@@ -111,26 +121,25 @@ struct Symbol
 };
 
 template <typename ARG>
-constexpr size_t get_spec(
+size_t get_spec(
     mrb_state* mrb, std::vector<char>&, std::vector<void*>&, ARG*);
 
-template <>
-constexpr inline size_t get_spec(
+ inline size_t get_spec(
     mrb_state* mrb, std::vector<char>& target, std::vector<void*>&, mrb_state**)
 {
     // Skip mrb_state, we provide it ourselves
+    fmt::print("SKIP\n");
     return 0; // target.size();
 }
 
-template <>
-constexpr inline size_t get_spec(
+inline size_t get_spec(
     mrb_state* mrb, std::vector<char>& target, std::vector<void*>&, ArgN*)
 {
     return 0; // target.size();
 }
 
 template <typename OBJ>
-constexpr inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
+inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, OBJ** p)
 {
     ptrs.push_back(p);
@@ -140,7 +149,6 @@ constexpr inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     return target.size();
 }
 
-template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, mrb_sym* p)
 {
@@ -149,7 +157,6 @@ inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     return target.size();
 }
 
-template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, mrb_int* p)
 {
@@ -158,7 +165,6 @@ inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     return target.size();
 }
 
-template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, mrb_float* p)
 {
@@ -167,7 +173,6 @@ inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     return target.size();
 }
 
-template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, const char** p)
 {
@@ -176,7 +181,6 @@ inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     return target.size();
 }
 
-template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, mrb_value* p)
 {
@@ -185,18 +189,16 @@ inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     return target.size();
 }
 
-template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
-                       std::vector<void*>& ptrs, Block* p)
+    std::vector<void*>& ptrs, Block* p)
 {
     ptrs.push_back(&p->val);
     fmt::print("{} spec\n", (void*)p);
     target.push_back('&');
-    target.push_back('!');
+    // target.push_back('!');
     return target.size();
 }
 
-template <>
 inline size_t get_spec(mrb_state* mrb, std::vector<char>& target,
     std::vector<void*>& ptrs, mrb_bool* p)
 {
@@ -263,11 +265,11 @@ struct to_mrb<Value>
     using type = mrb_value;
 };
 
-//template <>
-//struct to_mrb<Block>
+// template <>
+// struct to_mrb<Block>
 //{
-//    using type = Block;
-//};
+//     using type = Block;
+// };
 //
 
 template <typename T, size_t N>
@@ -279,7 +281,8 @@ struct to_mrb<std::array<T, N>>
 template <typename TARGET, typename SOURCE>
 auto mrb_to(SOURCE const& s, mrb_state* mrb)
 {
-    if constexpr (std::is_same_v<mrb_state*, SOURCE>) {
+    if constexpr (std::is_same_v<mrb_state*, TARGET>) {
+        fmt::print("MRBSTATE\n");
         return mrb;
     } else if constexpr (std::is_same_v<Symbol, TARGET>) {
         return Symbol{std::string{mrb_sym_name(mrb, s)}};
@@ -340,17 +343,31 @@ auto get_args(mrb_state* mrb, std::vector<mrb_value>* restv, int* num,
     // Build spec string, one character per type, plus a trailing '*' to
     // capture remaining arguments
     ((get_spec(mrb, v, arg_ptrs, &std::get<A>(target))), ...);
-    std::string x{v.begin(), v.end()};
+
+    // std::string x{v.begin(), v.end()};
+
+    int given = 0;
+    for (auto& c : v) {
+        if (c != '&') { given++; }
+        if (given > arg_count) {
+            c = 0;
+            break;
+        }
+    }
+
     // TODO: If we cap format string we cant add rest args to arg_ptrs
-    if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
+    // if (static_cast<int>(v.size()) > arg_count) { v.resize(arg_count); }
     // v.push_back('*');
     v.push_back(0);
     // arg_ptrs.push_back(&rest);
     // arg_ptrs.push_back(&n);
 
-    // fmt::print("ARG: {}\n", v.data());
+    // fmt::print("ARSG: {} => {}\n", x, v.data());
 
     mrb_get_args_a(mrb, v.data(), arg_ptrs.data());
+    // for(auto& p : arg_ptrs) {
+    //     fmt::print("{}\n", (void*)p);
+    // }
     auto converted = std::tuple{mrb_to<ARGS>(std::get<A>(target), mrb)...};
 
     // if (n > 0 && restv != nullptr) {

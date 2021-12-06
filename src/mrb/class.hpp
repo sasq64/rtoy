@@ -49,7 +49,7 @@ RClass* make_class(mrb_state* mrb, const char* name = class_name<T>(),
     mrb_define_method(
         mrb, rclass, "initialize",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            fmt::print("Initialize\n");
+            //fmt::print("Initialize\n");
             auto* cls = new T();
             DATA_PTR(self) = (void*)cls;            // NOLINT
             DATA_TYPE(self) = &Lookup<T>::dts[mrb]; // NOLINT

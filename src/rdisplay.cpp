@@ -1,5 +1,7 @@
 #include "rdisplay.hpp"
 
+#include "mrb/class.hpp"
+#include "mrb/get_args.hpp"
 #include "mruby/array.h"
 #include "mruby/value.h"
 
@@ -103,7 +105,7 @@ void Display::setup()
 bool Display::begin_draw()
 {
     pix::set_transform(Id);
-    //draw_handler();
+    // draw_handler();
     call_proc(ruby, draw_handler, 0);
     return false;
 }
@@ -173,6 +175,43 @@ void Display::reset()
     SET_NIL_VALUE(draw_handler.val);
 }
 
+int32_t Display::dump(int x, int y)
+{
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    uint32_t v = 0;
+    glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
+    // Little endian, as bytes means we get ABGR 32 bit
+    auto rgb = static_cast<int32_t>(
+        ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
+    fmt::print("{:08x} - > {:08x}\n", v, rgb);
+    return rgb;
+}
+
+std::vector<int32_t> Display::dump(int x, int y, int w, int h)
+{
+    std::vector<int32_t> result;
+    auto* ptr = new uint32_t[w * h];
+    memset(ptr, 0xff, w * h * 4);
+
+    y = height - (y + h);
+
+    glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
+
+    result.resize(w * h);
+    int i = 0;
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            auto v = ptr[x + (h - 1 - y) * w];
+            auto rgb = static_cast<int32_t>(
+                ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
+            fmt::print("{:08x} - > {:08x}\n", v, rgb);
+            result[i] = rgb;
+        }
+    }
+    return result;
+}
+
 void Display::reg_class(
     mrb_state* ruby, System& system, Settings const& settings)
 {
@@ -194,38 +233,38 @@ void Display::reg_class(
         mrb::new_data_obj(ruby, Display::default_display);
     mrb_gc_register(ruby, Display::default_display->disp_obj);
 
-    mrb::add_class_method<Display>(ruby, "default", [] {
-        return Display::default_display->disp_obj;
-    });
+    mrb::add_class_method<Display>(
+        ruby, "default", [] { return Display::default_display->disp_obj; });
 
-//    mrb_define_class_method(
-//        ruby, Display::rclass, "default",
-//        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value {
-//            return Display::default_display->disp_obj;
-//        },
-//        MRB_ARGS_NONE());
+    //    mrb_define_class_method(
+    //        ruby, Display::rclass, "default",
+    //        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value {
+    //            return Display::default_display->disp_obj;
+    //        },
+    //        MRB_ARGS_NONE());
 
-    mrb_define_method(
-        ruby, Display::rclass, "mouse_ptr",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            RImage* image = nullptr;
-            mrb_get_args(mrb, "d", &image, mrb::get_data_type<RImage>(mrb));
+    /* mrb_define_method( */
+    /*     ruby, Display::rclass, "mouse_ptr", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* display = mrb::self_to<Display>(self); */
+    /*         RImage* image = nullptr; */
+    /*         mrb_get_args(mrb, "d", &image, mrb::get_data_type<RImage>(mrb));
+     */
+    /*         display->mouse_cursor = display->sprite_field->add_sprite(image,
+     * 1); */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(3)); */
+
+    mrb::add_method<Display>(
+        ruby, "mouse_ptr", [](Display* display, RImage* image) {
             display->mouse_cursor = display->sprite_field->add_sprite(image, 1);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(3));
-
-    mrb::add_method<Display>(ruby, "on_draw",
-        [](Display* display, mrb::Block block) {
-
-        fmt::print("### ON DRAW {} {}\n", (void*)block.mrb, (void*)block.val.w);
-        display->draw_handler = mrb::Value{block.mrb, block};
-            //mrb_get_args(mrb, "&!", &display->draw_handler);
-            //mrb_gc_register(mrb, display->draw_handler);
-            //return mrb_nil_value();
         });
-//        MRB_ARGS_BLOCK());
+
+    mrb::add_method<Display>(
+        ruby, "on_draw", [](Display* display, mrb::Block block) {
+            display->draw_handler = block;
+        });
 
     mrb_define_method(
         ruby, Display::rclass, "console",
@@ -284,44 +323,51 @@ void Display::reg_class(
         },
         MRB_ARGS_NONE());
 
-    mrb_define_method(
-        ruby, Display::rclass, "dump",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            if (mrb_get_argc(mrb) == 2) {
-                auto [x, y] = mrb::get_args<int, int>(mrb);
-                uint32_t v = 0;
-                glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
-                // Little endian, as bytes means we get ABGR 32 bit
-                int rgb = static_cast<int>(
-                    ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
-                fmt::print("{:08x} - > {:08x}\n", v, rgb);
-                return mrb::to_value(rgb, mrb);
-            }
+    mrb::add_method<Display>(ruby, "dump",
+        [](Display* display, mrb_state* mrb, mrb::ArgN n, int x, int y, int w,
+            int h) {
+            if (n == 2) { return mrb::to_value(display->dump(x, y), mrb); }
+            return mrb::to_value(display->dump(x, y, w, h), mrb);
+        });
 
-            auto [x, y, w, h] = mrb::get_args<int, int, int, int>(mrb);
-            auto* ptr = new uint32_t[w * h];
-            memset(ptr, 0xff, w * h * 4);
+    /* mrb_define_method( */
+    /*     ruby, Display::rclass, "dump", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* display = mrb::self_to<Display>(self); */
+    /*         glBindFramebuffer(GL_FRAMEBUFFER, 0); */
+    /*         if (mrb_get_argc(mrb) == 2) { */
+    /*             auto [x, y] = mrb::get_args<int, int>(mrb); */
+    /*             uint32_t v = 0; */
+    /*             glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v); */
+    /*             // Little endian, as bytes means we get ABGR 32 bit */
+    /*             int rgb = static_cast<int>( */
+    /*                 ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff)); */
+    /*             fmt::print("{:08x} - > {:08x}\n", v, rgb); */
+    /*             return mrb::to_value(rgb, mrb); */
+    /*         } */
 
-            y = display->height - (y + h);
+    /*         auto [x, y, w, h] = mrb::get_args<int, int, int, int>(mrb); */
+    /*         auto* ptr = new uint32_t[w * h]; */
+    /*         memset(ptr, 0xff, w * h * 4); */
 
-            glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
+    /*         y = display->height - (y + h); */
 
-            auto a = mrb_ary_new_capa(mrb, w * h);
-            int i = 0;
-            for (y = 0; y < h; y++) {
-                for (x = 0; x < w; x++) {
-                    auto v = ptr[x + (h - 1 - y) * w];
-                    int rgb = static_cast<int>(
-                        ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
-                    fmt::print("{:08x} - > {:08x}\n", v, rgb);
-                    mrb_ary_set(mrb, a, i++, mrb_int_value(mrb, rgb));
-                }
-            }
-            return a;
-        },
-        MRB_ARGS_REQ(4));
+    /*         glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr); */
+
+    /*         auto a = mrb_ary_new_capa(mrb, w * h); */
+    /*         int i = 0; */
+    /*         for (y = 0; y < h; y++) { */
+    /*             for (x = 0; x < w; x++) { */
+    /*                 auto v = ptr[x + (h - 1 - y) * w]; */
+    /*                 int rgb = static_cast<int>( */
+    /*                     ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff)); */
+    /*                 fmt::print("{:08x} - > {:08x}\n", v, rgb); */
+    /*                 mrb_ary_set(mrb, a, i++, mrb_int_value(mrb, rgb)); */
+    /*             } */
+    /*         } */
+    /*         return a; */
+    /*     }, */
+    /*     MRB_ARGS_REQ(4)); */
 
     mrb_define_method(
         ruby, Display::rclass, "bench_start",
@@ -356,20 +402,22 @@ void Display::reg_class(
         },
         MRB_ARGS_NONE());
 
-    mrb_define_method(
-        ruby, Display::rclass, "bg=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [av] = mrb::get_args<mrb_value>(mrb);
-            auto* display = mrb::self_to<Display>(self);
-            display->bg = mrb::to_array<float, 4>(av, mrb);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, Display::rclass, "bg",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::to_value(display->bg, mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::attr_accessor<&Display::bg>(ruby, "bg");
+
+    /* mrb_define_method( */
+    /*     ruby, Display::rclass, "bg=", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto [av] = mrb::get_args<mrb_value>(mrb); */
+    /*         auto* display = mrb::self_to<Display>(self); */
+    /*         display->bg = mrb::to_array<float, 4>(av, mrb); */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(1)); */
+    /* mrb_define_method( */
+    /*     ruby, Display::rclass, "bg", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* display = mrb::self_to<Display>(self); */
+    /*         return mrb::to_value(display->bg, mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
 }

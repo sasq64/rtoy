@@ -43,6 +43,10 @@ class Display : public RLayer
     std::chrono::time_point<std::chrono::steady_clock> bench_start;
 
     int64_t swap_t = 0;
+
+    std::vector<int32_t> dump(int x, int y, int w, int h);
+    int32_t dump(int x, int y);
+
 public:
     int64_t pre_t = 0;
     RSprite* mouse_cursor = nullptr;
@@ -51,7 +55,7 @@ public:
     mrb_value sprite_fields{};
     mrb_value canvases{};
     static inline RClass* rclass;
-    //static mrb_data_type dt;
+    // static mrb_data_type dt;
     static inline Display* default_display = nullptr;
     explicit Display(
         mrb_state* state, System& system, Settings const& _settings);

@@ -2,6 +2,7 @@
 #include "rsprites.hpp"
 #include "error.hpp"
 #include "gl/buffer.hpp"
+#include "mrb/class.hpp"
 #include "mrb/mrb_tools.hpp"
 #include "mruby/value.h"
 #include "rimage.hpp"
@@ -351,76 +352,102 @@ void RSprites::reg_class(mrb_state* ruby)
         },
         MRB_ARGS_REQ(1));
 
-    mrb_define_method(
-        ruby, RSprite::rclass, "y=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [y] = mrb::get_args<float>(mrb);
-            auto* rspr = mrb::self_to<RSprite>(self);
-            rspr->trans[1] = y;
-            rspr->dirty = true;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    mrb::add_method<RSprite>(
+        ruby, "y", [](RSprite* sprite) { return sprite->trans[1]; });
+    mrb::add_method<RSprite>(ruby, "y=", [](RSprite* sprite, double y) {
+        sprite->trans[1] = static_cast<float>(y);
+        sprite->dirty = true;
+    });
 
-    mrb_define_method(
-        ruby, RSprite::rclass, "y",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rspr = mrb::self_to<RSprite>(self);
-            return mrb::to_value(rspr->trans[1], mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<RSprite>(
+        ruby, "x", [](RSprite* sprite) { return sprite->trans[0]; });
+    mrb::add_method<RSprite>(ruby, "x=", [](RSprite* sprite, double x) {
+        sprite->trans[0] = static_cast<float>(x);
+        sprite->dirty = true;
+    });
 
-    mrb_define_method(
-        ruby, RSprite::rclass, "x=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x] = mrb::get_args<float>(mrb);
-            auto* rspr = mrb::self_to<RSprite>(self);
-            rspr->trans[0] = x;
-            rspr->dirty = true;
-            // rspr->pos.first = x;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, RSprite::rclass, "width",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rspr = mrb::self_to<RSprite>(self);
-            return mrb::to_value(rspr->texture.width(), mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, RSprite::rclass, "height",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rspr = mrb::self_to<RSprite>(self);
-            return mrb::to_value(rspr->texture.height(), mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, RSprite::rclass, "size",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rspr = mrb::self_to<RSprite>(self);
-            return mrb::to_value(
-                std::array<float, 2>{static_cast<float>(rspr->texture.width()),
-                    static_cast<float>(rspr->texture.height())},
-                mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, RSprite::rclass, "x",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rspr = mrb::self_to<RSprite>(self);
-            return mrb::to_value(rspr->trans[0], mrb);
-        },
-        MRB_ARGS_NONE());
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "y=", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto [y] = mrb::get_args<float>(mrb); */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         rspr->trans[1] = y; */
+    /*         rspr->dirty = true; */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(1)); */
 
-    mrb_define_method(
-        ruby, RSprite::rclass, "img",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rspr = mrb::self_to<RSprite>(self);
-            auto* rimage = new RImage(rspr->texture);
-            return mrb::new_data_obj(mrb, rimage);
-        },
-        MRB_ARGS_NONE());
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "y", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         return mrb::to_value(rspr->trans[1], mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
+
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "x=", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto [x] = mrb::get_args<float>(mrb); */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         rspr->trans[0] = x; */
+    /*         rspr->dirty = true; */
+    /*         // rspr->pos.first = x; */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(1)); */
+
+    mrb::add_method<RSprite>(
+        ruby, "width", [](RSprite* sprite) { return sprite->texture.width(); });
+    mrb::add_method<RSprite>(ruby, "height",
+        [](RSprite* sprite) { return sprite->texture.height(); });
+
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "width", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         return mrb::to_value(rspr->texture.width(), mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "height", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         return mrb::to_value(rspr->texture.height(), mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
+    mrb::add_method<RSprite>(ruby, "size", [](RSprite* sprite) {
+        return std::array{sprite->texture.width(), sprite->texture.height()};
+    });
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "size", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         return mrb::to_value( */
+    /*             std::array<float,
+     * 2>{static_cast<float>(rspr->texture.width()), */
+    /*                 static_cast<float>(rspr->texture.height())}, */
+    /*             mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "x", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         return mrb::to_value(rspr->trans[0], mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
+
+    mrb::add_method<RSprite>(ruby, "img",
+        [](RSprite* sprite) { return new RImage(sprite->texture); });
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "img", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         auto* rimage = new RImage(rspr->texture); */
+    /*         return mrb::new_data_obj(mrb, rimage); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
 
     /* mrb_define_method( */
     /*     ruby, RSprite::rclass, "img=", */
@@ -438,22 +465,37 @@ void RSprites::reg_class(mrb_state* ruby)
     /*     }, */
     /*     MRB_ARGS_REQ(1)); */
 
-    mrb_define_method(
-        ruby, RSprite::rclass, "alpha=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x] = mrb::get_args<float>(mrb);
-            auto* rspr = mrb::self_to<RSprite>(self);
-            rspr->alpha = x;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, RSprite::rclass, "alpha",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rspr = mrb::self_to<RSprite>(self);
-            return mrb::to_value(rspr->alpha, mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::attr_accessor<&RSprite::alpha>(ruby, "alpha");
+
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "alpha=", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto [x] = mrb::get_args<float>(mrb); */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         rspr->alpha = x; */
+    /*         return mrb_nil_value(); */
+    /*     }, */
+    /*     MRB_ARGS_REQ(1)); */
+    /* mrb_define_method( */
+    /*     ruby, RSprite::rclass, "alpha", */
+    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
+    /*         auto* rspr = mrb::self_to<RSprite>(self); */
+    /*         return mrb::to_value(rspr->alpha, mrb); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
+
+    mrb::add_method<RSprite>(
+        ruby, "scalex", [](RSprite* sprite) { return sprite->scale[0]; });
+    mrb::add_method<RSprite>(ruby, "scalex=", [](RSprite* sprite, double x) {
+        sprite->scale[0] = static_cast<float>(x);
+        sprite->dirty = true;
+    });
+    mrb::add_method<RSprite>(
+        ruby, "scaley", [](RSprite* sprite) { return sprite->scale[1]; });
+    mrb::add_method<RSprite>(ruby, "scaley=", [](RSprite* sprite, double y) {
+        sprite->scale[1] = static_cast<float>(y);
+        sprite->dirty = true;
+    });
 
     mrb_define_method(
         ruby, RSprite::rclass, "scalex=",
