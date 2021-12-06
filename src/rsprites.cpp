@@ -290,6 +290,13 @@ void RSprites::reg_class(mrb_state* ruby)
     //    ruby->object_class); MRB_SET_INSTANCE_TT(RSprite::rclass,
     //    MRB_TT_DATA);
 
+    mrb::add_method<RSprites>(
+        ruby, "add_sprite", [](RSprites* self, mrb_state* mrb, RImage* image) {
+            auto* spr = self->add_sprite(image, 0);
+            spr->value = mrb::new_data_obj(mrb, spr);
+            return spr->value;
+        });
+
     mrb_define_method(
         ruby, RSprites::rclass, "add_sprite",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
