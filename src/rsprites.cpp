@@ -293,7 +293,7 @@ void RSprites::reg_class(mrb_state* ruby)
     mrb::add_method<RSprites>(
         ruby, "add_sprite", [](RSprites* self, mrb_state* mrb, RImage* image) {
             auto* spr = self->add_sprite(image, 0);
-            spr->value = mrb::new_data_obj(mrb, spr);
+            spr->value = mrb::Value{mrb, spr};///mrb::new_data_obj(mrb, spr);
             return spr->value;
         });
 
@@ -304,8 +304,10 @@ void RSprites::reg_class(mrb_state* ruby)
             RImage* image = nullptr;
             mrb_get_args(mrb, "d", &image, mrb::get_data_type<RImage>(mrb));
             auto* spr = ptr->add_sprite(image, 0);
-            spr->value = mrb::new_data_obj(mrb, spr);
+            spr->value = mrb::Value{mrb, spr};///mrb::new_data_obj(mrb, spr);
             return spr->value;
+            //spr->value = mrb::new_data_obj(mrb, spr);
+            //return spr->value;
         },
         MRB_ARGS_REQ(3));
 

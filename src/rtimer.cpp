@@ -25,16 +25,23 @@ void RTimer::update()
 
 void RTimer::reg_class(mrb_state* ruby)
 {
-    rclass = mrb_define_class(ruby, "Timer", ruby->object_class);
-    MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
+    rclass = mrb::make_noinit_class<RTimer>(ruby, "Timer");
+    mrb::set_deleter<RTimer>(ruby, [](mrb_state *, void *)
+    {});
+  //  rclass = mrb_define_class(ruby, "Timer", ruby->object_class);
+   // MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
+   default_timer = new RTimer(ruby);
 
-    mrb_define_class_method(
-        ruby, rclass, "default",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            if (default_timer == nullptr) { default_timer = new RTimer(mrb); }
-            return mrb::new_data_obj(mrb, default_timer);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_class_method<RTimer>(ruby, "default", []
+    { return RTimer::default_timer; });
+
+    /* mrb_define_class_method( */
+    /*     ruby, rclass, "default", */
+    /*     [](mrb_state* mrb, mrb_value) -> mrb_value { */
+    /*         if (default_timer == nullptr) { default_timer = new RTimer(mrb); } */
+    /*         return mrb::new_data_obj<RTimer>(mrb, default_timer); */
+    /*     }, */
+    /*     MRB_ARGS_NONE()); */
 
     mrb_define_method(
         ruby, rclass, "seconds",

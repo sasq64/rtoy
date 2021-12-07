@@ -225,8 +225,7 @@ void Display::reg_class(
     }
 
     Display::default_display->disp_obj =
-        mrb::new_data_obj(ruby, Display::default_display);
-    mrb_gc_register(ruby, Display::default_display->disp_obj);
+        mrb::Value{ruby, Display::default_display};
 
     mrb::add_class_method<Display>(
         ruby, "default", [] { return Display::default_display->disp_obj; });

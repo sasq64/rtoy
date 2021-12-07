@@ -2,19 +2,6 @@
 
 #include "conv.hpp"
 
-extern "C"
-{
-#include <mruby.h>
-#include <mruby/array.h>
-#include <mruby/class.h>
-#include <mruby/compile.h>
-#include <mruby/data.h>
-#include <mruby/proc.h>
-#include <mruby/string.h> // NOLINT
-#include <mruby/value.h>
-#include <mruby/variable.h>
-}
-
 #include <fmt/format.h>
 
 #include <algorithm>

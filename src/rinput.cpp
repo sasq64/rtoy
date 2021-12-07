@@ -2,6 +2,7 @@
 
 #include "error.hpp"
 #include "keycodes.h"
+#include "mrb/class.hpp"
 #include "mrb/mrb_tools.hpp"
 #include "settings.hpp"
 
@@ -18,7 +19,7 @@ RInput::RInput(mrb_state* _ruby, System& _system) : ruby{_ruby}, system{_system}
 bool RInput::handle_event(KeyEvent const& e)
 {
     auto code = e.key;
-    //fmt::print("CODE {:x}\n", e.key);
+    // fmt::print("CODE {:x}\n", e.key);
     if (code == RKEY_F12) {
         fmt::print("RESET!\n");
         do_reset = true;
@@ -59,7 +60,7 @@ bool RInput::handle_event(MoveEvent const& me)
 }
 bool RInput::handle_event(TextEvent const& me)
 {
-    //fmt::print("TEXT '{}'\n", me.text);
+    // fmt::print("TEXT '{}'\n", me.text);
     auto text32 = utils::utf8_decode(me.text);
     for (auto s : text32) {
         call_proc(ruby, key_handler, s, 0, me.device);
@@ -95,6 +96,18 @@ void RInput::reset()
     SET_NIL_VALUE(click_handler);
     SET_NIL_VALUE(drag_handler);
 }
+
+struct Key
+{
+    static const int Left = RKEY_LEFT;
+};
+
+namespace mrb {
+template <auto PTR>
+void define_const(mrb_state* mrb)
+{}
+}; // namespace mrb
+
 void RInput::reg_class(mrb_state* ruby, System& system)
 {
     auto* keys = mrb_define_module(ruby, "Key");
@@ -133,51 +146,27 @@ void RInput::reg_class(mrb_state* ruby, System& system)
 
     mrb_define_const(ruby, keys, "FIRE", mrb_int_value(ruby, RKEY_FIRE));
 
-    rclass = mrb_define_class(ruby, "Input", ruby->object_class);
-    MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
+    rclass = mrb::make_noinit_class<RInput>(ruby, "Input");
+    mrb::set_deleter<RInput>(ruby, [](mrb_state*, void*) {});
+
+    // rclass = mrb_define_class(ruby, "Input", ruby->object_class);
+    // MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
 
     default_input = new RInput(ruby, system);
 
-    mrb_define_class_method(
-        ruby, rclass, "default",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            return mrb::new_data_obj(mrb, default_input);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_class_method<RInput>(
+        ruby, "default", []() { return default_input; });
 
-    mrb_define_method(
-        ruby, rclass, "map",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            auto [code, target, mods] = mrb::get_args<int, int, int>(mrb);
-            // fmt::print("{:x} => {:x}\n", code, target);
-            input->system.map_key(code, target, mods);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(3));
+    mrb::add_method<RInput>(
+        ruby, "map", [](RInput* self, int code, int target, int mods) {
+            self->system.map_key(code, target, mods);
+        });
 
-    mrb_define_class_method(
-        ruby, rclass, "get_clipboard",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            // TODO
-            const char* clip = nullptr; // SDL_GetClipboardText();
-            if (clip == nullptr) { return mrb_nil_value(); }
-            return mrb::to_value(clip, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, rclass, "is_pressed",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            if (mrb_get_argc(mrb) == 1) {
-                auto [code] = mrb::get_args<uint32_t>(mrb);
-                return mrb::to_value(input->system.is_pressed(code), mrb);
-            }
-            auto [code, dev] = mrb::get_args<uint32_t, int>(mrb);
-            return mrb::to_value(input->system.is_pressed(code, dev), mrb);
-        },
-        MRB_ARGS_BLOCK());
+    mrb::add_method<RInput>(
+        ruby, "is_pressed", [](RInput* self, mrb::ArgN n, int code, int dev) {
+            if (n == 1) { dev = -1; }
+            return self->system.is_pressed(code, dev);
+        });
 
     mrb_define_method(
         ruby, rclass, "get_modifiers",

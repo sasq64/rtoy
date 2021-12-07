@@ -47,7 +47,7 @@ public:
     std::array<float, 2> trans = {0.0F, 0.0F};
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0;
-    mrb_value value{};
+    mrb::Value value{};
 
     static inline RClass* rclass;
     //static mrb_data_type dt;

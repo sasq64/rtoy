@@ -1,20 +1,6 @@
 #pragma once
 
 #include "base.hpp"
-#include <type_traits>
-
-extern "C"
-{
-#include <mruby.h>
-#include <mruby/array.h>
-#include <mruby/class.h>
-#include <mruby/compile.h>
-#include <mruby/data.h>
-#include <mruby/proc.h>
-#include <mruby/string.h> // NOLINT
-#include <mruby/value.h>
-#include <mruby/variable.h>
-}
 
 #include <fmt/format.h>
 
@@ -23,6 +9,7 @@ extern "C"
 #include <cassert>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <typeinfo>
 #include <vector>
 
@@ -97,9 +84,8 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
     } else if constexpr (std::is_same_v<TARGET, std::string>) {
         if (mrb_string_p(obj)) {
             return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
-        } else if (mrb_symbol_p(obj)) {
-            return "SYM";
         }
+        if (mrb_symbol_p(obj)) { return "SYM"; }
         throw std::exception();
     } else if constexpr (std::is_same_v<TARGET, bool>) {
         return mrb_bool(obj);
@@ -209,6 +195,15 @@ std::array<T, N> to_array(mrb_value ary, mrb_state* mrb)
         mrb_raise(mrb, E_TYPE_ERROR, "not an array");
     }
     return result;
+}
+
+inline std::optional<std::string> check_exception(mrb_state* ruby)
+{
+    if (ruby->exc != nullptr) {
+        auto obj = mrb_funcall(ruby, mrb_obj_value(ruby->exc), "inspect", 0);
+        return value_to<std::string>(obj);
+    }
+    return std::nullopt;
 }
 
 /*

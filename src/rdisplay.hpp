@@ -22,7 +22,7 @@ class PixConsole;
 class Display : public RLayer
 {
     mrb::Value draw_handler{};
-    mrb_value disp_obj{};
+    mrb::Value disp_obj{};
     mrb_state* ruby = nullptr;
     std::shared_ptr<Screen> window = nullptr;
 

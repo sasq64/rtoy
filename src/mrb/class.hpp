@@ -1,18 +1,7 @@
-
 #pragma once
 
-extern "C"
-{
-#include <mruby.h>
-#include <mruby/array.h>
-#include <mruby/class.h>
-#include <mruby/compile.h>
-#include <mruby/data.h>
-#include <mruby/proc.h>
-#include <mruby/string.h> // NOLINT
-#include <mruby/value.h>
-#include <mruby/variable.h>
-}
+#include "conv.hpp"
+#include "get_args.hpp"
 
 #include <fmt/format.h>
 
@@ -49,7 +38,7 @@ RClass* make_class(mrb_state* mrb, const char* name = class_name<T>(),
     mrb_define_method(
         mrb, rclass, "initialize",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            //fmt::print("Initialize\n");
+            // fmt::print("Initialize\n");
             auto* cls = new T();
             DATA_PTR(self) = (void*)cls;            // NOLINT
             DATA_TYPE(self) = &Lookup<T>::dts[mrb]; // NOLINT
@@ -123,7 +112,8 @@ void add_class_method(mrb_state* ruby, std::string const& name, FN const& fn)
     add_class_method<CLASS>(ruby, name, fn, &FN::operator());
 }
 
-template <typename CLASS, typename SELF, typename FX, typename RET, typename... ARGS>
+template <typename CLASS, typename SELF, typename FX, typename RET,
+    typename... ARGS>
 void add_method(mrb_state* ruby, std::string const& name, FX const& fn,
     RET (FX::*)(SELF, ARGS...) const)
 {
@@ -139,7 +129,8 @@ void add_method(mrb_state* ruby, std::string const& name, FX const& fn,
                 return mrb_nil_value();
             } else {
                 return mrb::to_value(
-                    std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args)), mrb);
+                    std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args)),
+                    mrb);
             }
         },
         MRB_ARGS_REQ(sizeof...(ARGS)));
@@ -170,7 +161,6 @@ void add_method2(
         return std::invoke(PTR, c, args...);
     });
 }
-
 
 template <auto PTR>
 void add_method(mrb_state* ruby, std::string const& name)
