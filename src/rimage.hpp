@@ -12,8 +12,6 @@ namespace gl = gl_wrap;
 class RImage
 {
 public:
-    static inline RClass* rclass = nullptr;
-    // static mrb_data_type dt;
     gl::TexRef texture;
 
     double width() const

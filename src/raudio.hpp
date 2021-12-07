@@ -17,7 +17,6 @@ struct Sound
     float freq = 0;
     int channels = 1;
     static inline RClass* rclass;
-    static mrb_data_type dt;
 };
 
 class RAudio

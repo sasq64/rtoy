@@ -121,7 +121,7 @@ struct classdef
 
 void RConsole::reg_class(mrb_state *ruby)
 {
-    RConsole::rclass = mrb::make_noinit_class<RConsole>(
+    mrb::make_noinit_class<RConsole>(
         ruby, "Console", mrb::get_class<RLayer>(ruby));
     mrb::set_deleter<RConsole>(ruby, [](mrb_state *, void *)
     {});

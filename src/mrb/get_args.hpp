@@ -69,9 +69,9 @@ struct Value
 
     void set_from_val(mrb_state* _mrb, mrb_value v)
     {
-        ptr = std::shared_ptr<void>(&dummy, [this](void*) {
+        ptr = std::shared_ptr<void>(&dummy, [_mrb, v](void*) {
             fmt::print("UNREG\n");
-            mrb_gc_unregister(mrb, val);
+            mrb_gc_unregister(_mrb, v);
         });
         mrb = _mrb;
         val = v;
@@ -83,9 +83,9 @@ struct Value
     Value(mrb_state* _mrb, T* p)
         : mrb{_mrb}, val(mrb::to_value(std::move(p), mrb))
     {
-        ptr = std::shared_ptr<void>(&dummy, [this](void*) {
+        ptr = std::shared_ptr<void>(&dummy, [m=mrb, v=val](void*) {
             fmt::print("UNREG\n");
-            mrb_gc_unregister(mrb, val);
+            mrb_gc_unregister(m, v);
         });
         // Stop value from being garbage collected
         fmt::print("REG\n");

@@ -18,9 +18,6 @@ class RCanvas : public RLayer
 
     mrb::Value current_font;
 
-    //std::array<double, 16> const Id = {
-    //    1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-
     std::pair<double, double> last_point;
 
     gl_wrap::Program program;
@@ -38,10 +35,6 @@ class RCanvas : public RLayer
 
 public:
     void init(mrb_state* mrb);
-    static inline RClass* rclass;
-    static inline mrb_data_type dt{"Canvas",
-        [](mrb_state*,
-            void* data) { /*delete static_cast<GLConsole *>(data); */ }};
 
     void clear() override;
     RCanvas(int w, int h);

@@ -87,7 +87,7 @@ void Display::setup()
         } else {
             cnv->enable(false);
         }
-        mrb_ary_set(ruby, canvases, i, mrb::new_data_obj(ruby, cnv.get()));
+        mrb_ary_set(ruby, canvases, i, mrb::to_value(cnv.get(), ruby));
     }
 
     for (int i = 0; i < 4; i++) {
@@ -98,7 +98,7 @@ void Display::setup()
         } else {
             spr->enable(false);
         }
-        mrb_ary_set(ruby, sprite_fields, i, mrb::new_data_obj(ruby, spr.get()));
+        mrb_ary_set(ruby, sprite_fields, i, mrb::to_value(spr.get(), ruby));
     }
 
     glEnable(GL_BLEND);
