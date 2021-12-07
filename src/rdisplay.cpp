@@ -28,6 +28,7 @@
 #endif
 
 #include <chrono>
+#include <span>
 
 using namespace std::chrono_literals;
 using clk = std::chrono::steady_clock;
@@ -49,7 +50,6 @@ void Display::setup()
     RLayer::height = h;
     gl::setViewport({w, h});
 
-    consoles = mrb_ary_new_capa(ruby, 4);
     canvases = mrb_ary_new_capa(ruby, 4);
     sprite_fields = mrb_ary_new_capa(ruby, 4);
     auto style = Style{0xffffffff, 0x00008000, settings.console_font.string(),
@@ -63,18 +63,20 @@ void Display::setup()
     debug_console->text(0, 0, "DEBUG");
     debug_console->flush();
 
+    std::vector<RConsole*> cptrs;
     auto pixel_console =
         std::make_shared<PixConsole>(256, 256, "data/unscii-16.ttf", 16);
     for (int i = 0; i < 4; i++) {
         auto con = std::make_shared<RConsole>(w, h, style, pixel_console);
+        cptrs.push_back(con.get());
         layers.push_back(con);
         if (console == nullptr) {
             console = con;
         } else {
             con->enable(false);
         }
-        mrb_ary_set(ruby, consoles, i, mrb::new_data_obj(ruby, con.get()));
     }
+    consoles = mrb::to_value(cptrs, ruby);
 
     for (int i = 0; i < 4; i++) {
         auto cnv = std::make_shared<RCanvas>(w, h);

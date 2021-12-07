@@ -120,31 +120,33 @@ void copy_value_to(TARGET* target, mrb_value v, mrb_state* mrb)
 }
 
 //! Convert native type to ruby (mrb_value)
-inline mrb_value to_value(const char* r, mrb_state* mrb = nullptr)
+inline mrb_value to_value(const char* r, mrb_state* mrb)
 {
     return mrb_str_new_cstr(mrb, r);
 }
 
 template <typename RET,
-    std::enable_if_t<std::is_pointer<RET>::value, bool> = true>
-mrb_value to_value(RET&& r, mrb_state* const mrb = nullptr)
+    std::enable_if_t<std::is_pointer<std::remove_reference_t<RET>>::value,
+        bool> = true>
+mrb_value to_value(RET&& r, mrb_state* const mrb)
 {
-    if constexpr (std::is_rvalue_reference_v<decltype(r)>) {
-        using T = typename std::remove_pointer<RET>::type;
-        using LU = Lookup<T>;
-        auto* o = mrb_obj_alloc(mrb, MRB_TT_DATA, LU::rclasses[mrb]);
-        auto obj = mrb_obj_value(o);
-        DATA_PTR(obj) = r;
-        DATA_TYPE(obj) = &LU::dts[mrb];
-        return obj;
-    } else {
-        return RET::pointers_must_be_moved;
-    }
+    // if constexpr (std::is_rvalue_reference_v<decltype(r)>) {
+    using T = typename std::remove_pointer_t<std::remove_reference_t<RET>>;
+    using LU = Lookup<T>;
+    auto* o = mrb_obj_alloc(mrb, MRB_TT_DATA, LU::rclasses[mrb]);
+    auto obj = mrb_obj_value(o);
+    DATA_PTR(obj) = r;
+    DATA_TYPE(obj) = &LU::dts[mrb];
+    return obj;
+    //} else {
+    //    return RET::pointers_must_be_moved;
+    //}
 }
 
 template <typename RET,
-    std::enable_if_t<!std::is_pointer<RET>::value, bool> = true>
-mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
+    std::enable_if_t<!std::is_pointer<std::remove_reference_t<RET>>::value,
+        bool> = true>
+mrb_value to_value(RET const& r, mrb_state* const mrb)
 {
     // fmt::print("toval {}\n", typeid(RET).name());
     if constexpr (std::is_same_v<RET, mrb_value>) {
@@ -162,7 +164,6 @@ mrb_value to_value(RET const& r, mrb_state* const mrb = nullptr)
     } else if constexpr (std::is_same_v<RET, mrb_sym>) {
         return mrb_sym_str(mrb, r);
     } else if constexpr (std::is_convertible_v<RET, mrb_value>) {
-        fmt::print("Converting {}\n", (void*)r.ptr.get());
         return r;
     } else {
         return RET::can_not_convert;
