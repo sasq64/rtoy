@@ -43,14 +43,18 @@ void RTimer::reg_class(mrb_state* ruby)
     /*     }, */
     /*     MRB_ARGS_NONE()); */
 
-    mrb_define_method(
-        ruby, rclass, "seconds",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            return mrb::to_value(
-                mrb::self_to<RTimer>(self)->get_seconds(), mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<&RTimer::get_seconds>(ruby, "seconds");
+//    mrb_define_method(
+//        ruby, rclass, "seconds",
+//        [](mrb_state* mrb, mrb_value self) -> mrb_value {
+//            return mrb::to_value(
+//                mrb::self_to<RTimer>(self)->get_seconds(), mrb);
+//        },
+//        MRB_ARGS_NONE());
 
+    mrb::add_method<RTimer>(ruby, "on_timer", [](RTimer* self, mrb::Block callback) {
+        self->timer_handler = callback;
+    });
     mrb_define_method(
         ruby, rclass, "on_timer",
         [](mrb_state* mrb, mrb_value self) -> mrb_value {

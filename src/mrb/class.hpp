@@ -64,7 +64,7 @@ RClass* make_noinit_class(mrb_state* mrb, const char* name = class_name<T>(),
 template <typename T, typename FN>
 void set_deleter(mrb_state* mrb, FN const& f)
 {
-    Lookup<T>::dts[mrb].dfree = f;
+    Lookup<T>::dts[mrb].dfree = reinterpret_cast<void (*)(mrb_state*, void*)>(+(f));
 }
 
 template <typename T>
