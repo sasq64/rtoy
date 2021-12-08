@@ -1,11 +1,9 @@
 #pragma once
 
 #include <gl/texture.hpp>
-#include <mruby.h>
-#include <mruby/data.h>
 #include <pix/pix.hpp>
 
-struct RClass;
+struct mrb_state;
 
 namespace gl = gl_wrap;
 

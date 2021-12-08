@@ -210,7 +210,7 @@ std::vector<int32_t> Display::dump(int x, int y, int w, int h)
 void Display::reg_class(
     mrb_state* ruby, System& system, Settings const& settings)
 {
-    Display::rclass = mrb::make_noinit_class<Display>(
+    mrb::make_noinit_class<Display>(
         ruby, "Display", mrb::get_class<RLayer>(ruby));
 
     mrb::set_deleter<Display>(ruby, [](mrb_state* /*mrb*/, void* data) {

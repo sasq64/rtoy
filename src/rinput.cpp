@@ -92,9 +92,9 @@ bool RInput::update()
 }
 void RInput::reset()
 {
-    SET_NIL_VALUE(key_handler);
-    SET_NIL_VALUE(click_handler);
-    SET_NIL_VALUE(drag_handler);
+    key_handler.clear();
+    click_handler.clear();
+    drag_handler.clear();
 }
 
 struct Key
@@ -146,11 +146,8 @@ void RInput::reg_class(mrb_state* ruby, System& system)
 
     mrb_define_const(ruby, keys, "FIRE", mrb_int_value(ruby, RKEY_FIRE));
 
-    rclass = mrb::make_noinit_class<RInput>(ruby, "Input");
+    mrb::make_noinit_class<RInput>(ruby, "Input");
     mrb::set_deleter<RInput>(ruby, [](mrb_state*, void*) {});
-
-    // rclass = mrb_define_class(ruby, "Input", ruby->object_class);
-    // MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
 
     default_input = new RInput(ruby, system);
 
@@ -167,42 +164,21 @@ void RInput::reg_class(mrb_state* ruby, System& system)
             if (n == 1) { dev = -1; }
             return self->system.is_pressed(code, dev);
         });
+    mrb::add_method<RInput>(
+        ruby, "get_modifiers", [](RInput*) {
+            return 0;
+        });
 
-    mrb_define_method(
-        ruby, rclass, "get_modifiers",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            // TODO
-            uint32_t mods = 0; // SDL_GetModState();
-            return mrb::to_value(mods, mrb);
-        },
-        MRB_ARGS_BLOCK());
-
-    mrb_define_method(
-        ruby, rclass, "on_key",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&", &input->key_handler);
-            mrb_gc_register(mrb, input->key_handler);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
-    mrb_define_method(
-        ruby, rclass, "on_drag",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&", &input->drag_handler);
-            mrb_gc_register(mrb, input->drag_handler);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
-    mrb_define_method(
-        ruby, rclass, "on_click",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&", &input->click_handler);
-            mrb_gc_register(mrb, input->click_handler);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
+    mrb::add_method<RInput>(
+        ruby, "on_key", [](RInput* self, mrb::Block callback) {
+            self->key_handler = callback;
+        });
+    mrb::add_method<RInput>(
+        ruby, "on_drag", [](RInput* self, mrb::Block callback) {
+            self->drag_handler = callback;
+        });
+    mrb::add_method<RInput>(
+        ruby, "on_click", [](RInput* self, mrb::Block callback) {
+            self->click_handler = callback;
+        });
 }

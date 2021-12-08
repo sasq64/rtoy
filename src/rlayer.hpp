@@ -5,9 +5,6 @@
 
 #include "mrb/mrb_tools.hpp"
 
-struct RClass;
-struct mrb_state;
-
 enum BlendMode
 {
     Blend,

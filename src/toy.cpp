@@ -2,6 +2,7 @@
 #include "toy.hpp"
 
 #include "error.hpp"
+#include "mrb/class.hpp"
 #include "mrb/mrb_tools.hpp"
 #include "raudio.hpp"
 #include "rcanvas.hpp"
@@ -64,6 +65,17 @@ fs::path find_data_root()
     return {};
 }
 
+namespace mrb {
+
+template <typename CLASS, typename N>
+void define_const(mrb_state* ruby, std::string const& name, N value)
+{
+    mrb_define_const(ruby, Lookup<CLASS>::rclasses[ruby], name.c_str(),
+        mrb::to_value(value, ruby));
+}
+
+} // namespace mrb
+
 struct Dummy
 {
     static constexpr const char* class_name() { return "Dummy"; }
@@ -107,14 +119,12 @@ void Toy::init()
     Display::reg_class(ruby, *system, settings);
 
     fmt::print("SYSTEM: {}\n", settings.system);
-    auto* rclass = mrb_define_class(ruby, "Settings", nullptr);
-    mrb_intern_cstr(ruby, settings.system.c_str());
-    mrb_define_const(ruby, rclass, "SYSTEM",
-        mrb_check_intern_cstr(ruby, settings.system.c_str()));
-    mrb_define_const(
-        ruby, rclass, "BOOT_CMD", mrb::to_value(settings.boot_cmd, ruby));
-    mrb_define_const(ruby, rclass, "CONSOLE_FONT",
-        mrb::to_value(settings.console_font.string(), ruby));
+    mrb::make_noinit_class<Settings>(ruby, "Settings");
+    mrb::define_const<Settings>(ruby, "SYSTEM", mrb::Symbol{settings.system});
+    mrb::define_const<Settings>(ruby, "BOOT_CMD", settings.boot_cmd);
+    mrb::define_const<Settings>(
+        ruby, "CONSOLE_FONT", settings.console_font.string());
+
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "puts",

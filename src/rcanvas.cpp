@@ -1,6 +1,5 @@
 #include "rcanvas.hpp"
 
-#include "mrb/class.hpp"
 #include "mrb/mrb_tools.hpp"
 #include "rimage.hpp"
 
@@ -9,8 +8,6 @@
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <pix/pix.hpp>
-
-#include <mruby/class.h>
 
 #include <array>
 #include <memory>
@@ -42,7 +39,6 @@ static std::string fragment_shader{R"gl(
 
 RCanvas::RCanvas(int w, int h) : RLayer{w, h}
 {
-
     program = gl_wrap::Program(gl_wrap::VertexShader{vertex_shader},
         gl_wrap::FragmentShader{fragment_shader});
 }
@@ -186,7 +182,7 @@ void RCanvas::draw_image(
 {
     if (style == nullptr) { style = &current_style; }
     set_target();
-    glLineWidth(current_style.line_width);
+    glLineWidth(style->line_width);
     pix::set_colors(style->fg, style->bg);
     image->draw(x, y, scale);
 }

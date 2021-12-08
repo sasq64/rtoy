@@ -100,13 +100,6 @@ struct ArgN
     operator int() const { return n; } // NOLINT
 };
 
-struct Symbol
-{
-    std::string sym;
-    bool operator==(const char* t) const { return std::string(t) == sym; }
-    operator std::string() { return sym; } // NOLINT
-};
-
 template <typename ARG>
 size_t get_spec(
     mrb_state* mrb, std::vector<char>&, std::vector<void*>&, ARG*);

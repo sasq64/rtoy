@@ -1,12 +1,9 @@
 #pragma once
 
 #include <array>
-#include <mruby.h>
-#include <mruby/data.h>
 #include <pix/font.hpp>
 #include <string>
 
-struct RClass;
 class RImage;
 struct mrb_state;
 

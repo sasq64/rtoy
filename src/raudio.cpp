@@ -63,33 +63,16 @@ void RAudio::set_frequency(int channel, int hz)
 void RAudio::reg_class(
     mrb_state *ruby, System &system, Settings const &settings)
 {
-    rclass = mrb::make_noinit_class<RAudio>(ruby, "Audio");
+    mrb::make_noinit_class<RAudio>(ruby, "Audio");
     mrb::set_deleter<RAudio>(ruby, [](mrb_state *, void *)
     {});
-    Sound::rclass = mrb::make_class<Sound>(ruby, "Sound");
+    mrb::make_class<Sound>(ruby, "Sound");
 
-//    rclass = mrb_define_class(ruby, "Audio", ruby->object_class);
-//    Sound::rclass = mrb_define_class(ruby, "Sound", ruby->object_class);
-//    MRB_SET_INSTANCE_TT(RAudio::rclass, MRB_TT_DATA);
-//    MRB_SET_INSTANCE_TT(Sound::rclass, MRB_TT_DATA);
 
     default_audio = new RAudio(ruby, system, settings);
 
     mrb::attr_reader<&Sound::channels>(ruby, "channels");
     mrb::attr_reader<&Sound::freq>(ruby, "freq");
-//    mrb_define_method(
-//        ruby, Sound::rclass, "channels",
-//        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-//            return mrb::to_value(mrb::self_to<Sound>(self)->channels, mrb);
-//        },
-//        MRB_ARGS_NONE());
-
-//    mrb_define_method(
-//        ruby, Sound::rclass, "freq",
-//        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-//            return mrb::to_value(mrb::self_to<Sound>(self)->freq, mrb);
-//        },
-//        MRB_ARGS_NONE());
 
     mrb::add_method<RAudio>(ruby, "play", [](RAudio *self, mrb::ArgN n, Sound *sound, int chan, float freq)
     {
@@ -104,13 +87,6 @@ void RAudio::reg_class(
 
     mrb::add_class_method<RAudio>(ruby, "default", []
     { return RAudio::default_audio; });
-
-//    mrb_define_class_method(
-//        ruby, rclass, "default",
-//        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-//            return mrb::new_data_obj(mrb, default_audio);
-//        },
-//        MRB_ARGS_NONE());
 
     mrb::add_method<RAudio>(ruby, "on_audio", [](RAudio *self, mrb::Block block)
     {

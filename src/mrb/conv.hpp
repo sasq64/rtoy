@@ -38,6 +38,13 @@ struct Lookup
     static inline std::unordered_map<mrb_state*, mrb_data_type> dts;
 };
 
+struct Symbol
+{
+    std::string sym;
+    bool operator==(const char* t) const { return std::string(t) == sym; }
+    operator std::string() { return sym; } // NOLINT
+};
+
 //! Convert ruby (mrb_value) type to native
 template <typename TARGET>
 TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
@@ -151,6 +158,8 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
         return mrb_sym_str(mrb, r);
     } else if constexpr (std::is_convertible_v<RET, mrb_value>) {
         return r;
+    } else if constexpr (std::is_same_v<RET, Symbol>) {
+        return mrb_check_intern_cstr(mrb, r.sym.c_str());
     } else {
         return RET::can_not_convert;
     }

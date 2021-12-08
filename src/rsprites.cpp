@@ -287,34 +287,12 @@ void RSprites::reg_class(mrb_state *ruby)
         }
     });
 
-    //    RSprites::rclass = mrb_define_class(ruby, "Sprites", RLayer::rclass);
-    //    MRB_SET_INSTANCE_TT(RSprites::rclass, MRB_TT_DATA);
-    //
-    //    RSprite::rclass = mrb_define_class(ruby, "Sprite",
-    //    ruby->object_class); MRB_SET_INSTANCE_TT(RSprite::rclass,
-    //    MRB_TT_DATA);
-
     mrb::add_method<RSprites>(
         ruby, "add_sprite", [](RSprites* self, mrb_state* mrb, RImage* image) {
             auto* spr = self->add_sprite(image, 0);
             spr->value = mrb::Value{mrb, spr};///mrb::new_data_obj(mrb, spr);
             return spr->value;
         });
-
-    /* mrb_define_method( */
-    /*     ruby, RSprites::rclass, "add_sprite", */
-    /*     [](mrb_state *mrb, mrb_value self) -> mrb_value */
-    /*     { */
-    /*         auto *ptr = mrb::self_to<RSprites>(self); */
-    /*         RImage *image = nullptr; */
-    /*         mrb_get_args(mrb, "d", &image, mrb::get_data_type<RImage>(mrb)); */
-    /*         auto* spr = ptr->add_sprite(image, 0); */
-    /*         spr->value = mrb::Value{mrb, spr};///mrb::new_data_obj(mrb, spr); */
-    /*         return spr->value; */
-    /*         //spr->value = mrb::new_data_obj(mrb, spr); */
-    /*         //return spr->value; */
-    /*     }, */
-    /*     MRB_ARGS_REQ(3)); */
 
     mrb_define_method(
         ruby, rclass, "on_collision",
