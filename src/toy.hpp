@@ -54,6 +54,7 @@ class Toy
     static inline bool do_exit = false;
     static void exit() { do_exit = true; }
 
+    static void require(mrb_state* mrb, std::string const& name);
 public:
     explicit Toy(Settings const& settings);
 

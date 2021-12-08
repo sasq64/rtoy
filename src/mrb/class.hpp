@@ -64,7 +64,8 @@ RClass* make_noinit_class(mrb_state* mrb, const char* name = class_name<T>(),
 template <typename T, typename FN>
 void set_deleter(mrb_state* mrb, FN const& f)
 {
-    Lookup<T>::dts[mrb].dfree = reinterpret_cast<void (*)(mrb_state*, void*)>(+(f));
+    Lookup<T>::dts[mrb].dfree =
+        reinterpret_cast<void (*)(mrb_state*, void*)>(+(f));
 }
 
 template <typename T>
@@ -83,6 +84,40 @@ template <typename T>
 mrb_value new_data_obj(mrb_state* mrb)
 {
     return mrb_obj_new(mrb, Lookup<T>::rclasses[mrb], 0, nullptr);
+}
+
+template <typename CLASS, typename N>
+void define_const(mrb_state* ruby, std::string const& name, N value)
+{
+    mrb_define_const(ruby, Lookup<CLASS>::rclasses[ruby], name.c_str(),
+        mrb::to_value(value, ruby));
+}
+
+template <typename FX, typename RET, typename... ARGS>
+void add_kernel_function(mrb_state* ruby, std::string const& name, FX const& fn,
+    RET (FX::*)(ARGS...) const)
+{
+    static FX _fn{fn};
+    mrb_define_module_function(
+        ruby, ruby->kernel_module, name.c_str(),
+        [](mrb_state* mrb, mrb_value) -> mrb_value {
+            FX fn{_fn};
+            auto args = mrb::get_args<ARGS...>(mrb);
+            if constexpr (std::is_same<RET, void>()) {
+                std::apply(fn, args);
+                return mrb_nil_value();
+            } else {
+                auto res = std::apply(fn, args);
+                return mrb::to_value(res, mrb);
+            }
+        },
+        MRB_ARGS_REQ(sizeof...(ARGS)));
+}
+
+template <typename FN>
+void add_kernel_function(mrb_state* ruby, std::string const& name, FN const& fn)
+{
+    add_kernel_function(ruby, name, fn, &FN::operator());
 }
 
 template <typename CLASS, typename FX, typename RET, typename... ARGS>
