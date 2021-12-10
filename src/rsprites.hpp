@@ -92,7 +92,7 @@ class RSprites : public RLayer
 public:
     RSprite* add_sprite(RImage* image, int flags);
     RSprite* add_particle(int size, uint32_t color);
-    static void remove_sprite(RSprite* spr);
+    void remove_sprite(RSprite* spr);
 
     static inline RClass* rclass;
     static mrb_data_type dt;

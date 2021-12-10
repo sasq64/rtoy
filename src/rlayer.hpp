@@ -46,6 +46,9 @@ protected:
 
     BlendMode blend_mode = BlendMode::Blend;
 
+    static inline mrb::Symbol blend_sym;
+    static inline mrb::Symbol add_sym;
+
     mrb::Value stylep;
     RStyle& current_style;
 

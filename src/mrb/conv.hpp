@@ -40,9 +40,16 @@ struct Lookup
 
 struct Symbol
 {
-    std::string sym;
-    bool operator==(const char* t) const { return std::string(t) == sym; }
-    operator std::string() { return sym; } // NOLINT
+    Symbol() = default;
+    Symbol(mrb_sym s) : sym(s) {}
+    Symbol(mrb_state* mrb, std::string const& name) {
+        sym = mrb_intern_cstr(mrb, name.c_str());
+    }
+    // std::string sym;
+    mrb_sym sym{};
+    // bool operator==(const char* t) const { return std::string(t) == sym; }
+    // operator std::string() { return sym; } // NOLINT
+    operator uint32_t() { return sym; } // NOLINT
 };
 
 //! Convert ruby (mrb_value) type to native
@@ -82,6 +89,8 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
             mrb_raise(mrb, E_TYPE_ERROR, "not an array");
         }
         return result;
+    } else if constexpr (std::is_same_v<TARGET, Symbol>) {
+        return Symbol{mrb_symbol(obj)};
     } else if constexpr (std::is_same_v<TARGET, std::string_view>) {
         if (mrb_string_p(obj)) {
             return std::string_view(
@@ -92,6 +101,7 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
         if (mrb_string_p(obj)) {
             return std::string(RSTRING_PTR(obj), RSTRING_LEN(obj)); // NOLINT
         }
+        // TODO: Find real string
         if (mrb_symbol_p(obj)) { return "SYM"; }
         throw std::exception();
     } else if constexpr (std::is_same_v<TARGET, bool>) {
@@ -99,6 +109,7 @@ TARGET value_to(mrb_value obj, mrb_state* mrb = nullptr)
     } else if constexpr (std::is_arithmetic_v<TARGET>) {
         if (mrb_float_p(obj)) { return static_cast<TARGET>(mrb_float(obj)); }
         if (mrb_fixnum_p(obj)) { return static_cast<TARGET>(mrb_fixnum(obj)); }
+        if (mrb_symbol_p(obj)) { return static_cast<TARGET>(mrb_symbol(obj)); }
         throw std::exception();
     } else {
         return static_cast<TARGET>(obj);
@@ -159,7 +170,9 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
     } else if constexpr (std::is_convertible_v<RET, mrb_value>) {
         return r;
     } else if constexpr (std::is_same_v<RET, Symbol>) {
-        return mrb_check_intern_cstr(mrb, r.sym.c_str());
+        fmt::print("Returning {}\n", r.sym);
+        return mrb_symbol_value(r.sym);
+        // return mrb_check_intern_cstr(mrb, r.sym.c_str());
     } else {
         return RET::can_not_convert;
     }

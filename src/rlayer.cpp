@@ -67,22 +67,26 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb::attr_accessor<&RStyle::bg>(ruby, "bg");
     mrb::attr_accessor<&RStyle::line_width>(ruby, "line_width");
 
+    blend_sym = mrb::Symbol{ruby, "blend"};
+    add_sym = mrb::Symbol{ruby, "add"};
+
     mrb::add_method<RStyle>(
         ruby, "blend_mode=", [](RStyle* style, mrb::Symbol s) {
-          if (s == "blend") {
-              style->blend_mode = BlendMode::Blend;
-          } else if (s == "add") {
-              style->blend_mode = BlendMode::Add;
+            if (s == blend_sym) {
+                style->blend_mode = BlendMode::Blend;
+            } else if (s == add_sym) {
+                style->blend_mode = BlendMode::Add;
             } else {
-                // throw std::exception();
+                throw std::exception();
             }
         });
-        mrb::add_method<RStyle>(
-            ruby, "blend_mode", [](RStyle* style, mrb_state* mrb) {
-            mrb_sym sym = (style->blend_mode == BlendMode::Blend)
-                              ? mrb_intern_lit(mrb, "blend")
-                              : mrb_intern_lit(mrb, "add");
-            return mrb_symbol_value(mrb_intern_lit(mrb, "dummy"));
+    mrb::add_method<RStyle>(
+        ruby, "blend_mode", [](RStyle* style, mrb_state* mrb) {
+            return style->blend_mode == BlendMode::Blend ? blend_sym : add_sym;
+            /* mrb_sym sym = (style->blend_mode == BlendMode::Blend) */
+            /*                   ? mrb_intern_lit(mrb, "blend") */
+            /*                   : mrb_intern_lit(mrb, "add"); */
+            /* return mrb_symbol_value(mrb_intern_lit(mrb, "dummy")); */
         });
 
     mrb::add_method<RLayer>(

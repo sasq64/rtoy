@@ -57,13 +57,13 @@ struct Value
     void set_from_val(mrb_state* _mrb, mrb_value v)
     {
         ptr = std::shared_ptr<void>(&dummy, [_mrb, v](void*) {
-            fmt::print("UNREG\n");
+            //fmt::print("UNREG\n");
             mrb_gc_unregister(_mrb, v);
         });
         mrb = _mrb;
         val = v;
         // Stop value from being garbage collected
-        fmt::print("REG\n");
+        //fmt::print("REG\n");
         mrb_gc_register(mrb, val);
     }
     template <typename T>
@@ -71,11 +71,11 @@ struct Value
         : mrb{_mrb}, val(mrb::to_value(std::move(p), mrb))
     {
         ptr = std::shared_ptr<void>(&dummy, [m=mrb, v=val](void*) {
-            fmt::print("UNREG\n");
+            //fmt::print("UNREG\n");
             mrb_gc_unregister(m, v);
         });
         // Stop value from being garbage collected
-        fmt::print("REG\n");
+        //fmt::print("REG\n");
         mrb_gc_register(mrb, val);
     }
 
@@ -108,7 +108,7 @@ size_t get_spec(
     mrb_state* mrb, std::vector<char>& target, std::vector<void*>&, mrb_state**)
 {
     // Skip mrb_state, we provide it ourselves
-    fmt::print("SKIP\n");
+    //fmt::print("SKIP\n");
     return 0; // target.size();
 }
 
@@ -262,10 +262,10 @@ template <typename TARGET, typename SOURCE>
 auto mrb_to(SOURCE const& s, mrb_state* mrb)
 {
     if constexpr (std::is_same_v<mrb_state*, TARGET>) {
-        fmt::print("MRBSTATE\n");
+        //fmt::print("MRBSTATE\n");
         return mrb;
     } else if constexpr (std::is_same_v<Symbol, TARGET>) {
-        return Symbol{std::string{mrb_sym_name(mrb, s)}};
+        return Symbol{mrb_sym(s)};
     } else if constexpr (std::is_same_v<ArgN, SOURCE>) {
         return TARGET{mrb_get_argc(mrb)};
     } else if constexpr (std::is_same_v<Block, TARGET>) {
