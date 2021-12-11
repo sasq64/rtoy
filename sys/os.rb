@@ -212,7 +212,9 @@ module OS
                 m.instance_eval(src, name, 1)
             end
             while f.alive? do
-                break if block_given? and yield
+                # TODO: This doesnt work anymore. block_given? is true
+                # but yield breaks
+                #break if block_given? and yield
                 f.resume
                 mods = Input.default.get_modifiers()
                 if Input.default.is_pressed('c'.ord)

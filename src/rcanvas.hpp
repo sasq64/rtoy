@@ -6,7 +6,7 @@
 #include <gl/texture.hpp>
 #include "gl/program.hpp"
 
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include <mruby.h>
 #include <mruby/data.h>
 
@@ -16,10 +16,7 @@ class RCanvas : public RLayer
 {
     std::shared_ptr<gl_wrap::Texture> canvas;
 
-    mrb::RubyPtr current_font;
-
-    //std::array<double, 16> const Id = {
-    //    1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+    mrb::Value current_font;
 
     std::pair<double, double> last_point;
 
@@ -38,16 +35,12 @@ class RCanvas : public RLayer
 
 public:
     void init(mrb_state* mrb);
-    static inline RClass* rclass;
-    static inline mrb_data_type dt{"Canvas",
-        [](mrb_state*,
-            void* data) { /*delete static_cast<GLConsole *>(data); */ }};
 
     void clear() override;
     RCanvas(int w, int h);
     void render(RLayer const* parent) override;
     void reset() override;
 
-    static void reg_class(mrb_state* ruby);
+    static void reg_class(mrb_state* self);
 };
 

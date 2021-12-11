@@ -47,10 +47,10 @@ public:
     std::array<float, 2> trans = {0.0F, 0.0F};
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0;
-    mrb_value value{};
+    mrb::Value value{};
 
     static inline RClass* rclass;
-    static mrb_data_type dt;
+    //static mrb_data_type dt;
 
     ~RSprite() { delete collider; }
 
@@ -62,7 +62,7 @@ struct CollisionGroup
 {
     uint32_t from = 0;
     uint32_t to = 0;
-    mrb::RubyPtr handler;
+    mrb::Value handler;
 };
 
 struct SpriteBatch
@@ -79,7 +79,7 @@ class RSprites : public RLayer
     SpriteBatch fixed_batch;
     SpriteBatch particle_batch;
     gl_wrap::Program program;
-    mrb_state* ruby;
+    //mrb_state* ruby;
     void purge();
     void collide();
     bool draw_batch(SpriteBatch& batch);
@@ -92,7 +92,7 @@ class RSprites : public RLayer
 public:
     RSprite* add_sprite(RImage* image, int flags);
     RSprite* add_particle(int size, uint32_t color);
-    static void remove_sprite(RSprite* spr);
+    void remove_sprite(RSprite* spr);
 
     static inline RClass* rclass;
     static mrb_data_type dt;

@@ -1,5 +1,7 @@
 #include "rdisplay.hpp"
 
+#include "mrb/class.hpp"
+#include "mrb/get_args.hpp"
 #include "mruby/array.h"
 #include "mruby/value.h"
 
@@ -10,13 +12,14 @@
 
 #include "error.hpp"
 #include "gl/functions.hpp"
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "pix/pixel_console.hpp"
 
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
 #include <mruby/compile.h>
 #include <pix/pix.hpp>
+
 #ifdef __APPLE__
 #    include "TargetConditionals.h"
 #    if TARGET_OS_OSX
@@ -25,16 +28,10 @@
 #endif
 
 #include <chrono>
+#include <span>
+
 using namespace std::chrono_literals;
 using clk = std::chrono::steady_clock;
-
-mrb_data_type Display::dt{"Display", [](mrb_state*, void* data) {
-                              auto* display = static_cast<Display*>(data);
-                              // SET_NIL_VALUE(display->draw_handler);
-                              if (display != Display::default_display) {
-                                  delete display;
-                              }
-                          }};
 
 Display::Display(mrb_state* state, System& system, Settings const& _settings)
     : RLayer(0, 0), ruby(state), settings{_settings}
@@ -53,7 +50,6 @@ void Display::setup()
     RLayer::height = h;
     gl::setViewport({w, h});
 
-    consoles = mrb_ary_new_capa(ruby, 4);
     canvases = mrb_ary_new_capa(ruby, 4);
     sprite_fields = mrb_ary_new_capa(ruby, 4);
     auto style = Style{0xffffffff, 0x00008000, settings.console_font.string(),
@@ -67,18 +63,20 @@ void Display::setup()
     debug_console->text(0, 0, "DEBUG");
     debug_console->flush();
 
+    std::vector<RConsole*> cptrs;
     auto pixel_console =
         std::make_shared<PixConsole>(256, 256, "data/unscii-16.ttf", 16);
     for (int i = 0; i < 4; i++) {
         auto con = std::make_shared<RConsole>(w, h, style, pixel_console);
+        cptrs.push_back(con.get());
         layers.push_back(con);
         if (console == nullptr) {
             console = con;
         } else {
             con->enable(false);
         }
-        mrb_ary_set(ruby, consoles, i, mrb::new_data_obj(ruby, con.get()));
     }
+    consoles = mrb::to_value(cptrs, ruby);
 
     for (int i = 0; i < 4; i++) {
         auto cnv = std::make_shared<RCanvas>(w, h);
@@ -89,7 +87,7 @@ void Display::setup()
         } else {
             cnv->enable(false);
         }
-        mrb_ary_set(ruby, canvases, i, mrb::new_data_obj(ruby, cnv.get()));
+        mrb_ary_set(ruby, canvases, i, mrb::to_value(cnv.get(), ruby));
     }
 
     for (int i = 0; i < 4; i++) {
@@ -100,7 +98,7 @@ void Display::setup()
         } else {
             spr->enable(false);
         }
-        mrb_ary_set(ruby, sprite_fields, i, mrb::new_data_obj(ruby, spr.get()));
+        mrb_ary_set(ruby, sprite_fields, i, mrb::to_value(spr.get(), ruby));
     }
 
     glEnable(GL_BLEND);
@@ -111,6 +109,7 @@ void Display::setup()
 bool Display::begin_draw()
 {
     pix::set_transform(Id);
+    // draw_handler();
     call_proc(ruby, draw_handler, 0);
     return false;
 }
@@ -127,9 +126,9 @@ void Display::end_draw()
     glScissor(scissor[0], scissor[1], width - scissor[2] * 2,
         height - scissor[3] * 2);
 
-
     auto rt = clk::now() - t;
-    long clear_t = std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
+    long clear_t =
+        std::chrono::duration_cast<std::chrono::milliseconds>(rt).count();
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -176,15 +175,48 @@ void Display::reset()
     console->enable(true);
     canvas->enable(true);
     sprite_field->enable(true);
+    draw_handler.clear();
+}
 
-    SET_NIL_VALUE(draw_handler);
+int32_t Display::dump(int x, int y)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    uint32_t v = 0;
+    glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
+    // Little endian, as bytes means we get ABGR 32 bit
+    return static_cast<int32_t>(
+        ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
+}
+
+std::vector<int32_t> Display::dump(int x, int y, int w, int h)
+{
+    std::vector<int32_t> result;
+    auto* ptr = new uint32_t[w * h];
+    memset(ptr, 0xff, w * h * 4);
+    y = height - (y + h);
+    glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
+    result.resize(w * h);
+    int i = 0;
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            auto v = ptr[x + (h - 1 - y) * w];
+            result[i] = static_cast<int32_t>(
+                ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
+        }
+    }
+    return result;
 }
 
 void Display::reg_class(
     mrb_state* ruby, System& system, Settings const& settings)
 {
-    Display::rclass = mrb_define_class(ruby, "Display", RLayer::rclass);
-    MRB_SET_INSTANCE_TT(Display::rclass, MRB_TT_DATA);
+    mrb::make_noinit_class<Display>(
+        ruby, "Display", mrb::get_class<RLayer>(ruby));
+
+    mrb::set_deleter<Display>(ruby, [](mrb_state* /*mrb*/, void* data) {
+        auto* display = static_cast<Display*>(data);
+        if (display != Display::default_display) { delete display; }
+    });
 
     if (Display::default_display == nullptr) {
         Display::default_display = new Display(ruby, system, settings);
@@ -193,194 +225,58 @@ void Display::reg_class(
     }
 
     Display::default_display->disp_obj =
-        mrb::new_data_obj(ruby, Display::default_display);
-    mrb_gc_register(ruby, Display::default_display->disp_obj);
+        mrb::Value{ruby, Display::default_display};
 
-    mrb_define_class_method(
-        ruby, Display::rclass, "default",
-        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value {
-            return Display::default_display->disp_obj;
-        },
-        MRB_ARGS_NONE());
+    mrb::add_class_method<Display>(
+        ruby, "default", [] { return Display::default_display->disp_obj; });
 
-    mrb_define_method(
-        ruby, Display::rclass, "mouse_ptr",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            RImage* image = nullptr;
-            mrb_get_args(mrb, "d", &image, &RImage::dt);
+    mrb::add_method<Display>(
+        ruby, "mouse_ptr", [](Display* display, RImage* image) {
             display->mouse_cursor = display->sprite_field->add_sprite(image, 1);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(3));
+        });
 
-    mrb_define_method(
-        ruby, Display::rclass, "width",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::to_value(display->width, mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, Display::rclass, "height",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::to_value(display->height, mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, Display::rclass, "on_draw",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            mrb_get_args(mrb, "&!", &display->draw_handler);
-            mrb_gc_register(mrb, display->draw_handler);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
+    mrb::add_method<Display>(
+        ruby, "on_draw", [](Display* display, mrb::Block block) {
+            display->draw_handler = block;
+        });
 
-    mrb_define_method(
-        ruby, Display::rclass, "console",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::new_data_obj(mrb, display->console.get());
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<Display>(
+        ruby, "console", [](Display* self) { return self->console.get(); });
+    mrb::add_method<Display>(
+        ruby, "canvas", [](Display* self) { return self->canvas.get(); });
+    mrb::add_method<Display>(ruby, "sprite_field",
+        [](Display* self) { return self->sprite_field.get(); });
 
-    mrb_define_method(
-        ruby, Display::rclass, "consoles",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return display->consoles;
-        },
-        MRB_ARGS_NONE());
+    mrb::attr_reader<&Display::consoles>(ruby, "consoles");
+    mrb::attr_reader<&Display::canvases>(ruby, "canvases");
+    mrb::attr_reader<&Display::sprite_fields>(ruby, "sprite_fields");
 
-    mrb_define_method(
-        ruby, Display::rclass, "canvas",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::new_data_obj(mrb, display->canvas.get());
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<Display>(
+        ruby, "reset", [](Display* self) { self->reset(); });
 
-    mrb_define_method(
-        ruby, Display::rclass, "canvases",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return display->canvases;
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<Display>(ruby, "dump",
+        [](Display* display, mrb_state* mrb, mrb::ArgN n, int x, int y, int w,
+            int h) {
+            if (n == 2) { return mrb::to_value(display->dump(x, y), mrb); }
+            return mrb::to_value(display->dump(x, y, w, h), mrb);
+        });
 
-    mrb_define_method(
-        ruby, Display::rclass, "sprite_field",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::new_data_obj(mrb, display->sprite_field.get());
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<Display>(ruby, "bench_start",
+        [](Display* self, int) { self->bench_start = clk::now(); });
 
-    mrb_define_method(
-        ruby, Display::rclass, "sprite_fields",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return display->sprite_fields;
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<Display>(ruby, "bench_end", [](Display* self, int i) {
+        self->bench_times[i] =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                clk::now() - self->bench_start)
+                .count();
+    });
 
-    mrb_define_method(
-        ruby, Display::rclass, "reset",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            display->reset();
-            return mrb_nil_value();
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<Display>(ruby, "clear", [](Display* self) {
+        for (auto&& layer : self->layers) {
+            layer->clear();
+        }
+        self->end_draw();
+    });
 
-    mrb_define_method(
-        ruby, Display::rclass, "dump",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            display->end_draw();
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            if (mrb_get_argc(mrb) == 2) {
-                auto [x, y] = mrb::get_args<int, int>(mrb);
-                uint8_t v[4];
-                glReadPixels(x, display->height - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
-                // Little endian, as bytes means we get ABGR 32 bit
-                int rgb = (v[0] << 16) | (v[1] << 8) | v[2]; 
-                fmt::print("{:02x} {:02x} {:02x} {:02x} - > {:08x}\n", v[0], v[1], v[2], v[3], rgb);
-                return mrb::to_value(rgb, mrb);
-            }
-
-            auto [x, y, w, h] = mrb::get_args<int, int, int, int>(mrb);
-            auto* ptr = new uint32_t[w * h];
-            memset(ptr, 0xff, w * h * 4);
-
-            y = display->height - (y + h);
-
-            glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
-
-            auto a = mrb_ary_new_capa(mrb, w * h);
-            int i = 0;
-            for (y = 0; y < h; y++) {
-                for (x = 0; x < w; x++) {
-                    auto v = ptr[x + (h - 1 - y) * w];
-                    int rgb = static_cast<int>(
-                        ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
-                    fmt::print("{:08x} - > {:08x}\n", v, rgb);
-                    mrb_ary_set(mrb, a, i++, mrb_int_value(mrb, rgb));
-                }
-            }
-            return a;
-        },
-        MRB_ARGS_REQ(4));
-
-    mrb_define_method(
-        ruby, Display::rclass, "bench_start",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            display->bench_start = clk::now();
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, Display::rclass, "bench_end",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            auto [i] = mrb::get_args<int>(mrb);
-            display->bench_times[i] =
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    clk::now() - display->bench_start)
-                    .count();
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_method(
-        ruby, Display::rclass, "clear",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            for (auto&& layer : display->layers) {
-                layer->clear();
-            }
-            display->end_draw();
-            return mrb_nil_value();
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, Display::rclass, "bg=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [av] = mrb::get_args<mrb_value>(mrb);
-            auto* display = mrb::self_to<Display>(self);
-            display->bg = mrb::to_array<float, 4>(av, mrb);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, Display::rclass, "bg",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* display = mrb::self_to<Display>(self);
-            return mrb::to_value(display->bg, mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::attr_accessor<&Display::bg>(ruby, "bg");
 }

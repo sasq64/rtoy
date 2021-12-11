@@ -2,7 +2,8 @@
 #include "toy.hpp"
 
 #include "error.hpp"
-#include "mrb_tools.hpp"
+#include "mrb/class.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "raudio.hpp"
 #include "rcanvas.hpp"
 #include "rconsole.hpp"
@@ -64,6 +65,51 @@ fs::path find_data_root()
     return {};
 }
 
+void Toy::require(mrb_state* mrb, std::string const& name)
+{
+    fmt::print("Require {}\n", name);
+
+    auto parts = utils::split(ruby_path, ":"s);
+    std::optional<fs::path> to_load;
+    for (auto const& part : parts) {
+        auto rb_file = fs::path(part) / name;
+        if (rb_file.extension() == "") { rb_file.replace_extension(".rb"); }
+        if (fs::exists(rb_file)) {
+            to_load = rb_file;
+            break;
+        }
+    }
+    if (!to_load) {
+        mrb_raise(mrb, mrb->object_class,
+            fmt::format("'{}' not found", name).c_str());
+    }
+    auto rb_file = fs::canonical(*to_load);
+    auto modified = fs::last_write_time(rb_file);
+
+    auto it = already_loaded.find(rb_file.string());
+
+    if (it != already_loaded.end() && it->second == modified) {
+        fmt::print("{} already loaded\n", rb_file.string());
+        return;
+    }
+    already_loaded[rb_file.string()] = modified;
+
+    FILE* fp = fopen(rb_file.string().c_str(), "rb");
+    if (fp != nullptr) {
+        auto* ctx = mrbc_context_new(mrb);
+        ctx->capture_errors = true;
+        mrbc_filename(mrb, ctx, name.c_str());
+        ctx->lineno = 1;
+        mrb_load_file_cxt(mrb, fp, ctx);
+        mrbc_context_free(mrb, ctx);
+        fclose(fp);
+        if (auto err = mrb::check_exception(mrb)) {
+            fmt::print("REQUIRE Error: {}\n", *err);
+            ::exit(1);
+        }
+    }
+}
+
 void Toy::init()
 {
     ruby = mrb_open();
@@ -99,128 +145,40 @@ void Toy::init()
     Display::reg_class(ruby, *system, settings);
 
     fmt::print("SYSTEM: {}\n", settings.system);
-    auto* rclass = mrb_define_class(ruby, "Settings", nullptr);
-    mrb_intern_cstr(ruby, settings.system.c_str());
-    mrb_define_const(ruby, rclass, "SYSTEM",
-        mrb_check_intern_cstr(ruby, settings.system.c_str()));
-    mrb_define_const(
-        ruby, rclass, "BOOT_CMD", mrb::to_value(settings.boot_cmd, ruby));
-    mrb_define_const(ruby, rclass, "CONSOLE_FONT",
-        mrb::to_value(settings.console_font.string(), ruby));
 
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "puts",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto n = mrb_get_argc(mrb);
-            if (n == 0) {
-                Display::default_display->console->text("\n");
-                return mrb_nil_value();
-            }
-            auto [val] = mrb::get_args<mrb_value>(mrb);
-            // TODO: Dont call if already string
-            auto sval = mrb_funcall(mrb, val, "to_s", 0);
+    auto* rclass = mrb::make_noinit_class<Settings>(ruby, "Settings");
+    mrb::define_const<Settings>(ruby, "SYSTEM", mrb::Symbol{ruby, settings.system});
+    mrb::define_const<Settings>(ruby, "BOOT_CMD", settings.boot_cmd);
+    mrb::define_const<Settings>(
+        ruby, "CONSOLE_FONT", settings.console_font.string());
 
-            auto text = mrb::to<std::string>(sval) + "\n";
-            Display::default_display->console->text(text);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    mrb::add_kernel_function(ruby, "puts", [](mrb_state* mrb, mrb_value val) {
+        auto sval = mrb_funcall(mrb, val, "to_s", 0);
+        auto text = mrb::value_to<std::string>(sval) + "\n";
+        Display::default_display->console->text(text);
+    });
 
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "exit",
-        [](mrb_state* /*mrb*/, mrb_value /*self*/) -> mrb_value {
-            Toy::exit();
-            return mrb_nil_value();
-        },
-        MRB_ARGS_NONE());
+    mrb::add_kernel_function(ruby, "exit", [] {
+        Toy::exit();
+        puts("EXIT");
+    });
+    mrb::add_kernel_function(ruby, "assert", [](bool what) { assert(what); });
 
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "set_error_handler",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            mrb_get_args(mrb, "&!", &Toy::error_handler);
-            mrb_gc_register(mrb, Toy::error_handler);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "assert",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [what] = mrb::get_args<bool>(mrb);
-            (void)what;
-            assert(what);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    mrb::add_kernel_function(ruby, "file_time", [](std::string const& name) {
+        auto rb_file = fs::canonical(name);
+        auto modified = fs::last_write_time(rb_file);
+        return static_cast<double>(to_time_t(modified));
+    });
 
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "file_time",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [name] = mrb::get_args<std::string>(mrb);
-            auto rb_file = fs::canonical(name);
-            auto modified = fs::last_write_time(rb_file);
-            auto tt = static_cast<double>(to_time_t(modified));
-            return mrb::to_value(tt, mrb);
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "require",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [name] = mrb::get_args<std::string>(mrb);
-            fmt::print("Require {}\n", name);
-
-            auto parts = utils::split(ruby_path, ":"s);
-            std::optional<fs::path> to_load;
-            for (auto const& part : parts) {
-                auto rb_file = fs::path(part) / name;
-                if (rb_file.extension() == "") {
-                    rb_file.replace_extension(".rb");
-                }
-                if (fs::exists(rb_file)) {
-                    to_load = rb_file;
-                    break;
-                }
-            }
-            if (!to_load) {
-                mrb_raise(mrb, mrb->object_class,
-                    fmt::format("'{}' not found", name).c_str());
-            }
-            auto rb_file = fs::canonical(*to_load);
-            auto modified = fs::last_write_time(rb_file);
-
-            auto it = already_loaded.find(rb_file.string());
-
-            if (it != already_loaded.end() && it->second == modified) {
-                fmt::print("{} already loaded\n", rb_file.string());
-                return mrb_nil_value();
-            }
-            already_loaded[rb_file.string()] = modified;
-
-            FILE* fp = fopen(rb_file.string().c_str(), "rb");
-            if (fp != nullptr) {
-                auto* ctx = mrbc_context_new(mrb);
-                ctx->capture_errors = true;
-                mrbc_filename(mrb, ctx, name.c_str());
-                ctx->lineno = 1;
-                mrb_load_file_cxt(mrb, fp, ctx);
-                mrbc_context_free(mrb, ctx);
-                fclose(fp);
-                if (auto err = mrb::check_exception(mrb)) {
-                    fmt::print("REQUIRE Error: {}\n", *err);
-                    ::exit(1);
-                }
-            }
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
+    mrb::add_kernel_function(
+        ruby, "require", [](mrb_state* mrb, std::string const& name) {
+            Toy::require(mrb, name);
+        });
     static auto root_path = fs::current_path();
 
-    mrb_define_module_function(
-        ruby, ruby->kernel_module, "list_files",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [ds] = mrb::get_args<std::string>(mrb);
-            auto dir = fs::path(ds);
+    mrb::add_kernel_function(
+        ruby, "list_files", [](std::string const& name) {
+            auto dir = fs::path(name);
             auto parent = fs::canonical(root_path / dir);
             std::vector<std::string> files;
             if (fs::is_directory(parent)) {
@@ -230,9 +188,17 @@ void Toy::init()
                     files.emplace_back(real_path.string());
                 }
             }
-            return mrb::to_value(files, mrb);
+            return files;
+        });
+
+    mrb_define_module_function(
+        ruby, ruby->kernel_module, "set_error_handler",
+        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
+            mrb_get_args(mrb, "&!", &Toy::error_handler);
+            mrb_gc_register(mrb, Toy::error_handler);
+            return mrb_nil_value();
         },
-        MRB_ARGS_REQ(1));
+        MRB_ARGS_BLOCK());
 }
 
 void Toy::exec(mrb_state* mrb, std::string const& code)

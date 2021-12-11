@@ -136,7 +136,7 @@ def mkstyle(ostyle = nil, **kwargs)
             style.fg = ostyle.fg
             style.bg = ostyle.bg
         end
-        kwargs.each { |a,b| style.send (a.to_s + '=').to_sym, b }
+        kwargs.each { |a,b| style.send((a.to_s + '=').to_sym, b) }
         return style
     end
     nil
@@ -169,6 +169,15 @@ class Console
             _fill(style)
         else
             _fill()
+        end
+    end
+
+    alias _text text
+    def text(*args, **kwargs)
+        if style = mkstyle(self.style, **kwargs)
+            _text(*args, style)
+        else
+            _text(*args)
         end
     end
 

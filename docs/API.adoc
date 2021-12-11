@@ -1,5 +1,11 @@
 
 
+rawptr -> mrb_value
+ Implies ownership transfer
+
+ptr<T> -> mrb_value
+  data_type of T must free
+
 
 module Display
 

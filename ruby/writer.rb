@@ -18,7 +18,7 @@ size = 100
 space = size/3
 
 text.each do |word|
-    img = font.render(word, Color::WHITE, size)
+    img = font.render(word, size, Color::WHITE)
     if pos.x + img.width > edge
         pos = vec2(margin, pos.y + size)
     end

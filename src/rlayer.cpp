@@ -6,13 +6,10 @@
 #include <mruby/array.h>
 #include <mruby/class.h>
 
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 
 #include <glm/ext.hpp>
 #include <glm/glm.hpp>
-
-mrb_data_type RStyle::dt{"RStyle",
-    [](mrb_state*, void* data) { delete static_cast<RStyle*>(data); }};
 
 void RLayer::update_tx(RLayer const* parent)
 {
@@ -52,234 +49,53 @@ void RLayer::update_tx(RLayer const* parent)
     //
     std::copy(glm::value_ptr(m), glm::value_ptr(m) + 16, transform.begin());
 
-    auto lowerx = scissor[0];
-    auto lowery = scissor[3];
+    auto low_x = scissor[0];
+    auto low_y = scissor[3];
     auto w = width - (scissor[0] + scissor[2]);
     auto h = height - (scissor[1] + scissor[3]);
-    //fmt::print("{} {} {} {}\n", lowerx, lowery, w, h);
-    glScissor(lowerx, lowery, w, h);
-
-//    glScissor(scissor[0] + trans[0] + t0, scissor[1] + trans[1] + t1,
-  //      width + t0 - scissor[2] * 2, height + t1 - scissor[3] * 2);
+    glScissor(low_x, low_y, w, h);
 }
 
 void RLayer::reg_class(mrb_state* ruby)
 {
     RStyle::ruby = ruby;
-    RStyle::rclass = mrb_define_class(ruby, "Style", ruby->object_class);
-    MRB_SET_INSTANCE_TT(RStyle::rclass, MRB_TT_DATA);
+    mrb::make_noinit_class<RLayer>(ruby, "Layer");
+    mrb::set_deleter<RLayer>(ruby, [](mrb_state*, void*) {});
+    mrb::make_class<RStyle>(ruby, "Style");
 
-    rclass = mrb_define_class(ruby, "Layer", ruby->object_class);
-    MRB_SET_INSTANCE_TT(RLayer::rclass, MRB_TT_DATA);
+    mrb::attr_accessor<&RStyle::fg>(ruby, "fg");
+    mrb::attr_accessor<&RStyle::bg>(ruby, "bg");
+    mrb::attr_accessor<&RStyle::line_width>(ruby, "line_width");
 
-    // RSTYLE
-    //
-    mrb_define_method(
-        ruby, RStyle::rclass, "initialize",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            DATA_PTR(self) = new RStyle();                  // NOLINT
-            DATA_TYPE(self) = mrb::get_data_type<RStyle>(); // NOLINT
-            auto* rstyle = mrb::self_to<RStyle>(self);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_NONE());
+    blend_sym = mrb::Symbol{ruby, "blend"};
+    add_sym = mrb::Symbol{ruby, "add"};
 
-    mrb_define_method(
-        ruby, RStyle::rclass, "fg=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [av] = mrb::get_args<mrb_value>(mrb);
-            auto* rstyle = mrb::self_to<RStyle>(self);
-            rstyle->fg = mrb::to_array<float, 4>(av, mrb);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_method(
-        ruby, RStyle::rclass, "fg",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rstyle = mrb::self_to<RStyle>(self);
-            return mrb::to_value(rstyle->fg, mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, RStyle::rclass, "bg=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [av] = mrb::get_args<mrb_value>(mrb);
-            auto* rstyle = mrb::self_to<RStyle>(self);
-            rstyle->bg = mrb::to_array<float, 4>(av, mrb);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_method(
-        ruby, RStyle::rclass, "bg",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rstyle = mrb::self_to<RStyle>(self);
-            return mrb::to_value(rstyle->bg, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RStyle::rclass, "blend_mode=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* style = mrb::self_to<RStyle>(self);
-            mrb_sym sym{};
-            mrb_get_args(mrb, "n", &sym);
-            std::string s{mrb_sym_name(mrb, sym)};
-            fmt::print("{}\n", s);
-            if (s == "blend") {
+    mrb::add_method<RStyle>(
+        ruby, "blend_mode=", [](RStyle* style, mrb::Symbol s) {
+        return style->blend_mode;
+            if (s == blend_sym) {
                 style->blend_mode = BlendMode::Blend;
-            } else if (s == "add") {
+            } else if (s == add_sym) {
                 style->blend_mode = BlendMode::Add;
             } else {
                 throw std::exception();
             }
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, RStyle::rclass, "blend_mode",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* style = mrb::self_to<RStyle>(self);
-            mrb_sym sym = (style->blend_mode == BlendMode::Blend)
-                              ? mrb_intern_lit(mrb, "blend")
-                              : mrb_intern_lit(mrb, "add");
-            return mrb_symbol_value(sym);
-        },
-        MRB_ARGS_NONE());
+        });
+    mrb::add_method<RStyle>(
+        ruby, "blend_mode", [](RStyle* style, mrb_state* mrb) {
+            return style->blend_mode == BlendMode::Blend ? blend_sym : add_sym;
+        });
 
-    mrb_define_method(
-        ruby, RStyle::rclass, "line_width=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [lw] = mrb::get_args<float>(mrb);
-            auto* style = mrb::self_to<RStyle>(self);
-            style->line_width = lw;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, RStyle::rclass, "line_width",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* style = mrb::self_to<RStyle>(self);
-            return mrb::to_value(style->line_width, mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<RLayer>(
+        ruby, "style", [](RLayer* l) -> mrb_value { return l->stylep; });
 
-    // RLAYER
-    //
-    mrb_define_method(
-        ruby, RLayer::rclass, "style",
-        [](mrb_state* /*mrb*/, mrb_value self) -> mrb_value {
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            return rlayer->stylep;
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "width",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            return mrb::to_value(rlayer->width, mrb);
-        },
-        MRB_ARGS_NONE());
-    mrb_define_method(
-        ruby, RLayer::rclass, "height",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            return mrb::to_value(rlayer->height, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "enabled=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [e] = mrb::get_args<bool>(mrb);
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->enabled = e;
-            rlayer->handle_enable();
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "enabled",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            return mrb::to_value(rlayer->enabled, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "border",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            return mrb::to_value(rlayer->scissor, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "border=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [av] = mrb::get_args<mrb_value>(mrb);
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->scissor = mrb::to_array<int, 4>(av, mrb);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "scale",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-          auto* rlayer = mrb::self_to<RLayer>(self);
-          return mrb::to_value(rlayer->scale, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "scale=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            fmt::print("SET_SCALE\n");
-            auto [av] = mrb::get_args<mrb_value>(mrb);
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->scale = mrb::to_array<float, 2>(av, mrb);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "offset",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            return mrb::to_value(rlayer->trans, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "offset=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [av] = mrb::get_args<mrb_value>(mrb);
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->trans = mrb::to_array<float, 2>(av, mrb);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(2));
-
-    mrb_define_method(
-        ruby, RLayer::rclass, "rotation=",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [x] = mrb::get_args<float>(mrb);
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            rlayer->rot = static_cast<float>(x);
-            return mrb::to_value(rlayer->rot, mrb);
-        },
-        MRB_ARGS_REQ(1));
-    mrb_define_method(
-        ruby, RLayer::rclass, "rotation",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* rlayer = mrb::self_to<RLayer>(self);
-            return mrb::to_value(rlayer->rot, mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::attr_reader<&RLayer::width>(ruby, "width");
+    mrb::attr_reader<&RLayer::height>(ruby, "height");
+    mrb::attr_accessor<&RLayer::enabled>(ruby, "enabled");
+    mrb::attr_accessor<&RLayer::scissor>(ruby, "border");
+    mrb::attr_accessor<&RLayer::scale>(ruby, "scale");
+    mrb::attr_accessor<&RLayer::trans>(ruby, "offset");
+    mrb::attr_accessor<&RLayer::rot>(ruby, "rotation");
 }
 
 void RLayer::reset()

@@ -2,7 +2,7 @@
 
 #include "system.hpp"
 #include "settings.hpp"
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 #include "ring_buffer.hpp"
 
 struct Sound
@@ -16,8 +16,6 @@ struct Sound
     size_t frames() const { return data.size() / channels; }
     float freq = 0;
     int channels = 1;
-    static inline RClass* rclass;
-    static mrb_data_type dt;
 };
 
 class RAudio
@@ -61,8 +59,7 @@ class RAudio
         }
     };
 
-    mrb::RubyPtr audio_handler;
-    //mrb_state* ruby;
+    mrb::Value audio_handler;
     System& system;
     Ring<float, 16384> out_buffer;
     std::array<Channel, 32> channels;
@@ -71,8 +68,6 @@ class RAudio
 
 public:
     static inline RAudio* default_audio = nullptr;
-    static inline RClass* rclass;
-    static inline mrb_data_type dt{"Audio", [](mrb_state*, void* data) {}};
 
     void set_sound(
         int channel, Sound const& sound, float freq = 0, bool loop = false);

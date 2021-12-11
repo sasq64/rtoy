@@ -1,133 +1,67 @@
 
 #include "rimage.hpp"
 
-#include "mruby/value.h"
-
-#include "mrb_tools.hpp"
-
 #include <gl/program_cache.hpp>
+#include <mrb/mrb_tools.hpp>
 
-#include <mruby.h>
-#include <mruby/class.h>
-
-#include "mrb_tools.hpp"
 #include <array>
 #include <memory>
 
 
-mrb_data_type RImage::dt{
-    "Image", [](mrb_state*, void* data) { delete static_cast<RImage*>(data); }};
-
 void RImage::reg_class(mrb_state* ruby)
 {
-    RImage::rclass = mrb_define_class(ruby, "Image", ruby->object_class);
-    MRB_SET_INSTANCE_TT(RImage::rclass, MRB_TT_DATA);
+    mrb::make_noinit_class<RImage>(ruby, "Image");
 
-    mrb_define_class_method(
-        ruby, RImage::rclass, "from_file",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            const char* name{};
-            mrb_get_args(mrb, "z", &name);
+    mrb::add_class_method<RImage>(
+        ruby, "from_file", [](std::string const& name) {
             auto img = pix::load_png(name);
-            if (img.ptr == nullptr) { return mrb_nil_value(); }
-            auto* rimage = new RImage(img);
-            return mrb::new_data_obj(mrb, rimage);
-        },
-        MRB_ARGS_REQ(1));
+            if (img.ptr == nullptr) { return static_cast<RImage*>(nullptr); }
+            return new RImage(img);
+        });
 
-    mrb_define_class_method(
-        ruby, RImage::rclass, "solid",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            mrb_value color;
-            int w{};
-            int h{};
-            mrb_get_args(mrb, "iio", &w, &h, &color);
-            auto col32 =
-                gl::Color(mrb::to_array<float, 4>(color, mrb)).to_rgba();
+    // TODO: Fix const& for array args
+    mrb::add_class_method<RImage>(
+        ruby, "solid", [](int w, int h, std::array<float, 4> color) {
+            auto col32 = gl::Color(color).to_rgba();
             auto texref = gl_wrap::TexRef(w, h);
             texref.tex->fill(col32);
-            auto* rimage = new RImage(texref);
-            return mrb::new_data_obj(mrb, rimage);
-        },
-        MRB_ARGS_REQ(3));
+            return new RImage(texref);
+        });
 
-    mrb_define_method(
-        ruby, RImage::rclass, "save",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            const char* name{};
-            mrb_get_args(mrb, "z", &name);
-            auto* thiz = mrb::self_to<RImage>(self);
-            // TODO: What does this mean for subpixel references?
-            auto bytes = thiz->texture.read_pixels();
-            pix::Image img{static_cast<int>(thiz->width()),
-                static_cast<int>(thiz->height()), bytes.data()};
-            pix::save_png(img, name);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(1));
+    mrb::add_method<&RImage::width>(ruby, "width");
+    mrb::add_method<&RImage::height>(ruby, "height");
 
-    mrb_define_method(
-        ruby, RImage::rclass, "width",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            return mrb::to_value(mrb::self_to<RImage>(self)->width(), mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<RImage>(ruby, "split", [](RImage* self, int w, int h) {
+        float u0 = self->texture.uvs[0];
+        float v0 = self->texture.uvs[1];
+        float u1 = self->texture.uvs[4];
+        float v1 = self->texture.uvs[5];
+        float du = (u1 - u0) / static_cast<float>(w);
+        float dv = (v1 - v0) / static_cast<float>(h);
 
-    mrb_define_method(
-        ruby, RImage::rclass, "height",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            return mrb::to_value(mrb::self_to<RImage>(self)->height(), mrb);
-        },
-        MRB_ARGS_NONE());
+        std::vector<RImage*> images;
 
-    /* mrb_define_method( */
-    /*     ruby, RImage::rclass, "size", */
-    /*     [](mrb_state* mrb, mrb_value self) -> mrb_value { */
-    /*         auto const* img = mrb::self_to<RImage>(self); */
-    /*         std::array<double, 2> data{img->width(), img->height()}; */
-    /*         return mrb::to_value(data, mrb); */
-    /*     }, */
-    /*     MRB_ARGS_NONE()); */
-
-    mrb_define_method(
-        ruby, RImage::rclass, "split",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [w, h] = mrb::get_args<int, int>(mrb);
-            auto* thiz = mrb::self_to<RImage>(self);
-
-            float u0 = thiz->texture.uvs[0];
-            float v0 = thiz->texture.uvs[1];
-            float u1 = thiz->texture.uvs[4];
-            float v1 = thiz->texture.uvs[5];
-            float du = (u1 - u0) / static_cast<float>(w);
-            float dv = (v1 - v0) / static_cast<float>(h);
-
-            std::vector<mrb_value> images;
-
-            float u = u0;
-            float v = v0;
-            int x = 0;
-            int y = 0;
-            while (true) {
-                if (x == w) {
-                    u = u0;
-                    v += dv;
-                    x = 0;
-                    y++;
-                }
-                if (y == h) { break; }
-                auto* rimage = new RImage(thiz->texture);
-                rimage->texture.tex = thiz->texture.tex;
-                rimage->texture.uvs = {
-                    u, v, u + du, v, u + du, v + dv, u, v + dv};
-                images.push_back(mrb::new_data_obj(mrb, rimage));
-                u += du;
-                x++;
+        float u = u0;
+        float v = v0;
+        int x = 0;
+        int y = 0;
+        while (true) {
+            if (x == w) {
+                u = u0;
+                v += dv;
+                x = 0;
+                y++;
             }
-
-            return mrb::to_value(images, mrb);
-        },
-        MRB_ARGS_REQ(2));
+            if (y == h) { break; }
+            auto* rimage = new RImage(self->texture);
+            rimage->texture.tex = self->texture.tex;
+            rimage->texture.uvs = {u, v, u + du, v, u + du, v + dv, u, v + dv};
+            images.push_back(rimage); // mrb::new_data_obj(mrb, rimage));
+            u += du;
+            x++;
+        }
+        return images;
+    });
 }
 
 RImage::RImage(pix::Image const& image)

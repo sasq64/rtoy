@@ -2,10 +2,9 @@
 
 #include "system.hpp"
 
-#include <cstdint>
-#include <mruby.h>
-#include <mruby/data.h>
+#include <mrb/mrb_tools.hpp>
 
+#include <cstdint>
 #include <unordered_map>
 
 class RInput
@@ -15,9 +14,9 @@ class RInput
     bool do_reset = false;
     bool do_quit = false;
     mrb_state* ruby;
-    mrb_value key_handler{};
-    mrb_value click_handler{};
-    mrb_value drag_handler{};
+    mrb::Value key_handler{};
+    mrb::Value click_handler{};
+    mrb::Value drag_handler{};
 
     int resize = 0;
     int mouse_x = 0;
@@ -47,8 +46,6 @@ public:
     std::pair<int, int> mouse_pos() { return { mouse_x, mouse_y }; }
 
     static inline RInput* default_input = nullptr;
-    static inline RClass* rclass;
-    static inline mrb_data_type dt{"Input", [](mrb_state*, void* data) {}};
 
     static void reg_class(mrb_state* ruby, System& system);
 };

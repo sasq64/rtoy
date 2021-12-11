@@ -1,17 +1,12 @@
 #pragma once
 
-#include <mruby.h>
-#include <mruby/data.h>
-
-#include "mrb_tools.hpp"
+#include "mrb/mrb_tools.hpp"
 
 #include <chrono>
 
 class RTimer
 {
-    mrb_state* ruby;
-    // std::shared_ptr<void> timer_handler{};
-    mrb::RubyPtr timer_handler;
+    mrb::Value timer_handler;
 
     std::chrono::steady_clock::time_point start_t;
     std::chrono::steady_clock::time_point next_timer;
@@ -25,8 +20,6 @@ public:
     void reset();
 
     static inline RTimer* default_timer = nullptr;
-    static inline RClass* rclass;
-    static inline mrb_data_type dt{"Timer", [](mrb_state*, void* data) {}};
 
     static void reg_class(mrb_state* ruby);
 };

@@ -38,7 +38,7 @@ def create_apple
         x,y = rand(WIDTH-2) + 1, rand(HEIGHT-TOP-1) + TOP + 1
         c = get_char(x, y)
     end
-    text(x, y, APPLE, Color::LIGHT_RED, Color::BLACK)
+    text(x, y, APPLE, fg: Color::LIGHT_RED, bg: Color::BLACK)
 end
  
 on_key { |key| $keys.append(key) }

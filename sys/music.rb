@@ -43,12 +43,12 @@ class Music
             unless note == :p
                 if note.class == Array
                     note.each do |n|
-                        @audio.play(@channel, @sound, ALL_KEYS[n])
+                        @audio.play(@sound, @channel, ALL_KEYS[n])
                         @channel += @sound.channels
                         @channel = 0 if @channel == 32
                     end
                 else
-                    @audio.play(@channel, @sound, ALL_KEYS[note])
+                    @audio.play(@sound, @channel, ALL_KEYS[note])
                     @channel += @sound.channels
                     @channel = 0 if @channel == 32
                 end

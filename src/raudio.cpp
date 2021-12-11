@@ -3,10 +3,7 @@
 #define DR_WAV_IMPLEMENTATION
 #include <dr_libs/dr_wav.h>
 
-mrb_data_type Sound::dt{
-    "Sound", [](mrb_state*, void* ptr) { delete static_cast<Sound*>(ptr); }};
-
-RAudio::RAudio(mrb_state* _ruby, System& _system, Settings const& settings)
+RAudio::RAudio(mrb_state*, System& _system, Settings const& settings)
     : system{_system}
 {
     system.init_audio(settings);
@@ -28,7 +25,7 @@ void RAudio::update()
 // Pull 'count' samples from all channels into out buffer
 void RAudio::mix(size_t samples_len)
 {
-    //fmt::print("Mix {}\n", samples_len);
+    // fmt::print("Mix {}\n", samples_len);
     std::array<float, 8192> temp[2]{{}, {}}; // NOLINT
     int ear = 0;
     for (auto& chan : channels) {
@@ -43,9 +40,7 @@ void RAudio::mix(size_t samples_len)
 
 void RAudio::set_sound(int channel, Sound const& sound, float freq, bool loop)
 {
-    if (sound.data.empty()) {
-        return;
-    }
+    if (sound.data.empty()) { return; }
     // Assume sample is C4 = 261.63 Hz
     if (freq == 0) { freq = 261.63F; }
     freq = sound.freq * (freq / 261.63F);
@@ -65,110 +60,62 @@ void RAudio::set_frequency(int channel, int hz)
 void RAudio::reg_class(
     mrb_state* ruby, System& system, Settings const& settings)
 {
-    rclass = mrb_define_class(ruby, "Audio", ruby->object_class);
-    Sound::rclass = mrb_define_class(ruby, "Sound", ruby->object_class);
-    MRB_SET_INSTANCE_TT(RAudio::rclass, MRB_TT_DATA);
-    MRB_SET_INSTANCE_TT(Sound::rclass, MRB_TT_DATA);
+    mrb::make_noinit_class<RAudio>(ruby, "Audio");
+    mrb::set_deleter<RAudio>(ruby, [](mrb_state*, void*) {});
+    mrb::make_class<Sound>(ruby, "Sound");
 
     default_audio = new RAudio(ruby, system, settings);
 
-    mrb_define_method(
-        ruby, Sound::rclass, "channels",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            return mrb::to_value(mrb::self_to<Sound>(self)->channels, mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::attr_reader<&Sound::channels>(ruby, "channels");
+    mrb::attr_reader<&Sound::freq>(ruby, "freq");
 
-    mrb_define_method(
-        ruby, Sound::rclass, "freq",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            return mrb::to_value(mrb::self_to<Sound>(self)->freq, mrb);
-        },
-        MRB_ARGS_NONE());
-
-    mrb_define_method(
-        ruby, RAudio::rclass, "play",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* audio = mrb::self_to<RAudio>(self);
-            Sound* sound{};
-            mrb_float freq = 0;
-            mrb_int chan = 0;
-            auto n = mrb_get_argc(mrb);
-            if (n == 3) {
-                mrb_get_args(mrb, "idf", &chan, &sound, &Sound::dt, &freq);
-            } else if (n == 2) {
-                mrb_get_args(mrb, "id", &chan, &sound, &Sound::dt);
-            } else if (n == 1) {
-                mrb_get_args(mrb, "d", &sound, &Sound::dt);
-                chan = audio->next_channel;
-                audio->next_channel = (audio->next_channel + 2) % 32;
-            }
+    mrb::add_method<RAudio>(ruby, "play",
+        [](RAudio* self, mrb::ArgN n, Sound* sound, int chan, float freq) {
+            if (n == 1) { chan = self->next_channel; }
+            self->next_channel = (chan + 2) % 32;
             fmt::print("chan {}, freq {}\n", chan, freq);
-            audio->set_sound(chan, *sound, static_cast<float>(freq));
+            self->set_sound(chan, *sound, static_cast<float>(freq));
             return self;
-        },
-        MRB_ARGS_REQ(2));
+        });
 
-    mrb_define_class_method(
-        ruby, rclass, "default",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            return mrb::new_data_obj(mrb, default_audio);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_class_method<RAudio>(
+        ruby, "default", [] { return RAudio::default_audio; });
 
-    mrb_define_method(
-        ruby, rclass, "on_audio",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* audio = mrb::self_to<RAudio>(self);
-            mrb_int n = -1;
-            mrb_value blk;
-            mrb_get_args(mrb, "&", &blk);
-            if (!mrb_nil_p(blk)) {
-                audio->audio_handler = mrb::RubyPtr{mrb, blk};
-            }
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
+    mrb::add_method<RAudio>(ruby, "on_audio",
+        [](RAudio* self, mrb::Block block) { self->audio_handler = block; });
 
-    mrb_define_method(
-        ruby, rclass, "set_freq",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto [chan, freq] = mrb::get_args<int, int>(mrb);
-            auto* audio = mrb::self_to<RAudio>(self);
-            audio->channels[chan].step = static_cast<float>(freq) / 44100.F;
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(2));
+    mrb::add_method<RAudio>(
+        ruby, "set_freq", [](RAudio* self, int chan, float freq) {
+            self->channels[chan].step = static_cast<float>(freq) / 44100.F;
+        });
 
-    mrb_define_class_method(
-        ruby, RAudio::rclass, "load_wav",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            auto [fname] = mrb::get_args<std::string>(mrb);
+    mrb::add_class_method<RAudio>(
+        ruby, "load_wav", [](std::string const& fname) {
             unsigned channel_count = 0;
             unsigned freq = 0;
             drwav_uint64 frames = 0;
+            Sound* sound = nullptr;
             float* sample_data = drwav_open_file_and_read_pcm_frames_f32(
                 fname.c_str(), &channel_count, &freq, &frames, nullptr);
             if (sample_data == nullptr) {
                 // Error opening and reading WAV file.
-                return mrb_nil_value();
+                return sound;
             }
             fmt::print("Channels {}, freq {} frames {}\n", channel_count, freq,
                 frames);
-
-            auto* sound = new Sound();
+            sound = new Sound();
             sound->freq = static_cast<float>(freq);
-            sound->channels = static_cast<int>(channel_count);
+            sound->channels = channel_count;
             sound->data.resize(frames * channel_count);
             for (size_t i = 0; i < frames; i++) {
                 for (size_t j = 0; j < channel_count; j++) {
-                    sound->data[j * frames + i] = sample_data[i * channel_count + j];
+                    sound->data[j * frames + i] =
+                        sample_data[i * channel_count + j];
                 }
             }
             drwav_free(sample_data, nullptr);
-            return mrb::new_data_obj(mrb, sound);
-        },
-        MRB_ARGS_REQ(1));
+            return sound;
+        });
 }
 
 #ifdef MUSIC

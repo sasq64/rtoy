@@ -2,11 +2,10 @@
 
 #include "error.hpp"
 #include "keycodes.h"
-#include "mrb_tools.hpp"
 #include "settings.hpp"
 
 #include <coreutils/utf8.h>
-#include <mruby/class.h>
+#include <mrb/mrb_tools.hpp>
 
 #include <fmt/format.h>
 
@@ -18,7 +17,7 @@ RInput::RInput(mrb_state* _ruby, System& _system) : ruby{_ruby}, system{_system}
 bool RInput::handle_event(KeyEvent const& e)
 {
     auto code = e.key;
-    //fmt::print("CODE {:x}\n", e.key);
+    // fmt::print("CODE {:x}\n", e.key);
     if (code == RKEY_F12) {
         fmt::print("RESET!\n");
         do_reset = true;
@@ -59,7 +58,7 @@ bool RInput::handle_event(MoveEvent const& me)
 }
 bool RInput::handle_event(TextEvent const& me)
 {
-    //fmt::print("TEXT '{}'\n", me.text);
+    // fmt::print("TEXT '{}'\n", me.text);
     auto text32 = utils::utf8_decode(me.text);
     for (auto s : text32) {
         call_proc(ruby, key_handler, s, 0, me.device);
@@ -78,6 +77,7 @@ bool RInput::should_reset()
     do_reset = false;
     return res;
 }
+
 bool RInput::update()
 {
     while (!std::visit([&](auto const& e) { return handle_event(e); },
@@ -91,129 +91,79 @@ bool RInput::update()
 }
 void RInput::reset()
 {
-    SET_NIL_VALUE(key_handler);
-    SET_NIL_VALUE(click_handler);
-    SET_NIL_VALUE(drag_handler);
+    key_handler.clear();
+    click_handler.clear();
+    drag_handler.clear();
 }
+
+struct Key
+{};
+
 void RInput::reg_class(mrb_state* ruby, System& system)
 {
-    auto* keys = mrb_define_module(ruby, "Key");
-    mrb_define_const(ruby, keys, "LEFT", mrb_int_value(ruby, RKEY_LEFT));
-    mrb_define_const(ruby, keys, "RIGHT", mrb_int_value(ruby, RKEY_RIGHT));
-    mrb_define_const(ruby, keys, "PAGE_UP", mrb_int_value(ruby, RKEY_PAGEUP));
-    mrb_define_const(
-        ruby, keys, "PAGE_DOWN", mrb_int_value(ruby, RKEY_PAGEDOWN));
-    mrb_define_const(ruby, keys, "UP", mrb_int_value(ruby, RKEY_UP));
-    mrb_define_const(ruby, keys, "DOWN", mrb_int_value(ruby, RKEY_DOWN));
-    mrb_define_const(
-        ruby, keys, "BACKSPACE", mrb_int_value(ruby, RKEY_BACKSPACE));
-    mrb_define_const(ruby, keys, "ENTER", mrb_int_value(ruby, RKEY_ENTER));
-    mrb_define_const(ruby, keys, "HOME", mrb_int_value(ruby, RKEY_HOME));
-    mrb_define_const(ruby, keys, "END", mrb_int_value(ruby, RKEY_END));
-    mrb_define_const(ruby, keys, "ESCAPE", mrb_int_value(ruby, RKEY_ESCAPE));
-    mrb_define_const(ruby, keys, "TAB", mrb_int_value(ruby, RKEY_TAB));
-    mrb_define_const(ruby, keys, "DEL", mrb_int_value(ruby, RKEY_DELETE));
-    mrb_define_const(ruby, keys, "INSERT", mrb_int_value(ruby, RKEY_INSERT));
-    mrb_define_const(ruby, keys, "END_", mrb_int_value(ruby, RKEY_END));
-    mrb_define_const(
-        ruby, keys, "LEFT_SHIFT", mrb_int_value(ruby, RKEY_LSHIFT));
-    mrb_define_const(ruby, keys, "LEFT_ALT", mrb_int_value(ruby, RKEY_LALT));
-    mrb_define_const(ruby, keys, "F1", mrb_int_value(ruby, RKEY_F1));
-    mrb_define_const(ruby, keys, "F2", mrb_int_value(ruby, RKEY_F2));
-    mrb_define_const(ruby, keys, "F3", mrb_int_value(ruby, RKEY_F3));
-    mrb_define_const(ruby, keys, "F4", mrb_int_value(ruby, RKEY_F4));
-    mrb_define_const(ruby, keys, "F5", mrb_int_value(ruby, RKEY_F5));
-    mrb_define_const(ruby, keys, "F6", mrb_int_value(ruby, RKEY_F6));
-    mrb_define_const(ruby, keys, "F7", mrb_int_value(ruby, RKEY_F7));
-    mrb_define_const(ruby, keys, "F8", mrb_int_value(ruby, RKEY_F8));
-    mrb_define_const(ruby, keys, "F9", mrb_int_value(ruby, RKEY_F9));
-    mrb_define_const(ruby, keys, "F10", mrb_int_value(ruby, RKEY_F10));
-    mrb_define_const(ruby, keys, "F11", mrb_int_value(ruby, RKEY_F11));
-    mrb_define_const(ruby, keys, "F12", mrb_int_value(ruby, RKEY_F12));
+    mrb::make_module<Key>(ruby, "Key");
 
-    mrb_define_const(ruby, keys, "FIRE", mrb_int_value(ruby, RKEY_FIRE));
+    mrb::define_const<Key>(ruby, "LEFT", RKEY_LEFT);
+    mrb::define_const<Key>(ruby, "RIGHT", RKEY_RIGHT);
+    mrb::define_const<Key>(ruby, "PAGE_UP", RKEY_PAGEUP);
+    mrb::define_const<Key>(ruby, "PAGE_DOWN", RKEY_PAGEDOWN);
+    mrb::define_const<Key>(ruby, "UP", RKEY_UP);
+    mrb::define_const<Key>(ruby, "DOWN", RKEY_DOWN);
+    mrb::define_const<Key>(ruby, "BACKSPACE", RKEY_BACKSPACE);
+    mrb::define_const<Key>(ruby, "ENTER", RKEY_ENTER);
+    mrb::define_const<Key>(ruby, "HOME", RKEY_HOME);
+    mrb::define_const<Key>(ruby, "END", RKEY_END);
+    mrb::define_const<Key>(ruby, "ESCAPE", RKEY_ESCAPE);
+    mrb::define_const<Key>(ruby, "TAB", RKEY_TAB);
+    mrb::define_const<Key>(ruby, "DEL", RKEY_DELETE);
+    mrb::define_const<Key>(ruby, "INSERT", RKEY_INSERT);
+    mrb::define_const<Key>(ruby, "END_", RKEY_END);
+    mrb::define_const<Key>(ruby, "LEFT_SHIFT", RKEY_LSHIFT);
+    mrb::define_const<Key>(ruby, "LEFT_ALT", RKEY_LALT);
+    mrb::define_const<Key>(ruby, "F1", RKEY_F1);
+    mrb::define_const<Key>(ruby, "F2", RKEY_F2);
+    mrb::define_const<Key>(ruby, "F3", RKEY_F3);
+    mrb::define_const<Key>(ruby, "F4", RKEY_F4);
+    mrb::define_const<Key>(ruby, "F5", RKEY_F5);
+    mrb::define_const<Key>(ruby, "F6", RKEY_F6);
+    mrb::define_const<Key>(ruby, "F7", RKEY_F7);
+    mrb::define_const<Key>(ruby, "F8", RKEY_F8);
+    mrb::define_const<Key>(ruby, "F9", RKEY_F9);
+    mrb::define_const<Key>(ruby, "F10", RKEY_F10);
+    mrb::define_const<Key>(ruby, "F11", RKEY_F11);
+    mrb::define_const<Key>(ruby, "F12", RKEY_F12);
+    mrb::define_const<Key>(ruby, "FIRE", RKEY_FIRE);
 
-    rclass = mrb_define_class(ruby, "Input", ruby->object_class);
-    MRB_SET_INSTANCE_TT(rclass, MRB_TT_DATA);
+    mrb::make_noinit_class<RInput>(ruby, "Input");
+    mrb::set_deleter<RInput>(ruby, [](mrb_state*, void*) {});
 
     default_input = new RInput(ruby, system);
 
-    mrb_define_class_method(
-        ruby, rclass, "default",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            return mrb::new_data_obj(mrb, default_input);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_class_method<RInput>(
+        ruby, "default", []() { return default_input; });
 
-    mrb_define_method(
-        ruby, rclass, "map",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            auto [code, target, mods] = mrb::get_args<int, int, int>(mrb);
-            // fmt::print("{:x} => {:x}\n", code, target);
-            input->system.map_key(code, target, mods);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_REQ(3));
+    mrb::add_method<RInput>(
+        ruby, "map", [](RInput* self, int code, int target, int mods) {
+            self->system.map_key(code, target, mods);
+        });
 
-    mrb_define_class_method(
-        ruby, rclass, "get_clipboard",
-        [](mrb_state* mrb, mrb_value /*self*/) -> mrb_value {
-            // TODO
-            const char* clip = nullptr; // SDL_GetClipboardText();
-            if (clip == nullptr) { return mrb_nil_value(); }
-            return mrb::to_value(clip, mrb);
-        },
-        MRB_ARGS_NONE());
+    mrb::add_method<RInput>(
+        ruby, "is_pressed", [](RInput* self, mrb::ArgN n, int code, int dev) {
+            if (n == 1) { dev = -1; }
+            return self->system.is_pressed(code, dev);
+        });
+    mrb::add_method<RInput>(ruby, "get_modifiers", [](RInput*) { return 0; });
 
-    mrb_define_method(
-        ruby, rclass, "is_pressed",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            if (mrb_get_argc(mrb) == 1) {
-                auto [code] = mrb::get_args<uint32_t>(mrb);
-                return mrb::to_value(input->system.is_pressed(code), mrb);
-            }
-            auto [code, dev] = mrb::get_args<uint32_t, int>(mrb);
-            return mrb::to_value(input->system.is_pressed(code, dev), mrb);
-        },
-        MRB_ARGS_BLOCK());
-
-    mrb_define_method(
-        ruby, rclass, "get_modifiers",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            // TODO
-            uint32_t mods = 0; // SDL_GetModState();
-            return mrb::to_value(mods, mrb);
-        },
-        MRB_ARGS_BLOCK());
-
-    mrb_define_method(
-        ruby, rclass, "on_key",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&!", &input->key_handler);
-            mrb_gc_register(mrb, input->key_handler);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
-    mrb_define_method(
-        ruby, rclass, "on_drag",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&!", &input->drag_handler);
-            mrb_gc_register(mrb, input->drag_handler);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
-    mrb_define_method(
-        ruby, rclass, "on_click",
-        [](mrb_state* mrb, mrb_value self) -> mrb_value {
-            auto* input = mrb::self_to<RInput>(self);
-            mrb_get_args(mrb, "&!", &input->click_handler);
-            mrb_gc_register(mrb, input->click_handler);
-            return mrb_nil_value();
-        },
-        MRB_ARGS_BLOCK());
+    mrb::add_method<RInput>(
+        ruby, "on_key", [](RInput* self, mrb::Block callback) {
+            self->key_handler = callback;
+        });
+    mrb::add_method<RInput>(
+        ruby, "on_drag", [](RInput* self, mrb::Block callback) {
+            self->drag_handler = callback;
+        });
+    mrb::add_method<RInput>(
+        ruby, "on_click", [](RInput* self, mrb::Block callback) {
+            self->click_handler = callback;
+        });
 }

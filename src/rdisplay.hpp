@@ -4,10 +4,9 @@
 #include "settings.hpp"
 #include "system.hpp"
 
-#include "mrb_tools.hpp"
+#include <mrb/mrb_tools.hpp>
+
 #include <chrono>
-#include <mruby.h>
-#include <mruby/data.h>
 
 #include <array>
 #include <memory>
@@ -21,8 +20,8 @@ class PixConsole;
 
 class Display : public RLayer
 {
-    mrb_value draw_handler{};
-    mrb_value disp_obj{};
+    mrb::Value draw_handler{};
+    mrb::Value disp_obj{};
     mrb_state* ruby = nullptr;
     std::shared_ptr<Screen> window = nullptr;
 
@@ -44,6 +43,10 @@ class Display : public RLayer
     std::chrono::time_point<std::chrono::steady_clock> bench_start;
 
     int64_t swap_t = 0;
+
+    std::vector<int32_t> dump(int x, int y, int w, int h);
+    static int32_t dump(int x, int y);
+
 public:
     int64_t pre_t = 0;
     RSprite* mouse_cursor = nullptr;
@@ -51,8 +54,7 @@ public:
     mrb_value consoles{};
     mrb_value sprite_fields{};
     mrb_value canvases{};
-    static inline RClass* rclass;
-    static mrb_data_type dt;
+    // static mrb_data_type dt;
     static inline Display* default_display = nullptr;
     explicit Display(
         mrb_state* state, System& system, Settings const& _settings);
