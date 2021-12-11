@@ -4,10 +4,9 @@
 #include "settings.hpp"
 #include "system.hpp"
 
-#include "mrb/mrb_tools.hpp"
+#include <mrb/mrb_tools.hpp>
+
 #include <chrono>
-#include <mruby.h>
-#include <mruby/data.h>
 
 #include <array>
 #include <memory>

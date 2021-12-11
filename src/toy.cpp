@@ -146,12 +146,7 @@ void Toy::init()
 
     fmt::print("SYSTEM: {}\n", settings.system);
     auto* rclass = mrb::make_noinit_class<Settings>(ruby, "Settings");
-    //mrb::define_const<Settings>(ruby, "SYSTEM", mrb::Symbol{ruby, settings.system});
-
-    //mrb_intern_cstr(ruby, settings.system.c_str());
-    mrb_define_const(ruby, rclass, "SYSTEM",
-        mrb_check_intern_cstr(ruby, settings.system.c_str()));
-
+    mrb::define_const<Settings>(ruby, "SYSTEM", mrb::Symbol{ruby, settings.system});
     mrb::define_const<Settings>(ruby, "BOOT_CMD", settings.boot_cmd);
     mrb::define_const<Settings>(
         ruby, "CONSOLE_FONT", settings.console_font.string());

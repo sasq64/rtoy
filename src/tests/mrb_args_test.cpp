@@ -55,15 +55,31 @@ TEST_CASE("class")
     mrb::add_method<Person>(
         ruby, "dup", [](Person const* p) { return new Person(*p); });
 
-    auto f = mrb_load_string(ruby,
+    auto other_age = mrb_load_string(ruby,
         "person = Person.new ; person.age = 5 ; other = "
         "Person.new ; other.copy_from(person) ; person.age = 2 ; other.age");
-    CHECK(mrb::value_to<int>(f) == 5);
+    CHECK(mrb::value_to<int>(other_age) == 5);
+
     CHECK(Person::counter == 2);
     mrb_load_string(ruby, "GC.start");
     CHECK(Person::counter == 0);
 
     mrb_close(ruby);
+}
+
+TEST_CASE("symbols")
+{
+    auto* ruby = mrb_open();
+    auto sym = mrb_intern_cstr(ruby, "testing");
+    mrb_define_global_const(ruby, "TEST", mrb_symbol_value(sym));
+    mrb_load_string(ruby, "p TEST.class ; p TEST ; TEST = :testing ; p TEST"); 
+
+    //mrb_define_global_const(ruby, "TEST", mrb_check_intern_cstr(ruby, "testing"));
+    //  mrb_load_string(ruby, "p TEST.class ; p TEST ; TEST = :testing ; p TEST"); 
+
+
+    //RUBY_CHECK("TEST == :testing");
+    //mrb::Symbol sym { ruby, "testing"};
 }
 
 TEST_CASE("shared_ptr")

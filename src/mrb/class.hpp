@@ -61,6 +61,14 @@ RClass* make_noinit_class(mrb_state* mrb, const char* name = class_name<T>(),
     return rclass;
 }
 
+template <typename T>
+RClass* make_module(mrb_state* mrb, const char* name = class_name<T>())
+{
+    auto* rclass = mrb_define_module(mrb, name);
+    Lookup<T>::rclasses[mrb] = rclass;
+    return rclass;
+}
+
 template <typename T, typename FN>
 void set_deleter(mrb_state* mrb, FN const& f)
 {
@@ -161,7 +169,8 @@ void add_method(mrb_state* ruby, std::string const& name, FX const& fn,
             auto ptr = mrb::self_to<SELF>(self);
             if constexpr (std::is_same<RET, void>()) {
                 std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args));
-                return mrb_nil_value();
+                return self;
+                //return mrb_nil_value();
             } else {
                 return mrb::to_value(
                     std::apply(fn, std::tuple_cat(std::make_tuple(ptr), args)),

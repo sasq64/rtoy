@@ -51,7 +51,7 @@ TEST_CASE("value_to")
 TEST_CASE("to_value")
 {
     auto* ruby = mrb_open();
-    mrb_define_global_const(ruby, "THREE", mrb::to_value(3));
+    mrb_define_global_const(ruby, "THREE", mrb::to_value(3, ruby));
     RUBY_CHECK("THREE == 3");
 
     mrb_define_global_const(ruby, "STRING", mrb::to_value("hello", ruby));

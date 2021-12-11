@@ -72,6 +72,7 @@ void RLayer::reg_class(mrb_state* ruby)
 
     mrb::add_method<RStyle>(
         ruby, "blend_mode=", [](RStyle* style, mrb::Symbol s) {
+        return style->blend_mode;
             if (s == blend_sym) {
                 style->blend_mode = BlendMode::Blend;
             } else if (s == add_sym) {
@@ -83,10 +84,6 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb::add_method<RStyle>(
         ruby, "blend_mode", [](RStyle* style, mrb_state* mrb) {
             return style->blend_mode == BlendMode::Blend ? blend_sym : add_sym;
-            /* mrb_sym sym = (style->blend_mode == BlendMode::Blend) */
-            /*                   ? mrb_intern_lit(mrb, "blend") */
-            /*                   : mrb_intern_lit(mrb, "add"); */
-            /* return mrb_symbol_value(mrb_intern_lit(mrb, "dummy")); */
         });
 
     mrb::add_method<RLayer>(

@@ -161,6 +161,8 @@ mrb_value to_value(RET const& r, mrb_state* const mrb)
         return mrb_float_value(mrb, r);
     } else if constexpr (std::is_integral_v<RET>) {
         return mrb_int_value(mrb, r);
+    } else if constexpr (std::is_enum_v<RET>) {
+        return mrb_int_value(mrb, r);
     } else if constexpr (std::is_same_v<
                              typename std::remove_reference<RET>::type,
                              std::string>) {

@@ -11,6 +11,7 @@ extern "C"
 #include <mruby/string.h> // NOLINT
 #include <mruby/value.h>
 #include <mruby/variable.h>
+#include <mruby/boxing_word.h>
 }
 
 #include <optional>
