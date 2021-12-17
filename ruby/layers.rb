@@ -55,5 +55,4 @@ vsync do
             i += 1
         end
     end
-
 end

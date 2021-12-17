@@ -1,7 +1,7 @@
-#console.enabled = false
+console.enabled = false
 display.bg = Color::BLACK
 sprite = add_sprite(Image.from_file('data/ship.png'),
-                    scale: 3, rotation: Math::PI/2)
+                    scale: 5, rotation: Math::PI/2)
 
 bullet = Image.solid(2,2,Color::YELLOW)
 

@@ -44,9 +44,6 @@ class Display : public RLayer
 
     int64_t swap_t = 0;
 
-    std::vector<int32_t> dump(int x, int y, int w, int h);
-    static int32_t dump(int x, int y);
-
 public:
     int64_t pre_t = 0;
     RSprite* mouse_cursor = nullptr;
@@ -64,6 +61,8 @@ public:
     bool begin_draw();
     void end_draw();
     void swap();
+
+    void bind() override;
 
     static void reg_class(
         mrb_state* ruby, System& system, Settings const& settings);

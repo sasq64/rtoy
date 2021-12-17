@@ -1,6 +1,6 @@
 ### SNAKE
 
-#include OS
+include OS
 
 APPLE = '⬤'
 WIDTH = 40
@@ -15,6 +15,9 @@ $score = 0
 $keys = []
 $snake = []
 $game_over = 0
+$style = Style.new
+$style.fg = Color::LIGHT_RED
+$style.bg = Color::BLACK
 
 def draw_box(x,y,w,h)
     w.times { |i|
@@ -38,9 +41,9 @@ def create_apple
         x,y = rand(WIDTH-2) + 1, rand(HEIGHT-TOP-1) + TOP + 1
         c = get_char(x, y)
     end
-    text(x, y, APPLE, fg: Color::LIGHT_RED, bg: Color::BLACK)
+    text(x, y, APPLE, $style)
 end
- 
+
 on_key { |key| $keys.append(key) }
 
 on_click do |x,y|

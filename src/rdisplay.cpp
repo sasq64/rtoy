@@ -178,33 +178,9 @@ void Display::reset()
     draw_handler.clear();
 }
 
-int32_t Display::dump(int x, int y)
+void Display::bind()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    uint32_t v = 0;
-    glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
-    // Little endian, as bytes means we get ABGR 32 bit
-    return static_cast<int32_t>(
-        ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
-}
-
-std::vector<int32_t> Display::dump(int x, int y, int w, int h)
-{
-    std::vector<int32_t> result;
-    auto* ptr = new uint32_t[w * h];
-    memset(ptr, 0xff, w * h * 4);
-    y = height - (y + h);
-    glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
-    result.resize(w * h);
-    int i = 0;
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            auto v = ptr[x + (h - 1 - y) * w];
-            result[i] = static_cast<int32_t>(
-                ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
-        }
-    }
-    return result;
 }
 
 void Display::reg_class(

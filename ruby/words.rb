@@ -139,7 +139,7 @@ class WordLayer
         @words = []
         img = nil
         LETTERS.each_char do |c|
-            img = @font.render(c, Color::WHITE, size)
+            img = @font.render(c, size, Color::WHITE)
             @letters[c] = img
         end
     end

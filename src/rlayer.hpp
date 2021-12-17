@@ -28,15 +28,15 @@ class RLayer
 protected:
     std::array<float, 16> transform{
         1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-public:
 
+public:
     static constexpr const char* class_name() { return "Layer"; }
 
     std::array<float, 2> trans = {0.0F, 0.0F};
     std::array<float, 2> scale = {1.0F, 1.0F};
     float rot = 0.0;
 
-    std::array<int, 4> scissor { 0, 0, 0, 0};
+    std::array<int, 4> scissor{0, 0, 0, 0};
 
 protected:
     int width = -1;
@@ -53,10 +53,12 @@ protected:
     RStyle& current_style;
 
 public:
+    int32_t dump(int x, int y);
+    std::vector<int32_t> dump(int x, int y, int w, int h);
     // Reset all state of the layer to default.
     virtual void reset();
     // Clear the layer
-    virtual void clear() {};
+    virtual void clear(){};
 
     static void reg_class(mrb_state* ruby);
 
@@ -73,5 +75,7 @@ public:
     virtual void update_tx(RLayer const* parent);
 
     virtual void enable(bool en = true) { enabled = en; }
+
+    virtual void bind() {}
 };
 

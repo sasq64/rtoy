@@ -105,7 +105,7 @@ void RAudio::reg_class(
                 frames);
             sound = new Sound();
             sound->freq = static_cast<float>(freq);
-            sound->channels = channel_count;
+            sound->channels = static_cast<int>(channel_count);
             sound->data.resize(frames * channel_count);
             for (size_t i = 0; i < frames; i++) {
                 for (size_t j = 0; j < channel_count; j++) {

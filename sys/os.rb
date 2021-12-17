@@ -153,7 +153,8 @@ module OS
     def vsync()
         raise "Can't vsync() in callback handlers" if @@handlers.in_callbacks
         if block_given?
-            loop { yield ; Fiber.yield }
+            p "Block given"
+            loop { Fiber.yield yield }
         else
             Fiber.yield
         end
@@ -172,7 +173,7 @@ module OS
             y += 1
         end
         while read_key() != 0x20
-            yield nil
+            Fiber.yield
         end
         #con.enabled = false
     end

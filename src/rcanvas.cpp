@@ -62,8 +62,8 @@ void RCanvas::update_tx(RLayer const* parent)
     // m = glm::scale(m, glm::vec3(2.0 / width, 2.0 / height, 1.0));
     float t0 = parent != nullptr ? parent->trans[0] : 0.0F;
     float t1 = parent != nullptr ? parent->trans[1] : 0.0F;
-    t0 = (t0 + trans[0]) / width;
-    t1 = (t1 + trans[1]) / height;
+    t0 = (t0 + trans[0]) / static_cast<float>(width);
+    t1 = (t1 + trans[1]) / static_cast<float>(height);
     // 3. Translate
     m = glm::translate(m, glm::vec3(-t0, t1, 0));
 

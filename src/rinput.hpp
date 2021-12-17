@@ -9,8 +9,6 @@
 
 class RInput
 {
-    static uint32_t sdl2key(uint32_t code);
-
     bool do_reset = false;
     bool do_quit = false;
     mrb_state* ruby;

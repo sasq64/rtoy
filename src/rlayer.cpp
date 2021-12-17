@@ -82,7 +82,7 @@ void RLayer::reg_class(mrb_state* ruby)
             }
         });
     mrb::add_method<RStyle>(
-        ruby, "blend_mode", [](RStyle* style, mrb_state* mrb) {
+        ruby, "blend_mode", [](RStyle* style) {
             return style->blend_mode == BlendMode::Blend ? blend_sym : add_sym;
         });
 
@@ -97,6 +97,37 @@ void RLayer::reg_class(mrb_state* ruby)
     mrb::attr_accessor<&RLayer::trans>(ruby, "offset");
     mrb::attr_accessor<&RLayer::rot>(ruby, "rotation");
 }
+
+int32_t RLayer::dump(int x, int y)
+{
+    bind();
+    uint32_t v = 0;
+    glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &v);
+    // Little endian, as bytes means we get ABGR 32 bit
+    return static_cast<int32_t>(
+        ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
+}
+
+std::vector<int32_t> RLayer::dump(int x, int y, int w, int h)
+{
+    bind();
+    std::vector<int32_t> result;
+    auto* ptr = new uint32_t[w * h];
+    memset(ptr, 0xff, w * h * 4);
+    y = height - (y + h);
+    glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
+    result.resize(w * h);
+    int i = 0;
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            auto v = ptr[x + (h - 1 - y) * w];
+            result[i] = static_cast<int32_t>(
+                ((v & 0xff) << 16) | (v & 0xff00) | ((v >> 16) & 0xff));
+        }
+    }
+    return result;
+}
+
 
 void RLayer::reset()
 {
