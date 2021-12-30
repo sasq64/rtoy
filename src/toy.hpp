@@ -22,10 +22,10 @@ struct toy_exception : public std::exception
 
 class Toy
 {
-    template <typename Stream>
-    static std::string read_all(Stream& in)
+    template <typename Stream, typename Result = std::string>
+    static Result read_all(Stream& in)
     {
-        std::string contents;
+        Result contents;
         auto here = in.tellg();
         in.seekg(0, std::ios::end);
         contents.resize(in.tellg() - here);

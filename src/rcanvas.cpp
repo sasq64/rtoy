@@ -230,7 +230,7 @@ void RCanvas::reg_class(mrb_state* ruby)
 
     mrb::add_method<RCanvas>(
         ruby, "backing=", [](RCanvas* self, RImage* image) {
-            self->canvas = image->texture.tex;
+            self->canvas = image->tex_ref.tex;
         });
 
     mrb::add_method<RCanvas>(ruby, "backing", [](RCanvas* self) {
@@ -241,7 +241,7 @@ void RCanvas::reg_class(mrb_state* ruby)
     mrb::add_method<RCanvas>(ruby, "as_image", [](RCanvas* self) {
         self->set_target();
         auto* image = new RImage(gl_wrap::TexRef{self->canvas});
-        image->texture.yflip();
+        image->tex_ref.yflip();
         return image;
     });
 

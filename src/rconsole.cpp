@@ -198,7 +198,7 @@ void RConsole::reg_class(mrb_state* ruby)
 
     mrb::add_method<RConsole>(
         ruby, "set_tile_image", [](RConsole* self, int index, RImage* image) {
-            self->console->set_tile_image(index, image->texture);
+            self->console->set_tile_image(index, image->tex_ref);
         });
 }
 

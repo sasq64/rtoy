@@ -39,6 +39,7 @@ struct Texture
             source_format,
             // Underlying type in array
             type, data.data());
+        gl_check("glTexImage2D");
     }
 
     template <typename T>

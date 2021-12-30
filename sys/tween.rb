@@ -215,6 +215,14 @@ class Tween
 
     end
 
+    def done?
+        @targets.all { |a| a.delta >= 1.0 }
+    end
+
+    def object()
+        @obj
+    end
+
     def add_target(r)
         REQUIRED.each { |x|
             raise TweenError.new "Missing attribute :#{x} for tween" unless r[x] 

@@ -1,11 +1,18 @@
 #include "pix.hpp"
 
 #include <array>
+#include <fstream>
+#include <istream>
+#include <filesystem>
+
 #include <gl/buffer.hpp>
 #include <gl/functions.hpp>
 #include <gl/program_cache.hpp>
 #include <gl/vec.hpp>
+#include <jpeg_decoder.h>
 #include <lodepng.h>
+
+namespace fs = std::filesystem;
 
 namespace pix {
 namespace gl = gl_wrap;
@@ -168,6 +175,37 @@ void draw_quad_filled(double x, double y, double sx, double sy)
     gl::vertexAttrib(pos, 2, gl::Type::Float, 0 * sizeof(GLfloat), 0);
     gl::drawArrays(gl::Primitive::TriangleFan, 0, 4);
     pos.disable();
+}
+
+template <typename Result = std::string, typename Stream>
+static Result read_all(Stream& in)
+{
+    Result contents;
+    auto here = in.tellg();
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg() - here);
+    in.seekg(here, std::ios::beg);
+    in.read((char*)contents.data(), contents.size());
+    in.close();
+    return contents;
+}
+
+Image load_jpg(fs::path const& name)
+{
+    std::ifstream jpg_file;
+    jpg_file.open(name);
+    auto data = read_all<std::vector<uint8_t>>(jpg_file);
+    jpeg::Decoder decoder{data.data(), data.size()};
+
+    Image image{decoder.GetWidth(), decoder.GetHeight()};
+    auto* rgb = decoder.GetImage();
+    uint32_t* ptr = (uint32_t*)image.ptr;
+    for (int i=0; i< image.width*image.height; i++) {
+        auto j = i*3;
+        ptr[i] = (rgb[j+2] << 16) | (rgb[j+1] << 8) | (rgb[j]) | (0xff000000);
+    }
+    //memcpy(image.ptr, decoder.GetImage(), image.width * image.height * 4);
+    return image;
 }
 
 Image load_png(std::string_view name)

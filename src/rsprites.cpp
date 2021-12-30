@@ -53,7 +53,7 @@ void RSprite::update_tx(double screen_width, double screen_height)
                               screen_height / 2.0 - trans[1], 0));
     m = glm::translate(m, glm::vec3(texture.width() / 2.0 * scale[0],
                               -texture.height() / 2.0 * scale[1], 0));
-    m = glm::rotate(m, -rot, glm::vec3(0.0, 0.0, 1.0));
+    m = glm::rotate(m, rot, glm::vec3(0.0, 0.0, 1.0));
 
     m = glm::scale(
         m, glm::vec3(static_cast<float>(texture.width()) * scale[0] / 2,
@@ -162,12 +162,7 @@ bool RSprites::draw_batch(SpriteBatch& batch)
         if (sprite->collider != nullptr) {
             colliders[sprite->collider->group].push_back(sprite);
         }
-        //if (last_alpha != sprite->alpha) {
-            //gl::Color fg = current_style.fg;
-            //fg.alpha = sprite->alpha;
-            program.setUniform(col_location, sprite->color);
-            //last_alpha = sprite->alpha;
-        //}
+        program.setUniform(col_location, sprite->color);
         if (sprite->dirty) {
             sprite->dirty = false;
             sprite->update_tx(width, height);
@@ -239,19 +234,19 @@ RSprite* RSprites::add_particle(int size, uint32_t color)
 RSprite* RSprites::add_sprite(RImage* image, int flags)
 {
     auto& batch =
-        flags == 1 ? fixed_batch : batches[image->texture.tex->tex_id];
+        flags == 1 ? fixed_batch : batches[image->tex_ref.tex->tex_id];
     if (batch.texture == nullptr) {
-        batch.texture = image->texture.tex;
+        batch.texture = image->tex_ref.tex;
         // batch.image = image->image;
     }
-    auto& uvs = image->texture.uvs;
+    auto& uvs = image->tex_ref.uvs;
     std::array vertexData{-1.F, -1.F, 1.F, -1.F, 1.F, 1.F, -1.F, 1.F, 0.F, 0.F,
         1.F, 0.F, 1.F, 1.F, 0.F, 1.F};
     std::copy(uvs.begin(), uvs.end(), vertexData.begin() + 8);
 
     auto* sprite =
         new RSprite{gl_wrap::ArrayBuffer<GL_STATIC_DRAW>{vertexData}};
-    sprite->texture = image->texture;
+    sprite->texture = image->tex_ref;
     sprite->trans[0] = static_cast<float>(sprite->texture.x());
     sprite->trans[1] = static_cast<float>(sprite->texture.y());
     sprite->update_tx(width, height);

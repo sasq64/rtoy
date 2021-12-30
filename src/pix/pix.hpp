@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstddef>
+#include <filesystem>
 #include <memory>
 #include <string_view>
 #include <tuple>
@@ -108,6 +109,8 @@ struct Image
 };
 
 Image load_png(std::string_view name);
+Image load_jpg(std::filesystem::path const& name);
+
 void save_png(Image const& image, std::string_view name);
 
 } // namespace pix

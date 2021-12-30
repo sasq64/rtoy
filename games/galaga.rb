@@ -22,15 +22,14 @@ class Galaga
         display.bg = Color::BLACK
         console.enabled = false
 
-        on_key { |key, mod, dev|
+        on_key do |key, mod, dev|
             unless @players.include? dev
-                p "NEW PLAYER"
                 @players[dev] = add_sprite(@ship,
                     pos: [display.width/4, display.height - 180],
                     collider: :ship,
                     scale: 3)
             end
-        }
+        end
 
     end
 
