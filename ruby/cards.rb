@@ -1,139 +1,6 @@
-class Token
+require_relative 'token.rb'
+require_relative 'location.rb'
 
-    attr_accessor :sides, :id, :current_side, :view, :name, :game, :before, :after
-
-    @@view_class = nil
-
-    def self.view_class(cls)
-        @@view_class = cls
-        @@tokens.keys.each { |t| t.view = cls.new(t) if t.view.nil? }
-    end
-
-    # All tokens
-    @@tokens = {}
-
-    def self.all()
-        @@tokens.keys
-    end
-
-    def initialize(name = nil, sides = 1, id = nil)
-        @name = name
-        @sides = sides
-        @id = id
-        @view = @@view_class.nil? ? nil : @@view_class.new(self)
-        @current_side = 0
-        Location.void.add(self)
-        @@tokens[self] = true 
-    end
-
-    def location()
-        @location
-    end
-
-    def location=(l)
-        @location = l
-        @view&.event(self, :location)
-    end
-
-    def label()
-        @name
-    end
-
-    def to_s
-        label
-    end
-
-    def turn_to(side)
-        @view&.turn_to(side)
-        @view&.event(self, :side)
-    end
-
-    def move_to(loc)
-        loc.add self
-    end
-
-end
-
-class Location
-
-
-    attr_accessor :name, :view, :active, :pile, :flip_to, :tokens
-
-    @@view_class = nil
-    @@locations = {}
-
-    def self.view_class(cls)
-        @@view_class = cls
-        @@locations.keys.each { |l| l.view = cls.new(l) if l.view.nil? }
-    end
-
-    def initialize(name = nil)
-        @name = name
-        @@locations[self] = true
-        @view = @@view_class.nil? ? nil : @@view_class.new(self)
-        @flip_to = nil
-        @pile = false
-        @active = false
-        @tokens = []
-    end
-
-    def to_s
-        return @name
-    end
-
-    def add(tok)
-
-        if tok.class == Location
-            tok = tok.tokens.dup
-        end
-
-        tok = [ tok ] unless tok.class == Array
-
-        for t in tok
-            fail unless t.class == Token
-            from = t.location
-            t.location = self
-            if from 
-                from.tokens.delete(t)
-            end
-            t.turn_to @flip_to unless @flip_to.nil?
-            @tokens << t
-        end
-        @view&.event(self, :update)
-    end
-
-    def draw(n = 1)
-        new_loc = Location.new('Draw')
-        new_loc.tokens = @tokens.slice!(0...n)
-        puts @tokens.size
-        new_loc.tokens.each { |t| t.location = new_loc }
-        puts new_loc.tokens.size
-        new_loc
-    end
-
-    def shuffle
-        @tokens.shuffle!
-        @view&.event(self, :shuffle)
-    end
-
-    def all()
-        @tokens
-    end
-
-    def first()
-        @tokens.first
-    end
-
-    @@void = Location.new("Void")
-    def self.void()
-        @@void
-    end
-
-    def contents
-        a = tokens.map { |t| t.name }
-        a.to_s
-    end
-end
 
 class Card < Token
 
@@ -160,10 +27,10 @@ end
 
 
 class TokenView
-    include OS
-    img = Image.from_file('data/cards.png').trim(1)
-    @@cards = img.split(13, 4)
-    @@cards.each { |c| c.trim(0,1,1,1) }
+    #include OS
+    #img = Image.from_file('data/cards.png').trim(1)
+    #@@cards = img.split(13, 4)
+    #@@cards.each { |c| c.trim(0,1,1,1) }
 
     def initialize(token)
         @token = token
@@ -253,29 +120,39 @@ deck = Location.new('Deck')
 hand = Location.new('Hand')
 
 suits = ['hearts', 'spades', 'diamonds', 'clubs']
-names = ['jack', 'queen', 'king']
+names = ['jack', 'queen', 'king', 'ace']
 
-Token.view_class(TokenView)
-Location.view_class(LocationView)
+#Token.view_class(TokenView)
+#Location.view_class(LocationView)
 
-tokens = (0...52).map { |i|
+tokens = (0...52).map do |i|
     suit = suits[i / 13]
     j = i % 13
-    name = j >= 10 ? names[j-10] : (j+1).to_s
-    name = 'ace' if j == 0
+    name = j >= 9 ? names[j-9] : (j+2).to_s
     Token.new("#{name} of #{suit}", 2, i)
-}
+end
 
-deck.add(tokens)
-deck.view.update()
+deck.put(from: tokens)
+#deck.view.update()
 deck.shuffle()
+
+puts deck.contents
+
+deck.sort()
+
+puts deck.contents
+
+hand.put(from: deck, from_index: 50, count: 2)
+
+puts hand.contents
 
 temp = deck.draw(5)
 
 puts temp.contents
 
-hand.add(temp)
+hand.put(from: temp, to_index: 1)
 
+puts hand.contents
 puts hand.tokens.size
 
 puts deck.tokens.size
