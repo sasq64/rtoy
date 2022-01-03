@@ -174,6 +174,10 @@ void Toy::init()
         ruby, "require", [](mrb_state* mrb, std::string const& name) {
             Toy::require(mrb, name);
         });
+    mrb::add_kernel_function(
+        ruby, "require_relative", [](mrb_state* mrb, std::string const& name) {
+            Toy::require(mrb, name);
+        });
     static auto root_path = fs::current_path();
 
     mrb::add_kernel_function(

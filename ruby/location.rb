@@ -1,18 +1,15 @@
 # frozen_string_literal: true
 
-require_relative './token'
+require_relative 'token'
+require_relative 'observable'
 
 # Represent a boardgame location that can hold tokens
 class Location
-  attr_accessor :name, :view, :active, :pile, :flip_to, :tokens
+  extend Observable
 
-  @view_class = nil
+  attr_accessor :name, :active, :pile, :flip_to, :tokens
+
   @locations = {}
-
-  def self.view_class(cls)
-    @view_class = cls
-    @locations.each_key { |l| l.view = cls.new(l) if l.view.nil? }
-  end
 
   def self.add(location)
     @locations[location] = true
@@ -22,10 +19,13 @@ class Location
     @locations.delete location
   end
 
+  # Create new Boardgame location, such as a _Deck_ of cards
+  # or the _board.
+  # @param name String Name of location
+  # @param tokens [Array<Token>] List of initial tokens for location
   def initialize(name = nil, tokens = [])
     @name = name
     Location.add(self)
-    @view = @view_class.nil? ? nil : @view_class.new(self)
     @flip_to = nil
     @pile = false
     @active = false
@@ -39,16 +39,12 @@ class Location
   end
 
   # Move tokens from another location to this location
+  # @param from 
   def put(from:, from_index: 0, to_index: 0, count: 0)
-    tokens = from
-    if from.instance_of? Location
-      tokens = from.tokens
-    elsif from.class != Array
-      tokens = [from]
-    end
+    tokens = from.tokens
     count = tokens.size if count.zero?
     @tokens.insert(to_index, *tokens.slice!(from_index, count))
-    @view&.event(self, :update)
+    Location.signal(self, :update)
   end
 
   # Create a temporary location with the top 'n' tokens of this
@@ -67,11 +63,19 @@ class Location
 
   def shuffle
     @tokens.shuffle!
-    @view&.event(self, :shuffle)
+    Location.signal(self, :shuffle)
   end
 
+  def each 
+    @tokens.each
+  end
+  
   def sort
     @tokens.sort! { |a, b| a.id <=> b.id }
+  end
+
+  def sort!
+    sort
   end
 
   def all

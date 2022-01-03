@@ -5,7 +5,7 @@ def list_files(s)
 end
 
 #require_relative 'ruby/os.rb'
-require_relative 'ruby/complete.rb'
+require_relative '../sys/complete.rb'
 
 class MyCoolClass
     def hey_people

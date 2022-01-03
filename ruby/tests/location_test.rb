@@ -23,7 +23,7 @@ class LocationTest < MiniTest::Test
     assert_equal 4, board.tokens.size
     assert_equal 'Yellow Pawn', board.tokens[3].label
 
-    board.sort
+    board.sort!
     assert_equal 'Blue Pawn', board.tokens[0].label
 
     assert_equal 4, Token.all.size
@@ -56,6 +56,8 @@ class LocationTest < MiniTest::Test
 
     assert_equal 'C', board.tokens[0].label
     assert_equal 'D', board.tokens[1].label
+
+    board.sort
 
     assert_equal 4, Token.all.size
     board.destroy
