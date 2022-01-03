@@ -39,6 +39,7 @@ class Toy
     std::unique_ptr<System> system;
 
     std::filesystem::path data_root;
+    static inline std::filesystem::path current_ruby_file;
 
     mrb_state* ruby = nullptr;
     static inline int stack_keep = 0;
@@ -57,7 +58,7 @@ class Toy
 
     static inline mrb_value error_handler{};
 
-    static void require(mrb_state* mrb, std::string const& name);
+    static void require(mrb_state* mrb, std::string const& name, bool rel);
 
 public:
     explicit Toy(Settings const& settings);

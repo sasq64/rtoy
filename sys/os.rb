@@ -208,6 +208,7 @@ module OS
             f = Fiber.new do
                 src = File.read(name)
                 p "LOAD #{name}"
+                set_ruby_file(name)
                 m = Module.new
                 m.send(:extend, OS)
                 m.instance_eval(src, name, 1)

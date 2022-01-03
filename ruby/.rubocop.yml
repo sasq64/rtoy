@@ -1,0 +1,5 @@
+Naming/MethodParameterName:
+  AllowedNames:
+    - x
+    - y
+

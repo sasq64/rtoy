@@ -41,15 +41,15 @@ TEST_CASE("class")
 {
     auto* ruby = mrb_open();
 
-    auto* person_class = mrb::make_class<Person>(ruby, "Person");
+    mrb::make_class<Person>(ruby, "Person");
     mrb::add_method<Person>(
-        ruby, "age=", [](Person* p, int age) { p->age = age; });
+        ruby, "age=", [](Person* person, int age) { person->age = age; });
     mrb::add_method<Person>(
-        ruby, "age", [](Person const* p) { return p->age; });
+        ruby, "age", [](Person const* person) { return person->age; });
 
-    mrb::add_method<Person>(ruby, "copy_from", [](Person* p, Person* src) {
-        p->name = src->name;
-        p->age = src->age;
+    mrb::add_method<Person>(ruby, "copy_from", [](Person* self, Person* other) {
+        self->name = other->name;
+        self->age = other->age;
     });
 
     mrb::add_method<Person>(
@@ -98,16 +98,16 @@ TEST_CASE("shared_ptr")
 TEST_CASE("retain") {
 
     auto* ruby = mrb_open();
-    auto* person_class = mrb::make_class<Person>(ruby, "Person");
+    mrb::make_class<Person>(ruby, "Person");
     mrb::add_method<Person>(
-        ruby, "age", [](Person const* p) { return 99; });
+        ruby, "age", [](Person const*) { return 99; });
     
-    auto f = mrb_load_string(ruby, "p = Person.new() ; p.age");
+    mrb_load_string(ruby, "p = Person.new() ; p.age");
     CHECK(Person::counter == 1);
     mrb_load_string(ruby, "GC.start");
     CHECK(Person::counter == 0);
 
-    mrb::Value v { ruby, new Person() };
+    mrb::Value person{ ruby, new Person() };
     CHECK(Person::counter == 1);
     //mrb_load_string(ruby, "p = Person.new() ; p.age");
     //CHECK(Person::counter == 2);
@@ -117,7 +117,7 @@ TEST_CASE("retain") {
 //mrb_define_global_const(ruby, "PERSON", v);
   //      RUBY_CHECK("PERSON.age == 99");
 
-    v.clear();
+    person.clear();
     mrb_load_string(ruby, "GC.start ; 3");
     CHECK(Person::counter == 1);
     mrb_close(ruby);

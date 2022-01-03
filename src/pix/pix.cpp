@@ -210,6 +210,7 @@ Image load_jpg(fs::path const& name)
 
 Image load_png(std::string_view name)
 {
+    fmt::print("Loading {}\n", name);
     Image image;
     std::byte* out{};
     unsigned w = 0;

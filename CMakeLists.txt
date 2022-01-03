@@ -181,7 +181,8 @@ add_library(pix STATIC
     src/pix/font.cpp
     src/pix/pixel_console.cpp
     external/lodepng/lodepng.cpp)
-target_include_directories(pix PRIVATE external external/lodepng PUBLIC src)
+target_include_directories(pix SYSTEM PRIVATE external)
+target_include_directories(pix PRIVATE external/lodepng PUBLIC src)
 target_link_libraries(pix PRIVATE Warnings PUBLIC
     Threads::Threads
     coreutils

@@ -65,21 +65,30 @@ fs::path find_data_root()
     return {};
 }
 
-void Toy::require(mrb_state* mrb, std::string const& name)
+void Toy::require(mrb_state* mrb, std::string const& name, bool rel)
 {
     fmt::print("Require {}\n", name);
 
     auto parts = utils::split(ruby_path, ":"s);
     std::optional<fs::path> to_load;
-    for (auto const& part : parts) {
-        auto rb_file = fs::path(part) / name;
+    if (rel) {
+        auto rb_file = current_ruby_file.parent_path() / name;
         if (rb_file.extension() == "") { rb_file.replace_extension(".rb"); }
-        if (fs::exists(rb_file)) {
-            to_load = rb_file;
-            break;
+        fmt::print("Checking {}\n", rb_file.string());
+        if (fs::exists(rb_file)) { to_load = rb_file; }
+    } else {
+        for (auto const& part : parts) {
+            auto rb_file = fs::path(part) / name;
+            if (rb_file.extension() == "") { rb_file.replace_extension(".rb"); }
+            fmt::print("Checking {}\n", rb_file.string());
+            if (fs::exists(rb_file)) {
+                to_load = rb_file;
+                break;
+            }
         }
     }
     if (!to_load) {
+        fmt::print("RAISE\n");
         mrb_raise(mrb, mrb->object_class,
             fmt::format("'{}' not found", name).c_str());
     }
@@ -100,9 +109,12 @@ void Toy::require(mrb_state* mrb, std::string const& name)
         ctx->capture_errors = true;
         mrbc_filename(mrb, ctx, name.c_str());
         ctx->lineno = 1;
+        auto old_file = current_ruby_file;
+        current_ruby_file = rb_file;
         mrb_load_file_cxt(mrb, fp, ctx);
         mrbc_context_free(mrb, ctx);
         fclose(fp);
+        current_ruby_file = old_file;
         if (auto err = mrb::check_exception(mrb)) {
             fmt::print("REQUIRE Error: {}\n", *err);
             ::exit(1);
@@ -147,7 +159,8 @@ void Toy::init()
     fmt::print("SYSTEM: {}\n", settings.system);
 
     auto* rclass = mrb::make_noinit_class<Settings>(ruby, "Settings");
-    mrb::define_const<Settings>(ruby, "SYSTEM", mrb::Symbol{ruby, settings.system});
+    mrb::define_const<Settings>(
+        ruby, "SYSTEM", mrb::Symbol{ruby, settings.system});
     mrb::define_const<Settings>(ruby, "BOOT_CMD", settings.boot_cmd);
     mrb::define_const<Settings>(
         ruby, "CONSOLE_FONT", settings.console_font.string());
@@ -171,29 +184,32 @@ void Toy::init()
     });
 
     mrb::add_kernel_function(
+        ruby, "set_ruby_file", [](mrb_state*, std::string const& name) {
+            Toy::current_ruby_file = name;
+        });
+    mrb::add_kernel_function(
         ruby, "require", [](mrb_state* mrb, std::string const& name) {
-            Toy::require(mrb, name);
+            Toy::require(mrb, name, false);
         });
     mrb::add_kernel_function(
         ruby, "require_relative", [](mrb_state* mrb, std::string const& name) {
-            Toy::require(mrb, name);
+            Toy::require(mrb, name, true);
         });
     static auto root_path = fs::current_path();
 
-    mrb::add_kernel_function(
-        ruby, "list_files", [](std::string const& name) {
-            auto dir = fs::path(name);
-            auto parent = fs::canonical(root_path / dir);
-            std::vector<std::string> files;
-            if (fs::is_directory(parent)) {
-                for (auto&& p : fs::directory_iterator(parent)) {
-                    auto real_path = p.path().filename(); //
-                    fmt::print("{}\n", real_path.string());
-                    files.emplace_back(real_path.string());
-                }
+    mrb::add_kernel_function(ruby, "list_files", [](std::string const& name) {
+        auto dir = fs::path(name);
+        auto parent = fs::canonical(root_path / dir);
+        std::vector<std::string> files;
+        if (fs::is_directory(parent)) {
+            for (auto&& p : fs::directory_iterator(parent)) {
+                auto real_path = p.path().filename(); //
+                fmt::print("{}\n", real_path.string());
+                files.emplace_back(real_path.string());
             }
-            return files;
-        });
+        }
+        return files;
+    });
 
     mrb_define_module_function(
         ruby, ruby->kernel_module, "set_error_handler",
@@ -211,10 +227,10 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     ctx->capture_errors = true;
     mrbc_filename(mrb, ctx, "main");
     ctx->lineno = 1;
-    //mrb_load_file_cxt(mrb, fp, ctx);
+    // mrb_load_file_cxt(mrb, fp, ctx);
     mrb_load_string_cxt(mrb, code.c_str(), ctx);
     mrbc_context_free(mrb, ctx);
-    //fclose(fp);
+    // fclose(fp);
     if (auto err = mrb::check_exception(mrb)) {
         fmt::print("Exec Error: {}\n", *err);
         ::exit(1);
@@ -234,13 +250,15 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     /* mrb_parser_parse(parser, ctx); */
 
     /* if (parser->nwarn > 0) { */
-    /*     char* msg = mrb_locale_from_utf8(parser->warn_buffer[0].message, -1); */
+    /*     char* msg = mrb_locale_from_utf8(parser->warn_buffer[0].message, -1);
+     */
     /*     printf("line %d: %s\n", parser->warn_buffer[0].lineno, msg); */
     /*     mrb_locale_free(msg); */
     /*     return; */
     /* } */
     /* if (parser->nerr > 0) { */
-    /*     char* msg = mrb_locale_from_utf8(parser->error_buffer[0].message, -1); */
+    /*     char* msg = mrb_locale_from_utf8(parser->error_buffer[0].message,
+     * -1); */
     /*     printf("line %d: %s\n", parser->error_buffer[0].lineno, msg); */
     /*     mrb_locale_free(msg); */
     /*     return; */
@@ -250,7 +268,8 @@ void Toy::exec(mrb_state* mrb, std::string const& code)
     /* if (proc == nullptr) { throw toy_exception("Can't generate code"); } */
     /* // struct RClass* target = mrb->object_class; */
     /* // MRB_PROC_SET_TARGET_CLASS(proc, target); */
-    /* /1* auto result = *1/ mrb_vm_run(mrb, proc, mrb_top_self(mrb), stack_keep); */
+    /* /1* auto result = *1/ mrb_vm_run(mrb, proc, mrb_top_self(mrb),
+     * stack_keep); */
     /* // stack_keep = proc->body.irep->nlocals; */
     /* // mrb_gc_arena_restore(ruby, ai); */
 }
