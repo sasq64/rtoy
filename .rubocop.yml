@@ -3,3 +3,5 @@ Naming/MethodParameterName:
     - x
     - y
 
+Style/MethodCallWithoutArgsParentheses:
+  Enabled: false
